@@ -11,7 +11,7 @@
    ============================================================ */
 
 /* ── 1. UTILIDADES ───────────────────────────────────────── */
-const supabase = sbClient;
+
 let currentUser = null;
 
 /** Muestra una notificación temporal en la parte inferior */
@@ -55,7 +55,7 @@ document.addEventListener('click', e => {
 /* ── 2. AUTENTICACIÓN ────────────────────────────────────── */
 
 async function loginWithGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin + window.location.pathname },
   });
@@ -63,7 +63,7 @@ async function loginWithGoogle() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await db.auth.signOut();
   currentUser = null;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-login').classList.add('active');
@@ -76,7 +76,7 @@ document.querySelectorAll('[data-logout]').forEach(btn => btn.addEventListener('
 document.getElementById('btn-logout')?.addEventListener('click', logout);
 
 // Reacciona a cambios de sesión (login, logout, refresh de token)
-supabase.auth.onAuthStateChange((event, session) => {
+db.auth.onAuthStateChange((event, session) => {
   if (session?.user) {
     currentUser = session.user;
     updateNavUser(currentUser);
@@ -134,7 +134,7 @@ async function loadLineup() {
   document.getElementById('lineup-jornada').textContent = JORNADA_ACTIVA;
   seleccionados = {};
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('jugadores')
     .select('*')
     .eq('jornada', JORNADA_ACTIVA)
@@ -266,7 +266,7 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   }
 
   // Borrar alineación previa de esta jornada
-  await supabase.from('mi_equipo').delete()
+  await db.from('mi_equipo').delete()
     .eq('user_id', currentUser.id)
     .eq('jornada', JORNADA_ACTIVA);
 
@@ -278,7 +278,7 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
     formacion,
   }));
 
-  const { error } = await supabase.from('mi_equipo').insert(filas);
+  const { error } = await db.from('mi_equipo').insert(filas);
   if (error) showToast('Error al guardar: ' + error.message, true);
   else       showToast('Alineación guardada ✓');
 });
@@ -294,7 +294,7 @@ async function loadMyTeam() {
 
   document.getElementById('myteam-jornada-num').textContent = JORNADA_ACTIVA;
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('mi_equipo_detalle')
     .select('*')
     .eq('user_id', currentUser.id)
@@ -337,7 +337,7 @@ async function loadRanking() {
   const jornada = JORNADA_ACTIVA - 1;
   document.getElementById('ranking-jornada-num').textContent = jornada;
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('clasificacion')
     .select('*')
     .eq('jornada', jornada)
@@ -366,7 +366,7 @@ async function loadRanking() {
 /* ── 7. ARRANQUE ─────────────────────────────────────────── */
 
 (async function init() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await db.auth.getSession();
 
   if (session?.user) {
     currentUser = session.user;
