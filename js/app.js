@@ -111,10 +111,13 @@ function loadHome() {
         </div>
         <div>
           <div class="team-name">${p.local.nombre}</div>
-          <div class="match-date">${p.fecha}</div>
+
         </div>
       </div>
-      <div class="match-vs"><small style="font-size:9px;letter-spacing:1px">⚽ ${p.estadio}</small></div>
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px">
+        <div class="match-vs">${p.estadio}</div>
+        <div class="match-date">${p.fecha}</div>
+      </div>
       <div class="match-team right">
         <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.visitante.escudo_url
