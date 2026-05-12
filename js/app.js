@@ -14,7 +14,6 @@
 
 let currentUser = null;
 
-/** Muestra una notificación temporal en la parte inferior */
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -23,7 +22,6 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-/** Navega a una pantalla y dispara su función de carga */
 function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screenId);
@@ -33,7 +31,6 @@ function goTo(screenId) {
   if (loaders[screenId]) loaders[screenId]();
 }
 
-/** Actualiza los avatares y nombres en todas las navbars */
 function updateNavUser(user) {
   const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
   const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -45,7 +42,17 @@ function updateNavUser(user) {
   });
 }
 
-// Delegación de clicks: botones de navegación [data-target]
+// Helper: renderiza un escudo como <img> si hay URL, o como texto si no
+function escudoHtml(escudo_url, club, size = 32) {
+  if (escudo_url) {
+    return `<img src="${escudo_url}" alt="${club}" width="${size}" height="${size}"
+              style="object-fit:contain;border-radius:2px;"
+              onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+            <span style="display:none;width:${size}px;height:${size}px;align-items:center;justify-content:center;font-family:var(--font-display);font-size:${Math.round(size*0.35)}px">${club}</span>`;
+  }
+  return `<span style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:${Math.round(size*0.35)}px">${club}</span>`;
+}
+
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-target]');
   if (btn) goTo(btn.dataset.target);
@@ -70,12 +77,9 @@ async function logout() {
 }
 
 document.getElementById('btn-google-login').addEventListener('click', loginWithGoogle);
-
-// Botones de logout en todas las navbars
 document.querySelectorAll('[data-logout]').forEach(btn => btn.addEventListener('click', logout));
 document.getElementById('btn-logout')?.addEventListener('click', logout);
 
-// Reacciona a cambios de sesión (login, logout, refresh de token)
 db.auth.onAuthStateChange((event, session) => {
   if (session?.user) {
     currentUser = session.user;
@@ -98,7 +102,11 @@ function loadHome() {
   container.innerHTML = PARTIDOS.map(p => `
     <div class="match-card">
       <div class="match-team">
-        <div class="crest" style="background:${p.local.color};color:white">${p.local.abrev}</div>
+        <div class="crest" style="background:${p.local.color};color:white;display:flex;align-items:center;justify-content:center">
+          ${p.local.escudo_url
+            ? `<img src="${p.local.escudo_url}" alt="${p.local.abrev}" width="28" height="28" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
+            : p.local.abrev}
+        </div>
         <div>
           <div class="team-name">${p.local.nombre}</div>
           <div class="match-date">${p.fecha}</div>
@@ -106,7 +114,11 @@ function loadHome() {
       </div>
       <div class="match-vs">VS<br><small style="font-size:9px;letter-spacing:1px">⚽ ${p.estadio}</small></div>
       <div class="match-team right">
-        <div class="crest" style="background:${p.visitante.color};color:white">${p.visitante.abrev}</div>
+        <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
+          ${p.visitante.escudo_url
+            ? `<img src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="28" height="28" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
+            : p.visitante.abrev}
+        </div>
         <div style="text-align:right">
           <div class="team-name">${p.visitante.nombre}</div>
           <div class="match-date">LaLiga</div>
@@ -127,7 +139,7 @@ const FORMACIONES = {
   '4-4-2': { def:4, mid:4, fwd:2 },
 };
 
-let seleccionados = {};           // { slotId: jugador }
+let seleccionados = {};
 let jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[] };
 
 async function loadLineup() {
@@ -154,10 +166,8 @@ function renderPitch() {
   const { def, mid, fwd } = FORMACIONES[formacion];
   const pitch = document.getElementById('pitch');
 
-  // Eliminar filas anteriores (conservar decoración del campo)
   pitch.querySelectorAll('.pitch-row').forEach(r => r.remove());
 
-  // Regenerar rayas de césped
   const stripes = document.getElementById('pitch-stripes');
   stripes.innerHTML = '';
   for (let i = 0; i < 10; i++) {
@@ -166,7 +176,6 @@ function renderPitch() {
     stripes.appendChild(d);
   }
 
-  // Orden visual: delanteros arriba → mediocampistas → defensas → portero
   const filas = [
     { pos:'DEL', count:fwd, cls:'fwd' },
     { pos:'MED', count:mid, cls:'mid' },
@@ -186,8 +195,15 @@ function renderPitch() {
       slot.dataset.slot = slotId;
 
       if (jugador) {
+        // Círculo con escudo si existe, si no iniciales
+        const circuloContenido = jugador.escudo_url
+          ? `<img src="${jugador.escudo_url}" alt="${jugador.club}"
+               width="28" height="28" style="object-fit:contain;border-radius:50%"
+               onerror="this.outerHTML='${jugador.nombre.substring(0,3).toUpperCase()}'">` 
+          : jugador.nombre.substring(0,3).toUpperCase();
+
         slot.innerHTML = `
-          <div class="player-circle ${fila.cls}">${jugador.nombre.substring(0,3).toUpperCase()}</div>
+          <div class="player-circle ${fila.cls}" style="overflow:hidden">${circuloContenido}</div>
           <div class="player-name">${jugador.nombre}</div>
           <div class="pos-badge">${jugador.club}</div>`;
       } else {
@@ -216,12 +232,19 @@ function openModal(slotId, posicion, cls) {
 
   list.innerHTML = jugadoresPorPos[posicion].map(j => {
     const usado = usados.has(j.id);
+    // En el modal: escudo del club a la izquierda
+    const escudo = j.escudo_url
+      ? `<img src="${j.escudo_url}" alt="${j.club}" width="32" height="32"
+           style="object-fit:contain;border-radius:2px"
+           onerror="this.style.display='none'">`
+      : `<div class="modal-player-circle"
+              style="background:${colores[cls]};color:${textoCols[cls]}">
+           ${j.nombre.substring(0,2).toUpperCase()}
+         </div>`;
+
     return `<div class="modal-player" data-id="${j.id}" data-slot="${slotId}"
               style="opacity:${usado ? 0.35 : 1};pointer-events:${usado ? 'none' : 'auto'}">
-      <div class="modal-player-circle"
-           style="background:${colores[cls]};color:${textoCols[cls]}">
-        ${j.nombre.substring(0,2).toUpperCase()}
-      </div>
+      ${escudo}
       <div>
         <div class="modal-player-name">${j.nombre}</div>
         <div class="modal-player-meta">${j.club} · ${j.posicion}</div>
@@ -265,12 +288,10 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
     return;
   }
 
-  // Borrar alineación previa de esta jornada
   await db.from('mi_equipo').delete()
     .eq('user_id', currentUser.id)
     .eq('jornada', JORNADA_ACTIVA);
 
-  // Insertar la nueva
   const filas = Object.values(seleccionados).map(jugador => ({
     user_id:    currentUser.id,
     jugador_id: jugador.id,
@@ -312,22 +333,39 @@ async function loadMyTeam() {
 
   empty.style.display = 'none';
 
+  // Necesitamos escudo_url que no está en la vista, lo sacamos de jugadores
+  const ids = data.map(j => j.jugador_id);
+  const { data: jugData } = await db
+    .from('jugadores')
+    .select('id, escudo_url')
+    .in('id', ids);
+
+  const escudoMap = {};
+  (jugData || []).forEach(j => escudoMap[j.id] = j.escudo_url);
+
   const orden = ['POR','DEF','MED','DEL'];
   const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion));
 
-  grid.innerHTML = sorted.map(j => `
-    <div class="player-card">
+  grid.innerHTML = sorted.map(j => {
+    const escudo = escudoMap[j.jugador_id];
+    const avatarContenido = escudo
+      ? `<img src="${escudo}" alt="${j.club}" width="30" height="30"
+           style="object-fit:contain"
+           onerror="this.style.display='none'">`
+      : j.nombre.substring(0,2).toUpperCase();
+
+    return `<div class="player-card">
       <div class="pc-avatar"
-           style="background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]}">
-        ${j.nombre.substring(0,2).toUpperCase()}
+           style="background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:hidden">
+        ${avatarContenido}
       </div>
       <div class="pc-info">
         <div class="pc-name">${j.nombre}</div>
         <div class="pc-meta">${j.posicion} · ${j.club}</div>
       </div>
       <div class="pc-pts">${j.puntos}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 
@@ -367,11 +405,9 @@ async function loadRanking() {
 
 (async function init() {
   const { data: { session } } = await db.auth.getSession();
-
   if (session?.user) {
     currentUser = session.user;
     updateNavUser(currentUser);
     goTo('home');
   }
-  // Si no hay sesión: el #screen-login ya tiene clase "active" en el HTML
 })();
