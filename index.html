@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FantasiLiga</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="screen-login" class="screen active">
+    <div class="login-card">
+      <span class="login-badge">⚽</span>
+      <h1 class="login-title">Fantasi<span>Liga</span></h1>
+      <p class="login-sub">Temporada 2024 · 2025</p>
+      <button id="btn-google-login" class="btn-google">
+        <div class="google-g">G</div>
+        Iniciar sesión con Google
+      </button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="screen-home" class="screen">
+    <nav class="navbar">
+      <div class="nav-logo">Fantasi<span>Liga</span></div>
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-target="home">Inicio</button>
+        <button class="nav-tab" data-target="lineup">Alineación</button>
+        <button class="nav-tab" data-target="myteam">Mi Equipo</button>
+        <button class="nav-tab" data-target="ranking">Clasificación</button>
+      </div>
+      <div class="nav-user">
+        <div class="avatar" id="nav-avatar">??</div>
+        <span id="nav-username">...</span>
+        <button class="btn-logout" id="btn-logout">✕</button>
+      </div>
+    </nav>
+    <div class="jornada-banner">
+      <span class="jornada-text">JORNADA</span>
+      <span class="jornada-num" id="home-jornada-num">—</span>
+      <span class="jornada-side">Temporada 24/25</span>
+    </div>
+    <main class="page-body">
+      <div class="section-label">Partidos de la semana</div>
+      <div id="matches-container" class="matches-grid"></div>
+      <div class="section-label" style="margin-top:28px;margin-bottom:14px">Acciones</div>
+      <div class="action-grid">
+        <button class="action-btn" data-target="lineup">
+          <span class="action-icon">📋</span>
+          <span class="action-label">Alineación</span>
+          <span class="action-desc">elige tu once</span>
+        </button>
+        <button class="action-btn" data-target="myteam">
+          <span class="action-icon">🛡</span>
+          <span class="action-label">Mi Equipo</span>
+          <span class="action-desc">tu plantilla</span>
+        </button>
+        <button class="action-btn" data-target="ranking">
+          <span class="action-icon">🏆</span>
+          <span class="action-label">Ranking</span>
+          <span class="action-desc">clasificación</span>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ALINEACIÓN -->
+  <div id="screen-lineup" class="screen">
+    <nav class="navbar">
+      <div class="nav-logo">Fantasi<span>Liga</span></div>
+      <div class="nav-tabs">
+        <button class="nav-tab" data-target="home">Inicio</button>
+        <button class="nav-tab active" data-target="lineup">Alineación</button>
+        <button class="nav-tab" data-target="myteam">Mi Equipo</button>
+        <button class="nav-tab" data-target="ranking">Clasificación</button>
+      </div>
+      <div class="nav-user">
+        <div class="avatar" id="nav-avatar-lineup">??</div>
+        <span id="nav-username-lineup">...</span>
+        <button class="btn-logout" data-logout>✕</button>
+      </div>
+    </nav>
+    <div class="round-header">
+      <div class="round-badge">Jornada <span id="lineup-jornada">—</span></div>
+      <select id="formation-select" class="formation-select">
+        <option>4-3-3</option>
+        <option>3-4-3</option>
+        <option>3-5-2</option>
+        <option>5-3-2</option>
+        <option>4-4-2</option>
+      </select>
+    </div>
+    <div class="pitch-wrapper">
+      <div id="pitch" class="pitch">
+        <div class="pitch-stripes" id="pitch-stripes"></div>
+        <div class="pitch-halftime"></div>
+        <div class="pitch-center-circle"></div>
+      </div>
+    </div>
+    <button id="btn-save-lineup" class="btn-primary">Guardar Alineación →</button>
+  </div>
+
+  <!-- MI EQUIPO -->
+  <div id="screen-myteam" class="screen">
+    <nav class="navbar">
+      <div class="nav-logo">Fantasi<span>Liga</span></div>
+      <div class="nav-tabs">
+        <button class="nav-tab" data-target="home">Inicio</button>
+        <button class="nav-tab" data-target="lineup">Alineación</button>
+        <button class="nav-tab active" data-target="myteam">Mi Equipo</button>
+        <button class="nav-tab" data-target="ranking">Clasificación</button>
+      </div>
+      <div class="nav-user">
+        <div class="avatar" id="nav-avatar-myteam">??</div>
+        <span id="nav-username-myteam">...</span>
+        <button class="btn-logout" data-logout>✕</button>
+      </div>
+    </nav>
+    <div class="jornada-banner">
+      <span class="jornada-text">JORNADA</span>
+      <span class="jornada-num" id="myteam-jornada-num">—</span>
+      <span class="jornada-side">Tu plantilla</span>
+    </div>
+    <main class="page-body">
+      <div class="section-label" style="margin-bottom:14px">Jugadores seleccionados</div>
+      <div id="myteam-empty" class="empty-state" style="display:none">
+        <p>Todavía no has guardado tu alineación para esta jornada.</p>
+      </div>
+      <div id="myteam-grid" class="squad-grid"></div>
+    </main>
+  </div>
+
+  <!-- CLASIFICACIÓN -->
+  <div id="screen-ranking" class="screen">
+    <nav class="navbar">
+      <div class="nav-logo">Fantasi<span>Liga</span></div>
+      <div class="nav-tabs">
+        <button class="nav-tab" data-target="home">Inicio</button>
+        <button class="nav-tab" data-target="lineup">Alineación</button>
+        <button class="nav-tab" data-target="myteam">Mi Equipo</button>
+        <button class="nav-tab active" data-target="ranking">Clasificación</button>
+      </div>
+      <div class="nav-user">
+        <div class="avatar" id="nav-avatar-ranking">??</div>
+        <span id="nav-username-ranking">...</span>
+        <button class="btn-logout" data-logout>✕</button>
+      </div>
+    </nav>
+    <div class="jornada-banner">
+      <span class="jornada-text">JORNADA</span>
+      <span class="jornada-num" id="ranking-jornada-num">—</span>
+      <span class="jornada-side">Clasificación general</span>
+    </div>
+    <main class="page-body">
+      <div class="section-label" style="margin-bottom:16px">Tabla de clasificación</div>
+      <table class="ranking-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Pts</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-body"></tbody>
+      </table>
+    </main>
+  </div>
+
+  <!-- MODAL selector de jugador -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">Seleccionar jugador</span>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-list" id="modal-list"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
