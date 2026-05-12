@@ -5,7 +5,7 @@ const JORNADA_ACTIVA = 1;
 
 const PARTIDOS = [
   {
-    local:     { nombre: 'Mosconia',       abrev: 'MOS', color: '#FFFFFF' },
+    local:     { nombre: 'Mosconia',       abrev: 'MOS', color: '#97D5DE' },
     visitante: { nombre: 'Covadonga',       abrev: 'COV', color: '#1C0096' },
     fecha:     'Domingo 17, 18:00h',
     estadio:   'Marqués Vega de Anzo',
@@ -14,7 +14,7 @@ const PARTIDOS = [
     local:     { nombre: 'Caudal Deportivo', abrev: 'CAU', color: '#000000' },
     visitante: { nombre: 'Sporting Atlético',         abrev: 'RSG', color: '#FF0303' },
     fecha:     'Domingo 17, 18:30h',
-    estadio:   'Hermanos Antula',
+    estadio:   'Hermanos Antuña',
   },
 ];
 
