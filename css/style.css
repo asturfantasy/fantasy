@@ -139,9 +139,9 @@ html, body { height:100%; font-family:var(--font-body); background:var(--cream);
 .player-circle { width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:11px; letter-spacing:.5px; border:2px solid rgba(255,255,255,0.3); transition:transform .12s, border-color .12s; }
 .player-circle:hover { transform:scale(1.12); border-color:rgba(255,255,255,.8); }
 .player-circle.empty { background:rgba(255,255,255,.08); border-style:dashed; color:rgba(255,255,255,.35); }
-.player-circle.gk  { background:var(--amber); color:var(--ink); }
+.player-circle.gk  { background:var(--yellow); color:black; }
 .player-circle.def { background:var(--blue); color:white; }
-.player-circle.mid { background:var(--ink); color:var(--cream); }
+.player-circle.mid { background:var(--green); color:white; }
 .player-circle.fwd { background:var(--red); color:white; }
 .player-name { font-family:var(--font-ui); font-weight:600; font-size:9px; letter-spacing:.5px; text-align:center; color:var(--cream); text-shadow:0 1px 3px rgba(0,0,0,.9); max-width:52px; text-transform:uppercase; }
 .pos-badge { font-family:var(--font-mono); font-size:8px; color:rgba(255,255,255,.5); text-align:center; }
@@ -204,7 +204,8 @@ html, body { height:100%; font-family:var(--font-body); background:var(--cream);
 
 /* ── RESPONSIVE ── */
 @media (max-width:720px) {
-  .nav-tabs { display:none; }
+  .nav-tabs { display:flex; width:100%; justify-content:space-between; }
+  .nav-tab { flex:1; text-align:center; font-size:9px; padding:6px 4px; }
   .action-grid { grid-template-columns:1fr; }
   .squad-grid { grid-template-columns:1fr; }
   .login-card { width:92%; padding:32px 24px; }
