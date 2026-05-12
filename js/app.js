@@ -232,36 +232,59 @@ function openModal(slotId, posicion, cls) {
   const colores = { gk:'var(--amber)', def:'var(--blue)', mid:'var(--ink)', fwd:'var(--red)' };
   const textoCols = { gk:'var(--ink)', def:'white', mid:'var(--cream)', fwd:'white' };
 
-  list.innerHTML = jugadoresPorPos[posicion].map(j => {
-    const usado = usados.has(j.id);
-    // En el modal: escudo del club a la izquierda
-    const escudo = j.escudo_url
-      ? `<img src="${j.escudo_url}" alt="${j.club}" width="32" height="32"
-           style="object-fit:contain;border-radius:2px"
-           onerror="this.style.display='none'">`
-      : `<div class="modal-player-circle"
-              style="background:${colores[cls]};color:${textoCols[cls]}">
-           ${j.nombre.substring(0,2).toUpperCase()}
-         </div>`;
+  // 1. Buscador + contenedor de jugadores
+  list.innerHTML = `
+    <div style="padding:12px 20px;border-bottom:1px solid var(--cream-dark);position:sticky;top:0;background:var(--cream);z-index:1">
+      <input id="modal-search" type="text" placeholder="Buscar jugador..."
+        style="width:100%;padding:8px 12px;font-family:var(--font-mono);font-size:13px;
+               border:2px solid var(--ink);border-radius:4px;background:var(--white);color:var(--ink)">
+    </div>
+    <div id="modal-players"></div>
+  `;
 
-    return `<div class="modal-player" data-id="${j.id}" data-slot="${slotId}"
-              style="opacity:${usado ? 0.35 : 1};pointer-events:${usado ? 'none' : 'auto'}">
-      ${escudo}
-      <div>
-        <div class="modal-player-name">${j.nombre}</div>
-        <div class="modal-player-meta">${j.club} · ${j.posicion}</div>
-      </div>
-      <div class="modal-player-pts">${j.puntos}</div>
-    </div>`;
-  }).join('');
+  // 2. Función que filtra y pinta la lista
+  const renderLista = (filtro = '') => {
+    const jugadoresFiltrados = jugadoresPorPos[posicion].filter(j =>
+      j.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+      j.club.toLowerCase().includes(filtro.toLowerCase())
+    );
 
-  list.querySelectorAll('.modal-player').forEach(el => {
-    el.addEventListener('click', () => {
-      const id = el.dataset.id;
-      seleccionados[slotId] = jugadoresPorPos[posicion].find(j => j.id === id);
-      closeModal();
-      renderPitch();
+    document.getElementById('modal-players').innerHTML = jugadoresFiltrados.map(j => {
+      const usado = usados.has(j.id);
+      const escudo = j.escudo_url
+        ? `<img src="${j.escudo_url}" alt="${j.club}" width="32" height="32"
+               style="object-fit:contain;border-radius:2px"
+               onerror="this.style.display='none'">`
+        : `<div class="modal-player-circle"
+                  style="background:${colores[cls]};color:${textoCols[cls]}">
+               ${j.nombre.substring(0,2).toUpperCase()}
+             </div>`;
+
+      return `<div class="modal-player" data-id="${j.id}" data-slot="${slotId}"
+                style="opacity:${usado ? 0.35 : 1};pointer-events:${usado ? 'none' : 'auto'}">
+        ${escudo}
+        <div>
+          <div class="modal-player-name">${j.nombre}</div>
+          <div class="modal-player-meta">${j.club} · ${j.posicion}</div>
+        </div>
+        <div class="modal-player-pts">${j.puntos}</div>
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('.modal-player').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        seleccionados[slotId] = jugadoresPorPos[posicion].find(j => j.id === id);
+        closeModal();
+        renderPitch();
+      });
     });
+  };
+
+  // 3. Pintar lista inicial y activar buscador
+  renderLista();
+  document.getElementById('modal-search').addEventListener('input', e => {
+    renderLista(e.target.value);
   });
 
   document.getElementById('modal-overlay').classList.add('open');
@@ -357,7 +380,7 @@ async function loadMyTeam() {
   banner.style.display = 'block';
   banner.innerHTML = `
     <div class="saved-title">¡Ya tienes tu equipo guardado!</div>
-    <div class="saved-sub"><strong>Recuerda que puedes modificar tu once hasta el inicio de la jornada</strong></div>
+    <div class="saved-sub"><strong>Recuerda que puedes modificar el once hasta el inicio de la jornada</strong></div>
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
     <div class="saved-pts-high"><strong>${totalPuntos} puntos</strong></div>
     <div class="saved-players">Esta es tu alineación: ${nombres}</div>
