@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FantasiLiga</title>
+  <title>AsturFantasy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -15,10 +15,10 @@
 <div id="screen-login" class="screen active">
   <div class="login-card">
     <span class="login-badge">⚽</span>
-    <h1 class="login-title">Fantasi<span>Liga</span></h1>
-    <p class="login-sub">Temporada 2024 · 2025</p>
+    <h1 class="login-title"><span>AsturFantasy</span></h1>
+    <p class="login-sub">Vive la 3RFEF como nunca antes la habías vivido</p>
     <button id="btn-google-login" class="btn-google">
-      <div class="google-g">G</div>
+      <div class="google-g"></div>
       Iniciar sesión con Google
     </button>
   </div>
@@ -27,7 +27,7 @@
 <!-- HOME -->
 <div id="screen-home" class="screen">
   <nav class="navbar">
-    <div class="nav-logo">Fantasi<span>Liga</span></div>
+    <div class="nav-logo"><span>AsturFantasy</span></div>
     <div class="nav-tabs">
       <button class="nav-tab active" data-target="home">Inicio</button>
       <button class="nav-tab" data-target="lineup">Alineación</button>
@@ -43,27 +43,27 @@
   <div class="jornada-banner">
     <span class="jornada-text">JORNADA</span>
     <span class="jornada-num" id="home-jornada-num">—</span>
-    <span class="jornada-side">Temporada 24/25</span>
+    <span class="jornada-side">Temporada 2025/26</span>
   </div>
   <main class="page-body">
-    <div class="section-label">Partidos de la semana</div>
+    <div class="section-label">Los partidos de la jornada</div>
     <div id="matches-container" class="matches-grid"></div>
     <div class="section-label" style="margin-top:28px;margin-bottom:14px">Acciones</div>
     <div class="action-grid">
       <button class="action-btn" data-target="lineup">
         <span class="action-icon">📋</span>
         <span class="action-label">Alineación</span>
-        <span class="action-desc">elige tu once</span>
+        <span class="action-desc">Haz tu once</span>
       </button>
       <button class="action-btn" data-target="myteam">
         <span class="action-icon">🛡</span>
         <span class="action-label">Mi Equipo</span>
-        <span class="action-desc">tu plantilla</span>
+        <span class="action-desc">Tu plantilla</span>
       </button>
       <button class="action-btn" data-target="ranking">
         <span class="action-icon">🏆</span>
         <span class="action-label">Ranking</span>
-        <span class="action-desc">clasificación</span>
+        <span class="action-desc">Consulta la clasificación de la pasada jornada</span>
       </button>
     </div>
   </main>
@@ -72,7 +72,7 @@
 <!-- ALINEACIÓN -->
 <div id="screen-lineup" class="screen">
   <nav class="navbar">
-    <div class="nav-logo">Fantasi<span>Liga</span></div>
+    <div class="nav-logo"><span>AsturFantasy</span></div>
     <div class="nav-tabs">
       <button class="nav-tab" data-target="home">Inicio</button>
       <button class="nav-tab active" data-target="lineup">Alineación</button>
@@ -102,7 +102,7 @@
       <div class="pitch-center-circle"></div>
     </div>
   </div>
-  <button id="btn-save-lineup" class="btn-primary">Guardar Alineación →</button>
+  <button id="btn-save-lineup" class="btn-primary">Guardar Alineación</button>
 </div>
 
 <!-- MI EQUIPO -->
@@ -155,7 +155,7 @@
   <div class="jornada-banner">
     <span class="jornada-text">JORNADA</span>
     <span class="jornada-num" id="ranking-jornada-num">—</span>
-    <span class="jornada-side">Clasificación general</span>
+    <span class="jornada-side">Consulta la clasificación en directo</span>
   </div>
   <main class="page-body">
     <div class="section-label" style="margin-bottom:16px">Tabla de clasificación</div>

@@ -355,7 +355,7 @@ async function loadMyTeam() {
   banner.innerHTML = `
     <div class="saved-title">¡Ya tienes tu equipo guardado!</div>
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
-    <div class="saved-players">Tu equipo actual es: ${nombres}</div>
+    <div class="saved-players">Esta es tu alineación: ${nombres}</div>
     <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? → Ir a Alineación</button>
   `;
 
