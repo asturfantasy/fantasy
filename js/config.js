@@ -5,7 +5,7 @@
    Supabase → Settings → API
    ============================================================ */
 
-const SUPABASE_URL = 'https://supabase.com/dashboard/project/rtmclmqzasktshlzwcyn';   // ← cambia esto
+const SUPABASE_URL = 'https://rtmclmqzasktshlzwcyn.supabase.co';   // ← cambia esto
 const SUPABASE_KEY = 'sb_publishable_8aNRtGX0cHoNcaJHv9ASOw_Fz-3Of-2';                // ← cambia esto
 
 // Número de jornada activa. Cámbialo cada semana.
