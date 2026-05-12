@@ -29,4 +29,4 @@ const PARTIDOS = [
 ];
 
 // Cliente Supabase (disponible globalmente en app.js)
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
