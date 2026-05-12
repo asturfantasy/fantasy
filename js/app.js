@@ -384,7 +384,7 @@ async function loadMyTeam() {
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
     <div class="saved-pts-high"><strong>${totalPuntos} puntos</strong></div>
     <div class="saved-players">Esta es tu alineación: ${nombres}</div>
-    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? → Ir a Alineación</button>
+    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? Hazlo aquí</button>
   `;
 
   grid.innerHTML = sorted.map(j => {
