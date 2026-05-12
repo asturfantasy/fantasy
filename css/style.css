@@ -17,9 +17,12 @@
   --ink:         #1a1a16;
   --ink-light:   #6a6a58;
   --white:       #ffffff;
-  --red:         #b03020;
-  --blue:        #1a3a8a;
+  --red:         #D10000;
+  --blue:        #047ACF;
   --amber:       #c8860a;
+  --yellow:      #f0d000;
+  --black:       #000000;
+  --green:       #07B50C;
   --font-display:'Bebas Neue', sans-serif;
   --font-body:   'Special Elite', cursive;
   --font-ui:     'Oswald', sans-serif;
@@ -101,7 +104,7 @@ html, body { height:100%; font-family:var(--font-body); background:var(--cream);
 .match-card::before { content:''; position:absolute; top:4px; left:4px; right:-4px; bottom:-4px; background:var(--ink); border-radius:4px; z-index:-1; }
 .match-team { display:flex; align-items:center; gap:10px; flex:1; }
 .match-team.right { flex-direction:row-reverse; }
-.crest { width:36px; height:36px; border-radius:3px; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:12px; letter-spacing:1px; flex-shrink:0; border:2px solid var(--ink); }
+.crest { width:36px; height:36px; border-radius:3px; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:12px; letter-spacing:1px; flex-shrink:0; border:none; }
 .team-name { font-family:var(--font-ui); font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.5px; }
 .match-vs { font-family:var(--font-display); font-size:11px; letter-spacing:2px; color:var(--ink-light); padding:0 14px; text-align:center; line-height:2; }
 .match-date { font-family:var(--font-mono); font-size:10px; color:var(--ink-light); }
@@ -261,5 +264,13 @@ html, body { height:100%; font-family:var(--font-body); background:var(--cream);
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.15s;
+}
+.saved-pts-high {
+  font-family: var(--font-display);
+  font-size: 50px;
+  line-height: 1;
+  color: var(--cream);
+  letter-spacing: 4px;
+  margin: 8px 0 0;
 }
 .btn-modificar:hover { background: var(--cream-dark); }

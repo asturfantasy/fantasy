@@ -97,6 +97,8 @@ db.auth.onAuthStateChange((event, session) => {
 
 function loadHome() {
   document.getElementById('home-jornada-num').textContent = JORNADA_ACTIVA;
+  const userName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 'crack';
+  document.getElementById('home-bienvenida').textContent = '¡Bienvenido, ' + userName + '!';
 
   const container = document.getElementById('matches-container');
   container.innerHTML = PARTIDOS.map(p => `
@@ -104,7 +106,7 @@ function loadHome() {
       <div class="match-team">
         <div class="crest" style="background:${p.local.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.local.escudo_url
-            ? `<img src="${p.local.escudo_url}" alt="${p.local.abrev}" width="28" height="28" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
+            ? `<img src="${p.local.escudo_url}" alt="${p.local.abrev}" width="40" height="40" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
             : p.local.abrev}
         </div>
         <div>
@@ -112,16 +114,16 @@ function loadHome() {
           <div class="match-date">${p.fecha}</div>
         </div>
       </div>
-      <div class="match-vs">VS<br><small style="font-size:9px;letter-spacing:1px">⚽ ${p.estadio}</small></div>
+      <div class="match-vs"><small style="font-size:9px;letter-spacing:1px">⚽ ${p.estadio}</small></div>
       <div class="match-team right">
         <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.visitante.escudo_url
-            ? `<img src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="28" height="28" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
+            ? `<img src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="40" height="40" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
             : p.visitante.abrev}
         </div>
         <div style="text-align:right">
           <div class="team-name">${p.visitante.nombre}</div>
-          <div class="match-date">LaLiga</div>
+          <div class="match-date"></div>
         </div>
       </div>
     </div>
@@ -307,8 +309,8 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
 
 /* ── 5. MI EQUIPO ────────────────────────────────────────── */
 
-const POS_COLORS = { POR:'var(--amber)', DEF:'var(--blue)', MED:'var(--ink)', DEL:'var(--red)' };
-const POS_TEXT   = { POR:'var(--ink)',   DEF:'white',       MED:'var(--cream)', DEL:'white' };
+const POS_COLORS = { POR:'var(--yellow)', DEF:'var(--blue)', MED:'var(--green)', DEL:'var(--red)' };
+const POS_TEXT   = { POR:'var(--black)',   DEF:'white',       MED:'white', DEL:'white' };
 
 async function loadMyTeam() {
   if (!currentUser) return;
@@ -351,10 +353,13 @@ async function loadMyTeam() {
   // Banner: equipo ya guardado
   const formacion = data[0]?.formacion || '—';
   const nombres = sorted.map(j => j.nombre).join(', ');
+  const totalPuntos = sorted.reduce((acc, j) => acc + (j.puntos || 0), 0);
   banner.style.display = 'block';
   banner.innerHTML = `
     <div class="saved-title">¡Ya tienes tu equipo guardado!</div>
+    <div class="saved-sub"><strong>Recuerda que puedes modificar tu once hasta el inicio de la jornada</strong></div>
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
+    <div class="saved-pts-high"><strong>${totalPuntos} puntos</strong></div>
     <div class="saved-players">Esta es tu alineación: ${nombres}</div>
     <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? → Ir a Alineación</button>
   `;
