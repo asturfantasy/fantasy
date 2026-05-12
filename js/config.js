@@ -9,28 +9,22 @@ const SUPABASE_URL = 'https://supabase.com/dashboard/project/rtmclmqzasktshlzwcy
 const SUPABASE_KEY = 'sb_publishable_8aNRtGX0cHoNcaJHv9ASOw_Fz-3Of-2';                // ← cambia esto
 
 // Número de jornada activa. Cámbialo cada semana.
-const JORNADA_ACTIVA = 28;
+const JORNADA_ACTIVA = 1;
 
 // Partidos de la semana. Actualiza el array cada jornada.
 // color: código hex del color principal del equipo
 const PARTIDOS = [
   {
-    local:     { nombre: 'Real Madrid',       abrev: 'RMA', color: '#c8181a' },
-    visitante: { nombre: 'FC Barcelona',       abrev: 'BAR', color: '#17409a' },
-    fecha:     'Sáb 18:00',
-    estadio:   'Bernabéu',
+    local:     { nombre: 'Mosconia',       abrev: 'MOS', color: '#c8181a' },
+    visitante: { nombre: 'Covadonga',       abrev: 'COV', color: '#17409a' },
+    fecha:     'Domingo 17, 17:30h',
+    estadio:   'Marqués Vega de Anzo',
   },
   {
-    local:     { nombre: 'Atlético de Madrid', abrev: 'ATL', color: '#c8181a' },
-    visitante: { nombre: 'Sevilla FC',         abrev: 'SEV', color: '#1a6b3a' },
-    fecha:     'Dom 16:15',
-    estadio:   'Cívitas',
-  },
-  {
-    local:     { nombre: 'Athletic Club',      abrev: 'ATH', color: '#c60b1e' },
-    visitante: { nombre: 'Valencia CF',        abrev: 'VLC', color: '#1a1a16' },
-    fecha:     'Dom 21:00',
-    estadio:   'San Mamés',
+    local:     { nombre: 'Caudal Deportivo', abrev: 'CAU', color: '#c8181a' },
+    visitante: { nombre: 'Sporting Atlético',         abrev: 'RSG', color: '#1a6b3a' },
+    fecha:     'Domingo 17, 18:30h',
+    estadio:   'Hermanos Antuña',
   },
 ];
 
