@@ -8,7 +8,7 @@ const JORNADA_ACTIVA = 1;
 const PARTIDOS = [
   {
     local:     { nombre: 'Mosconia',       abrev: 'MOS', color: '#83BFC7', escudo_url: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/sign/escudos/MosconiaEscudo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMzdiOGIxYS1lMzkzLTRjNjMtOTNlNS0yNThmOGZlZWVjZDEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlc2N1ZG9zL01vc2NvbmlhRXNjdWRvLnBuZyIsImlhdCI6MTc3ODYwNDkwNCwiZXhwIjoyMjUxNjQ0OTA0fQ.5OFUtjz62YVtkT0NDEUmBD4I4LVTENItKTksoRsLmkg' },
-    visitante: { nombre: 'Covadonga',       abrev: 'COV', color: '#310FBD', escudo_url: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/sign/escudos/CovadongaEscudo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMzdiOGIxYS1lMzkzLTRjNjMtOTNlNS0yNThmOGZlZWVjZDEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlc2N1ZG9zL0NvdmFkb25nYUVzY3Vkby5wbmciLCJpYXQiOjE3Nzg2MDQ5MTgsImV4cCI6MjI1MTY0NDkxOH0.nFE1GekbM4per2WpZHZD6wYIf6BQnT9-j2eyS7vjFX4' },
+    visitante: { nombre: 'Covadonga',       abrev: 'COV', color: '#310FBD', escudo_url: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/sign/escudos/CovadongaEscudo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMzdiOGIxYS1lMzkzLTRjNjMtOTNlNS0yNThmOGZlZWVjZDEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlc2N1ZG9zL0NvdmFkb25nYUVzY3Vkby5wbmciLCJpYXQiOjE3Nzg2MDU1MjUsImV4cCI6MjI1MTY0NTUyNX0.KLrHqbsHfolsib7Yzq8TILqjjU5NJ7vtugG-BhAobVI' },
     fecha:     'Domingo 17, 18:00h',
     estadio:   'Marqués Vega de Anzo',
   },
