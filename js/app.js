@@ -11,7 +11,7 @@
    ============================================================ */
 
 /* ── 1. UTILIDADES ───────────────────────────────────────── */
-
+const supabase = sbClient;
 let currentUser = null;
 
 /** Muestra una notificación temporal en la parte inferior */
