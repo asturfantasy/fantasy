@@ -137,8 +137,19 @@
     <span class="jornada-side"></span>
   </div>
   <main class="page-body">
-    <div class="section-label" style="margin-bottom:14px">Jugadores seleccionados</div>
+    <!--<div class="section-label" style="margin-bottom:14px">Jugadores seleccionados</div>-->
     <div id="myteam-banner" class="myteam-banner" style="display:none"></div>
+    <div id="nombre-equipo-form" style="display:flex;gap:8px;align-items:center;margin:0 0 16px">
+      <input id="input-nombre-equipo" type="text" placeholder="¡Dale un nombre a tu equipo!"
+             style="flex:1;padding:8px 12px;font-family:var(--font-display);font-size:14px;
+           background:var(--surface);color:var(--text);border:1px solid var(--border);
+           border-radius:8px">
+      <button id="btn-guardar-equipo"
+              style="padding:8px 16px;background:var(--neon);color:var(--bg);border:none;border-radius:8px;
+           font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer">
+        Guardar nombre de equipo
+      </button>
+    </div>
     <div id="myteam-empty" class="empty-state" style="display:none">
       <p>Todavía no has guardado tu alineación para esta jornada.</p>
     </div>
@@ -168,15 +179,38 @@
     <span class="jornada-side"></span>
   </div>
   <main class="page-body">
-    <div class="section-label" style="margin-bottom:16px">Tabla de clasificación</div>
-    <table class="ranking-table">
-      <thead>
-      <tr>
-        <th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Pts</th>
-      </tr>
-      </thead>
-      <tbody id="ranking-body"></tbody>
-    </table>
+    <div class="section-label" style="margin-bottom:16px">Estadísticas</div>
+
+    <!-- Pestañas -->
+    <div class="ranking-tabs">
+      <button class="ranking-tab active" data-rtab="semanal">Jornada</button>
+      <button class="ranking-tab" data-rtab="general">General</button>
+      <button class="ranking-tab" data-rtab="jugadores">Jugadores</button>
+    </div>
+
+    <!-- Clasificación semanal -->
+    <div id="rtab-semanal" class="rtab-content">
+      <table class="ranking-table">
+        <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Pts</th></tr></thead>
+        <tbody id="ranking-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Clasificación general -->
+    <div id="rtab-general" class="rtab-content" style="display:none">
+      <table class="ranking-table">
+        <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody id="ranking-general-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Ranking jugadores -->
+    <div id="rtab-jugadores" class="rtab-content" style="display:none">
+      <table class="ranking-table">
+        <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
+        <tbody id="ranking-jugadores-body"></tbody>
+      </table>
+    </div>
   </main>
 </div>
 

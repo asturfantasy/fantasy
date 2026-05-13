@@ -519,11 +519,11 @@ async function loadMyTeam() {
 
   banner.style.display = 'block';
   banner.innerHTML = `
-    <div class="saved-title">¡Ya tienes tu equipo guardado!</div>
+    <div class="saved-title">¡Este es tu once! Suerte</div>
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
-    <div class="saved-pts-high"><strong>PUNTOS OBTENIDOS: ${totalPuntos}</strong></div>
-    <div class="saved-players">Tu equipo actual es: ${nombres}</div>
-    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? Hazlo aquí</button>
+    <div class="saved-pts-high"><strong>${totalPuntos} PUNTOS</strong></div>
+    <br>
+    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo?</button>
   `;
 
   grid.innerHTML = sorted.map(j => {
@@ -552,42 +552,161 @@ async function loadMyTeam() {
       </div>
     </div>`;
   }).join('');
+
+  const { data: equipoData } = await db
+    .from('equipos')
+    .select('nombre_equipo')
+    .eq('user_id', currentUser.id)
+    .single();
+
+  const inputNombre = document.getElementById('input-nombre-equipo');
+  if (inputNombre && equipoData?.nombre_equipo) {
+    inputNombre.value = equipoData.nombre_equipo;
+  }
 }
 
 
 /* ── 6. CLASIFICACIÓN ────────────────────────────────────── */
 
+const medalClass = pos => pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
+
 async function loadRanking() {
   const jornada = JORNADA_ACTIVA - 1;
   document.getElementById('ranking-jornada-num').textContent = jornada;
 
-  const { data, error } = await db
-    .from('clasificacion')
+  // Eventos de las pestañas
+  document.querySelectorAll('.ranking-tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.ranking-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.rtab-content').forEach(c => c.style.display = 'none');
+      tab.classList.add('active');
+      document.getElementById('rtab-' + tab.dataset.rtab).style.display = 'block';
+    };
+  });
+
+  // ── Clasificación semanal ──
+  const { data: semanal } = await db
+    .from('clasificacion_automatica')
     .select('*')
     .eq('jornada', jornada)
-    .order('posicion', { ascending: true });
+    .order('puntos', { ascending: false });
 
   const tbody = document.getElementById('ranking-body');
-
-  if (error || !data?.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--ink-light);padding:28px;font-family:var(--font-mono)">Sin datos para la jornada ${jornada}</td></tr>`;
-    return;
+  if (!semanal?.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ${jornada}</td></tr>`;
+  } else {
+    tbody.innerHTML = semanal.map((r, i) => `
+      <tr class="${medalClass(i+1)}">
+        <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+        <td><div class="rank-name">${r.nombre}</div></td>
+        <td><div class="rank-team">${r.nombre_equipo}</div></td>
+        <td><div class="rank-pts">${r.puntos}</div></td>
+      </tr>
+    `).join('');
   }
 
-  const medalClass = pos => pos === 1 ? 'gold' : pos === 2 ? 'silver' : '';
+  // ── Clasificación general ──
+  const { data: general } = await db
+    .from('clasificacion_general_auto')
+    .select('*');
 
-  tbody.innerHTML = data.map(r => `
-    <tr>
-      <td><span class="rank-pos ${medalClass(r.posicion)}">${r.posicion}</span></td>
-      <td><div class="rank-name">${r.nombre}</div></td>
-      <td><div class="rank-team">${r.nombre_equipo}</div></td>
-      <td><div class="rank-pts">${r.puntos}</div></td>
-    </tr>
-  `).join('');
+  const tbodyGeneral = document.getElementById('ranking-general-body');
+  if (!general?.length) {
+    tbodyGeneral.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>`;
+  } else {
+    tbodyGeneral.innerHTML = general.map((r, i) => `
+      <tr class="${medalClass(i+1)}">
+        <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+        <td><div class="rank-name">${r.nombre}</div></td>
+        <td><div class="rank-team">${r.nombre_equipo}</div></td>
+        <td><div class="rank-pts">${r.puntos_total}</div></td>
+      </tr>
+    `).join('');
+  }
+
+  // ── Ranking jugadores ──
+  const { data: jugadores } = await db
+    .from('jugadores')
+    .select('nombre, club, posicion, puntos, escudo_url')
+    .eq('jornada', JORNADA_ACTIVA)
+    .neq('posicion', 'ENT')
+    .order('puntos', { ascending: false });
+
+  const clubes = [...new Set((jugadores || []).map(j => j.club))].sort();
+  const posiciones = ['POR','DEF','MED','DEL'];
+
+  document.getElementById('rtab-jugadores').innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <select id="filtro-club" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-display);font-size:14px;cursor:pointer">
+        <option value="">Todos los clubes</option>
+        ${clubes.map(c => `<option value="${c}">${c}</option>`).join('')}
+      </select>
+      <select id="filtro-pos" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-display);font-size:14px;cursor:pointer">
+        <option value="">Todas las posiciones</option>
+        ${posiciones.map(p => `<option value="${p}">${p}</option>`).join('')}
+      </select>
+    </div>
+    <table class="ranking-table">
+      <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
+      <tbody id="ranking-jugadores-body"></tbody>
+    </table>
+  `;
+
+  const renderJugadores = () => {
+    const club = document.getElementById('filtro-club').value;
+    const pos  = document.getElementById('filtro-pos').value;
+
+    const filtrados = (jugadores || []).filter(j =>
+      (!club || j.club === club) &&
+      (!pos  || j.posicion === pos)
+    );
+
+    const tbody = document.getElementById('ranking-jugadores-body');
+
+    if (!filtrados.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">Sin resultados</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtrados.map((j, i) => `
+      <tr class="${medalClass(i+1)}">
+        <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+        <td>
+          <div class="rank-name">${j.nombre}</div>
+          <div class="rank-team">${j.posicion}</div>
+        </td>
+        <td>
+          ${j.escudo_url ? `<img src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
+          <span class="rank-team">${j.club}</span>
+        </td>
+        <td><div class="rank-pts">${j.puntos}</div></td>
+      </tr>
+    `).join('');
+  };
+
+  renderJugadores();
+  document.getElementById('filtro-club').addEventListener('change', renderJugadores);
+  document.getElementById('filtro-pos').addEventListener('change', renderJugadores);
 }
 
 
 /* ── 7. ARRANQUE ─────────────────────────────────────────── */
+
+async function guardarNombreEquipo() {
+  if (!currentUser) return;
+  const nombre = document.getElementById('input-nombre-equipo').value.trim();
+  if (!nombre) { showToast('Escribe un nombre para tu equipo', true); return; }
+
+  const { error } = await db.from('equipos').upsert({
+    user_id: currentUser.id,
+    nombre_equipo: nombre,
+  }, { onConflict: 'user_id' });
+
+  if (error) showToast('Error al guardar: ' + error.message, true);
+  else showToast('Nombre de equipo guardado ✓');
+}
+
+document.getElementById('btn-guardar-equipo')?.addEventListener('click', guardarNombreEquipo);
 
 (async function init() {
   const { data: { session } } = await db.auth.getSession();

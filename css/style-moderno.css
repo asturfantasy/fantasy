@@ -420,9 +420,9 @@ html, body {
 
 .saved-pts-high {
   font-family: var(--font-display);
-  font-size: 35px;
+  font-size: 25px;
   line-height: 1;
-  color: var(--cream);
+  color: var(--white);
   letter-spacing: 4px;
   margin: 8px 0 0;
 }
@@ -450,3 +450,33 @@ html, body {
 }
 
 .btn-clear:hover { background: #a07820; }
+
+.ranking-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+.ranking-tab {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 8px 20px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.ranking-tab:hover { color: var(--text); }
+.ranking-tab.active { color: var(--neon); border-bottom-color: var(--neon); }
+
+.ranking-table tbody tr.gold td   { background: rgba(255,215,0,0.1);  }
+.ranking-table tbody tr.silver td { background: rgba(192,192,192,0.1); }
+.ranking-table tbody tr.bronze td { background: rgba(205,127,50,0.1);  }
+.rank-pos.bronze { color: #cd7f32; }
