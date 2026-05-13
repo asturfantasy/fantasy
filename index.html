@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet" />
-  <!--<link rel="stylesheet" href="css/style.css" />-->
   <link rel="stylesheet" href="css/style-moderno.css" />
 </head>
 <body>
@@ -17,10 +16,10 @@
   <div class="login-card">
     <span class="login-badge">⚽</span>
     <h1 class="login-title">ASTUR<span>FANTASY</span></h1>
-    <p class="login-sub">Vive la 3RFEF como nunca antes la habías vivido</p>
+    <p class="login-sub">La Tercera como nunca antes la habías vivido</p>
     <button id="btn-google-login" class="btn-google">
-      <div class="google-g"></div>
-      Iniciar sesión con Google
+      <div class="google-g">🗝️️</div>
+      Inicia sesión con tu cuenta de Google
     </button>
   </div>
 </div>
@@ -36,9 +35,12 @@
       <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
     </div>
     <div class="nav-user">
-      <div class="avatar" id="nav-avatar">??</div>
-      <span id="nav-username">...</span>
-      <button class="btn-logout" id="btn-logout">✕</button>
+      <div class="avatar" id="nav-avatar" onclick="toggleUserMenu()">??</div>
+      <div id="user-menu" class="user-menu" style="display:none">
+        <div class="user-menu-name" id="user-menu-name">Bienvenido</div>
+        <button class="user-menu-logout" id="btn-logout">Cerrar sesión</button>
+        <button class="btn-toggle-theme" id="btn-toggle-theme">Modo claro</button>
+      </div>
     </div>
   </nav>
   <div class="jornada-banner">
@@ -64,7 +66,7 @@
       <button class="action-btn" data-target="ranking">
         <span class="action-icon">📊</span>
         <span class="action-label">RANKINGS</span>
-        <span class="action-desc">Consulta las clasifiaciones</span>
+        <span class="action-desc">Consulta las clasificaciones</span>
       </button>
     </div>
   </main>
@@ -81,9 +83,12 @@
       <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
     </div>
     <div class="nav-user">
-      <div class="avatar" id="nav-avatar-lineup">??</div>
-      <span id="nav-username-lineup">...</span>
-      <button class="btn-logout" data-logout>✕</button>
+      <div class="avatar" id="nav-avatar-lineup" onclick="toggleUserMenu()">??</div>
+      <div id="user-menu-lineup" class="user-menu" style="display:none">
+        <div class="user-menu-name" id="user-menu-name-lineup">Bienvenido</div>
+        <button class="user-menu-logout" data-logout>Cerrar sesión</button>
+        <button class="btn-toggle-theme" onclick="toggleTheme()">Modo claro</button>
+      </div>
     </div>
   </nav>
   <div class="round-header">
@@ -126,9 +131,12 @@
       <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
     </div>
     <div class="nav-user">
-      <div class="avatar" id="nav-avatar-myteam">??</div>
-      <span id="nav-username-myteam">...</span>
-      <button class="btn-logout" data-logout>✕</button>
+      <div class="avatar" id="nav-avatar-myteam" onclick="toggleUserMenu()">??</div>
+      <div id="user-menu-myteam" class="user-menu" style="display:none">
+        <div class="user-menu-name" id="user-menu-name-myteam">Bienvenido</div>
+        <button class="user-menu-logout" data-logout>Cerrar sesión</button>
+        <button class="btn-toggle-theme" onclick="toggleTheme()">Modo claro</button>
+      </div>
     </div>
   </nav>
   <div class="jornada-banner">
@@ -137,17 +145,15 @@
     <span class="jornada-side"></span>
   </div>
   <main class="page-body">
-    <!--<div class="section-label" style="margin-bottom:14px">Jugadores seleccionados</div>-->
     <div id="myteam-banner" class="myteam-banner" style="display:none"></div>
     <div id="nombre-equipo-form" style="display:flex;gap:8px;align-items:center;margin:0 0 16px">
       <input id="input-nombre-equipo" type="text" placeholder="¡Dale un nombre a tu equipo!"
              style="flex:1;padding:8px 12px;font-family:var(--font-display);font-size:14px;
-           background:var(--surface);color:var(--text);border:1px solid var(--border);
-           border-radius:8px">
+             background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px">
       <button id="btn-guardar-equipo"
               style="padding:8px 16px;background:var(--neon);color:var(--bg);border:none;border-radius:8px;
-           font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer">
-        Guardar nombre de equipo
+              font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer">
+        Guardar nombre
       </button>
     </div>
     <div id="myteam-empty" class="empty-state" style="display:none">
@@ -168,9 +174,12 @@
       <button class="nav-tab active" data-target="ranking">CLASIFICACIÓN</button>
     </div>
     <div class="nav-user">
-      <div class="avatar" id="nav-avatar-ranking">??</div>
-      <span id="nav-username-ranking">...</span>
-      <button class="btn-logout" data-logout>✕</button>
+      <div class="avatar" id="nav-avatar-ranking" onclick="toggleUserMenu()">??</div>
+      <div id="user-menu-ranking" class="user-menu" style="display:none">
+        <div class="user-menu-name" id="user-menu-name-ranking">Bienvenido</div>
+        <button class="user-menu-logout" data-logout>Cerrar sesión</button>
+        <button class="btn-toggle-theme" onclick="toggleTheme()">Modo claro</button>
+      </div>
     </div>
   </nav>
   <div class="jornada-banner">
@@ -180,31 +189,23 @@
   </div>
   <main class="page-body">
     <div class="section-label" style="margin-bottom:16px">Estadísticas</div>
-
-    <!-- Pestañas -->
     <div class="ranking-tabs">
       <button class="ranking-tab active" data-rtab="semanal">Jornada</button>
       <button class="ranking-tab" data-rtab="general">General</button>
       <button class="ranking-tab" data-rtab="jugadores">Jugadores</button>
     </div>
-
-    <!-- Clasificación semanal -->
     <div id="rtab-semanal" class="rtab-content">
       <table class="ranking-table">
         <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Pts</th></tr></thead>
         <tbody id="ranking-body"></tbody>
       </table>
     </div>
-
-    <!-- Clasificación general -->
     <div id="rtab-general" class="rtab-content" style="display:none">
       <table class="ranking-table">
         <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
         <tbody id="ranking-general-body"></tbody>
       </table>
     </div>
-
-    <!-- Ranking jugadores -->
     <div id="rtab-jugadores" class="rtab-content" style="display:none">
       <table class="ranking-table">
         <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
@@ -228,7 +229,6 @@
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
-<!-- SDK de Supabase PRIMERO, luego nuestros scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>

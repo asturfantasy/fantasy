@@ -14,6 +14,54 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+function toggleUserMenu() {
+  const menus = ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking'];
+  const screenActiva = document.querySelector('.screen.active');
+  const menuId = screenActiva?.id === 'screen-home'     ? 'user-menu' :
+                 screenActiva?.id === 'screen-lineup'   ? 'user-menu-lineup' :
+                 screenActiva?.id === 'screen-myteam'   ? 'user-menu-myteam' :
+                 screenActiva?.id === 'screen-ranking'  ? 'user-menu-ranking' : 'user-menu';
+
+  menus.forEach(id => {
+    const m = document.getElementById(id);
+    if (m) m.style.display = 'none';
+  });
+
+  const menu = document.getElementById(menuId);
+  if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleTheme() {
+  const link = document.querySelector('link[rel="stylesheet"][href*="style"]');
+  const esDark = link.href.includes('style-moderno');
+  link.href = esDark ? 'css/style-claro.css' : 'css/style-moderno.css';
+  const btn = document.getElementById('btn-toggle-theme');
+  if (btn) btn.textContent = esDark ? 'Modo oscuro' : 'Modo claro';
+  localStorage.setItem('theme', esDark ? 'claro' : 'oscuro');
+}
+
+// Recordar tema al cargar
+const temaGuardado = localStorage.getItem('theme');
+if (temaGuardado === 'claro') {
+  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-claro.css';
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btn-toggle-theme');
+    if (btn) btn.textContent = 'Modo oscuro';
+  });
+}
+
+document.getElementById('btn-toggle-theme')?.addEventListener('click', toggleTheme);
+
+// Cerrar el menú al hacer clic fuera
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nav-user')) {
+    ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking'].forEach(id => {
+      const m = document.getElementById(id);
+      if (m) m.style.display = 'none';
+    });
+  }
+});
+
 function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screenId);
@@ -29,8 +77,10 @@ function updateNavUser(user) {
   ['', '-lineup', '-myteam', '-ranking'].forEach(s => {
     const av = document.getElementById('nav-avatar' + s);
     const un = document.getElementById('nav-username' + s);
+    const mn = document.getElementById('user-menu-name' + (s || ''));
     if (av) av.textContent = initials;
     if (un) un.textContent = name.split(' ')[0];
+    if (mn) mn.textContent = '¡Bienvenido, ' + name.split(' ')[0] + '!';
   });
 }
 
