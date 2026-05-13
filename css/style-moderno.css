@@ -236,10 +236,14 @@ html, body {
 .match-card:hover { border-color: var(--border-neon); box-shadow: 0 0 20px var(--neon-glow); }
 .match-team { display: flex; align-items: center; gap: 12px; flex: 1; }
 .match-team.right { flex-direction: row-reverse; }
-.crest { border: none; background: transparent; }
-.crest { overflow:hidden; }
-.crest { width:30px; height:30px; }
-.crest img { width:22px; height:22px; }
+.crest {
+  border: none;
+  background: transparent;
+  overflow: hidden;
+  width: 60px;
+  height: 60px;
+}
+.crest img { width: 45px; height: 45px; }
 .team-name { font-family: var(--font-display); font-weight: 600; font-size: 14px; color: var(--text); }
 .match-vs { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; color: var(--text-muted); padding: 0 14px; text-align: center; }
 .match-date { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
