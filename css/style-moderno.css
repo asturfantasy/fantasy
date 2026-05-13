@@ -27,6 +27,22 @@
   --blue:        #3b82f6;
   --amber:       #f59e0b;
   --purple:      #7c3aed;
+  --pitch:       #2a5c34;
+    --pitch-dark:  #1e4427;
+    --pitch-light: #317a3d;
+    --pitch-line:  rgba(255,255,255,0.18);
+    --cream:       #f5f0e8;
+    --cream-dark:  #e8e2d5;
+    --cream-muted: #c8c0b0;
+    --ink:         #1a1a16;
+    --ink-light:   #6a6a58;
+    --white:       #ffffff;
+    --red:         #D10000;
+    --blue:        #047ACF;
+    --amber:       #c8860a;
+    --yellow:      #f0d000;
+    --black:       #000000;
+    --green:       #07B50C;
   --font-display:'Space Grotesk', sans-serif;
   --font-body:   'Inter', sans-serif;
   --font-mono:   'JetBrains Mono', monospace;
@@ -221,6 +237,9 @@ html, body {
 .match-team { display: flex; align-items: center; gap: 12px; flex: 1; }
 .match-team.right { flex-direction: row-reverse; }
 .crest { border: none; background: transparent; }
+.crest { overflow:hidden; }
+.crest { width:30px; height:30px; }
+.crest img { width:22px; height:22px; }
 .team-name { font-family: var(--font-display); font-weight: 600; font-size: 14px; color: var(--text); }
 .match-vs { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; color: var(--text-muted); padding: 0 14px; text-align: center; }
 .match-date { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
@@ -280,12 +299,12 @@ html, body {
   position: relative;
 }
 .player-circle:hover { transform: scale(1.12); box-shadow: 0 0 16px rgba(0,230,118,0.4); }
-.player-circle.empty { background: rgba(255,255,255,0.06); border-style: dashed; color: rgba(255,255,255,0.3); }
-.player-circle.gk  { background: var(--amber); color: var(--bg); }
-.player-circle.def { background: var(--blue); color: white; }
-.player-circle.mid { background: var(--accent); color: white; }
-.player-circle.fwd { background: var(--red); color: white; }
-.player-circle.ent { background: #0d6e47; color: white; }
+.player-circle.empty { background:rgba(255,255,255,.08); border-style:dashed; color:rgba(255,255,255,.35); }
+.player-circle.gk  { background:var(--yellow); color:black; }
+.player-circle.def { background:var(--blue); color:white; }
+.player-circle.mid { background:var(--green); color:white; }
+.player-circle.fwd { background:var(--red); color:white; }
+.player-circle.ent { background:var(--black); color:white; }
 .player-name { font-family: var(--font-body); font-weight: 600; font-size: 9px; text-align: center; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.9); max-width: 52px; }
 .pos-badge { font-family: var(--font-mono); font-size: 8px; color: rgba(255,255,255,0.5); text-align: center; }
 
@@ -386,4 +405,13 @@ html, body {
   .squad-grid { grid-template-columns: 1fr; }
   .login-card { width: 92%; padding: 32px 24px; }
   .jornada-side { display: none; }
+}
+
+.saved-pts-high {
+  font-family: var(--font-display);
+  font-size: 35px;
+  line-height: 1;
+  color: var(--cream);
+  letter-spacing: 4px;
+  margin: 8px 0 0;
 }

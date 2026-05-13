@@ -158,7 +158,7 @@ async function loadLineup() {
   seleccionados = {};
   capitan = null;
   const sel = document.getElementById('capitan-select');
-  if (sel) sel.innerHTML = '<option value="">Selecciona un capitán</option>';
+  if (sel) sel.innerHTML = '<option value="">SELECCIONA UN CAPITÁN</option>';
 
   const { data, error } = await db
     .from('jugadores')
@@ -421,9 +421,9 @@ async function loadMyTeam() {
   banner.innerHTML = `
     <div class="saved-title">¡Ya tienes tu equipo guardado!</div>
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
-    <div class="saved-pts-high">Puntos obtenidos: ${totalPuntos}</div>
+    <div class="saved-pts-high"><strong>PUNTOS OBTENIDOS: ${totalPuntos}</strong></div>
     <div class="saved-players">Tu equipo actual es: ${nombres}</div>
-    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? → Ir a Alineación</button>
+    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? Hazlo aquí</button>
   `;
 
   grid.innerHTML = sorted.map(j => {
