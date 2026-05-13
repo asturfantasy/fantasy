@@ -1,13 +1,5 @@
 /* ============================================================
    js/app.js  —  Lógica completa de FantasiLiga
-   Secciones:
-     1. Utilidades (toast, router, nav)
-     2. Autenticación (Google OAuth)
-     3. Home (partidos)
-     4. Alineación (campo + modal)
-     5. Mi Equipo
-     6. Clasificación
-     7. Arranque (init)
    ============================================================ */
 
 /* ── 1. UTILIDADES ───────────────────────────────────────── */
@@ -40,17 +32,6 @@ function updateNavUser(user) {
     if (av) av.textContent = initials;
     if (un) un.textContent = name.split(' ')[0];
   });
-}
-
-// Helper: renderiza un escudo como <img> si hay URL, o como texto si no
-function escudoHtml(escudo_url, club, size = 32) {
-  if (escudo_url) {
-    return `<img src="${escudo_url}" alt="${club}" width="${size}" height="${size}"
-              style="object-fit:contain;border-radius:2px;"
-              onerror="this.style.display='none';this.nextSibling.style.display='flex'">
-            <span style="display:none;width:${size}px;height:${size}px;align-items:center;justify-content:center;font-family:var(--font-display);font-size:${Math.round(size*0.35)}px">${club}</span>`;
-  }
-  return `<span style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:${Math.round(size*0.35)}px">${club}</span>`;
 }
 
 document.addEventListener('click', e => {
@@ -97,8 +78,10 @@ db.auth.onAuthStateChange((event, session) => {
 
 function loadHome() {
   document.getElementById('home-jornada-num').textContent = JORNADA_ACTIVA;
+
   const userName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 'crack';
-  document.getElementById('home-bienvenida').textContent = '¡Bienvenido, ' + userName + '!';
+  const bienvenida = document.getElementById('home-bienvenida');
+  if (bienvenida) bienvenida.textContent = '¡Bienvenido, ' + userName + '!';
 
   const container = document.getElementById('matches-container');
   container.innerHTML = PARTIDOS.map(p => `
@@ -111,11 +94,11 @@ function loadHome() {
         </div>
         <div>
           <div class="team-name">${p.local.nombre}</div>
-
+          <div class="match-date">${p.fecha}</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px">
-        <div class="match-vs">${p.estadio}</div>
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:0 14px">
+        <div class="match-vs">⚽ ${p.estadio}</div>
         <div class="match-date">${p.fecha}</div>
       </div>
       <div class="match-team right">
@@ -126,7 +109,7 @@ function loadHome() {
         </div>
         <div style="text-align:right">
           <div class="team-name">${p.visitante.nombre}</div>
-          <div class="match-date"></div>
+          <div class="match-date">${p.visitante.nombre}</div>
         </div>
       </div>
     </div>
@@ -145,11 +128,37 @@ const FORMACIONES = {
 };
 
 let seleccionados = {};
-let jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[] };
+let jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
+let capitan = null;
+
+// Actualiza el select de capitán con los jugadores seleccionados
+function actualizarSelectCapitan() {
+  const sel = document.getElementById('capitan-select');
+  if (!sel) return;
+  const valorActual = sel.value;
+  sel.innerHTML = '<option value="">Selecciona capitán</option>';
+  Object.values(seleccionados).forEach(j => {
+    if (j.posicion === 'ENT') return; // el entrenador no puede ser capitán
+    const opt = document.createElement('option');
+    opt.value = j.id;
+    opt.textContent = j.nombre + ' · ' + j.posicion;
+    sel.appendChild(opt);
+  });
+  // Mantener el capitán si sigue en el equipo
+  if ([...sel.options].some(o => o.value === valorActual)) {
+    sel.value = valorActual;
+    capitan = valorActual || null;
+  } else {
+    capitan = null;
+  }
+}
 
 async function loadLineup() {
   document.getElementById('lineup-jornada').textContent = JORNADA_ACTIVA;
   seleccionados = {};
+  capitan = null;
+  const sel = document.getElementById('capitan-select');
+  if (sel) sel.innerHTML = '<option value="">Selecciona un capitán</option>';
 
   const { data, error } = await db
     .from('jugadores')
@@ -160,8 +169,10 @@ async function loadLineup() {
 
   if (error) { showToast('Error cargando jugadores', true); return; }
 
-  jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[] };
-  (data || []).forEach(j => jugadoresPorPos[j.posicion]?.push(j));
+  jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
+  (data || []).forEach(j => {
+    if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j);
+  });
 
   renderPitch();
 }
@@ -186,6 +197,7 @@ function renderPitch() {
     { pos:'MED', count:mid, cls:'mid' },
     { pos:'DEF', count:def, cls:'def' },
     { pos:'POR', count:1,  cls:'gk'  },
+    { pos:'ENT', count:1,  cls:'ent' },
   ];
 
   filas.forEach(fila => {
@@ -200,7 +212,7 @@ function renderPitch() {
       slot.dataset.slot = slotId;
 
       if (jugador) {
-        // Círculo con escudo si existe, si no iniciales
+        const esCap = capitan === jugador.id;
         const circuloContenido = jugador.escudo_url
           ? `<img src="${jugador.escudo_url}" alt="${jugador.club}"
                width="28" height="28" style="object-fit:contain;border-radius:50%"
@@ -208,9 +220,12 @@ function renderPitch() {
           : jugador.nombre.substring(0,3).toUpperCase();
 
         slot.innerHTML = `
-          <div class="player-circle ${fila.cls}" style="overflow:hidden">${circuloContenido}</div>
+          <div class="player-circle ${fila.cls} ${esCap ? 'es-capitan' : ''}" style="overflow:hidden;position:relative">
+            ${circuloContenido}
+            ${esCap ? '<span class="cap-badge">C</span>' : ''}
+          </div>
           <div class="player-name">${jugador.nombre}</div>
-          <div class="pos-badge">${jugador.club}</div>`;
+          <div class="pos-badge">${esCap ? '⭐ Cap.' : jugador.club}</div>`;
       } else {
         slot.innerHTML = `
           <div class="player-circle ${fila.cls} empty">+</div>
@@ -226,16 +241,15 @@ function renderPitch() {
 }
 
 function openModal(slotId, posicion, cls) {
-  const labels = { POR:'Portero', DEF:'Defensa', MED:'Mediocampista', DEL:'Delantero' };
+  const labels = { POR:'Portero', DEF:'Defensa', MED:'Mediocampista', DEL:'Delantero', ENT:'Entrenador' };
   document.getElementById('modal-title').textContent = 'Seleccionar ' + labels[posicion];
 
   const usados = new Set(Object.values(seleccionados).map(j => j.id));
   const list = document.getElementById('modal-list');
 
-  const colores = { gk:'var(--amber)', def:'var(--blue)', mid:'var(--ink)', fwd:'var(--red)' };
-  const textoCols = { gk:'var(--ink)', def:'white', mid:'var(--cream)', fwd:'white' };
+  const colores    = { gk:'var(--amber)', def:'var(--blue)', mid:'var(--ink)', fwd:'var(--red)', ent:'black' };
+  const textoCols  = { gk:'var(--ink)',   def:'white',       mid:'var(--cream)', fwd:'white',    ent:'white' };
 
-  // 1. Buscador + contenedor de jugadores
   list.innerHTML = `
     <div style="padding:12px 20px;border-bottom:1px solid var(--cream-dark);position:sticky;top:0;background:var(--cream);z-index:1">
       <input id="modal-search" type="text" placeholder="Buscar jugador..."
@@ -245,30 +259,29 @@ function openModal(slotId, posicion, cls) {
     <div id="modal-players"></div>
   `;
 
-  // 2. Función que filtra y pinta la lista
   const renderLista = (filtro = '') => {
-    const jugadoresFiltrados = jugadoresPorPos[posicion].filter(j =>
+    const filtrados = jugadoresPorPos[posicion].filter(j =>
       j.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
       j.club.toLowerCase().includes(filtro.toLowerCase())
     );
 
-    document.getElementById('modal-players').innerHTML = jugadoresFiltrados.map(j => {
+    document.getElementById('modal-players').innerHTML = filtrados.map(j => {
       const usado = usados.has(j.id);
       const escudo = j.escudo_url
         ? `<img src="${j.escudo_url}" alt="${j.club}" width="32" height="32"
                style="object-fit:contain;border-radius:2px"
                onerror="this.style.display='none'">`
         : `<div class="modal-player-circle"
-                  style="background:${colores[cls]};color:${textoCols[cls]}">
-               ${j.nombre.substring(0,2).toUpperCase()}
-             </div>`;
+                style="background:${colores[cls]};color:${textoCols[cls]}">
+             ${j.nombre.substring(0,2).toUpperCase()}
+           </div>`;
 
       return `<div class="modal-player" data-id="${j.id}" data-slot="${slotId}"
                 style="opacity:${usado ? 0.35 : 1};pointer-events:${usado ? 'none' : 'auto'}">
         ${escudo}
         <div>
           <div class="modal-player-name">${j.nombre}</div>
-          <div class="modal-player-meta">${j.club} · ${j.posicion}</div>
+          <div class="modal-player-meta">${j.club} · ${j.posicion} · ${j.puntos} pts</div>
         </div>
         <div class="modal-player-pts">${j.puntos}</div>
       </div>`;
@@ -280,11 +293,11 @@ function openModal(slotId, posicion, cls) {
         seleccionados[slotId] = jugadoresPorPos[posicion].find(j => j.id === id);
         closeModal();
         renderPitch();
+        actualizarSelectCapitan();
       });
     });
   };
 
-  // 3. Pintar lista inicial y activar buscador
   renderLista();
   document.getElementById('modal-search').addEventListener('input', e => {
     renderLista(e.target.value);
@@ -304,15 +317,22 @@ document.getElementById('modal-overlay').addEventListener('click', e => {
 
 document.getElementById('formation-select').addEventListener('change', renderPitch);
 
+// Select de capitán
+document.getElementById('capitan-select')?.addEventListener('change', e => {
+  capitan = e.target.value || null;
+  renderPitch();
+});
+
+// Guardar alineación
 document.getElementById('btn-save-lineup').addEventListener('click', async () => {
   if (!currentUser) { showToast('Debes iniciar sesión', true); return; }
 
   const formacion = document.getElementById('formation-select').value;
   const { def, mid, fwd } = FORMACIONES[formacion];
-  const totalSlots = 1 + def + mid + fwd;
+  const totalSlots = 1 + def + mid + fwd + 1; // +1 portero +1 entrenador
 
   if (Object.keys(seleccionados).length < totalSlots) {
-    showToast('Faltan jugadores por seleccionar', true);
+    showToast('¡Faltan jugadores por seleccionar! Completa tu once', true);
     return;
   }
 
@@ -325,6 +345,7 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
     jugador_id: jugador.id,
     jornada:    JORNADA_ACTIVA,
     formacion,
+    capitan:    capitan === jugador.id,
   }));
 
   const { error } = await db.from('mi_equipo').insert(filas);
@@ -335,8 +356,8 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
 
 /* ── 5. MI EQUIPO ────────────────────────────────────────── */
 
-const POS_COLORS = { POR:'var(--yellow)', DEF:'var(--blue)', MED:'var(--green)', DEL:'var(--red)' };
-const POS_TEXT   = { POR:'var(--black)',   DEF:'white',       MED:'white', DEL:'white' };
+const POS_COLORS = { POR:'var(--yellow)', DEF:'var(--blue)', MED:'var(--green)', DEL:'var(--red)', ENT:'black' };
+const POS_TEXT   = { POR:'var(--black)',   DEF:'white',       MED:'var(--black)', DEL:'white',    ENT:'white' };
 
 async function loadMyTeam() {
   if (!currentUser) return;
@@ -363,7 +384,7 @@ async function loadMyTeam() {
 
   empty.style.display = 'none';
 
-  // Necesitamos escudo_url que no está en la vista, lo sacamos de jugadores
+  // Obtener escudos
   const ids = data.map(j => j.jugador_id);
   const { data: jugData } = await db
     .from('jugadores')
@@ -373,21 +394,36 @@ async function loadMyTeam() {
   const escudoMap = {};
   (jugData || []).forEach(j => escudoMap[j.id] = j.escudo_url);
 
-  const orden = ['POR','DEF','MED','DEL'];
+  // Obtener capitán
+  const { data: capData } = await db
+    .from('mi_equipo')
+    .select('jugador_id, capitan')
+    .eq('user_id', currentUser.id)
+    .eq('jornada', JORNADA_ACTIVA)
+    .eq('capitan', true)
+    .single();
+
+  const capitanId = capData?.jugador_id || null;
+
+  const orden = ['POR','DEF','MED','DEL','ENT'];
   const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion));
 
-  // Banner: equipo ya guardado
+  // Total de puntos (capitán cuenta doble)
+  const totalPuntos = sorted.reduce((acc, j) => {
+    const pts = j.puntos || 0;
+    return acc + (j.jugador_id === capitanId ? pts * 2 : pts);
+  }, 0);
+
   const formacion = data[0]?.formacion || '—';
   const nombres = sorted.map(j => j.nombre).join(', ');
-  const totalPuntos = sorted.reduce((acc, j) => acc + (j.puntos || 0), 0);
+
   banner.style.display = 'block';
   banner.innerHTML = `
     <div class="saved-title">¡Ya tienes tu equipo guardado!</div>
-    <div class="saved-sub"><strong>Recuerda que puedes modificar el once hasta el inicio de la jornada</strong></div>
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
-    <div class="saved-pts-high"><strong>${totalPuntos} puntos</strong></div>
-    <div class="saved-players">Esta es tu alineación: ${nombres}</div>
-    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? Hazlo aquí</button>
+    <div class="saved-pts-high">Puntos obtenidos: ${totalPuntos}</div>
+    <div class="saved-players">Tu equipo actual es: ${nombres}</div>
+    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo? → Ir a Alineación</button>
   `;
 
   grid.innerHTML = sorted.map(j => {
@@ -398,16 +434,22 @@ async function loadMyTeam() {
            onerror="this.style.display='none'">`
       : j.nombre.substring(0,2).toUpperCase();
 
-    return `<div class="player-card">
+    const esCapitan = j.jugador_id === capitanId;
+    const puntosFinales = esCapitan ? j.puntos * 2 : j.puntos;
+
+    return `<div class="player-card ${esCapitan ? 'card-capitan' : ''}">
       <div class="pc-avatar"
            style="background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:hidden">
         ${avatarContenido}
       </div>
       <div class="pc-info">
-        <div class="pc-name">${j.nombre}</div>
-        <div class="pc-meta">${j.posicion} · ${j.club}</div>
+        <div class="pc-name">${j.nombre} ${esCapitan ? '⭐' : ''}</div>
+        <div class="pc-meta">${j.posicion} · ${j.club}${esCapitan ? ' · Capitán - Puntúa doble' : ''}</div>
       </div>
-      <div class="pc-pts">${j.puntos}</div>
+      <div class="pc-pts">
+        ${puntosFinales}
+        ${esCapitan ? '<span style="font-size:11px;display:block;color:var(--pitch-dark)"></span>' : ''}
+      </div>
     </div>`;
   }).join('');
 }
