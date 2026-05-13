@@ -121,10 +121,11 @@ function loadHome() {
 
 const FORMACIONES = {
   '4-3-3': { def:4, mid:3, fwd:3 },
+  '4-4-2': { def:4, mid:4, fwd:2 },
+  '4-5-1': { def:4, mid:5, fwd:1 },
   '3-4-3': { def:3, mid:4, fwd:3 },
   '3-5-2': { def:3, mid:5, fwd:2 },
   '5-3-2': { def:5, mid:3, fwd:2 },
-  '4-4-2': { def:4, mid:4, fwd:2 },
 };
 
 let seleccionados = {};
@@ -136,7 +137,7 @@ function actualizarSelectCapitan() {
   const sel = document.getElementById('capitan-select');
   if (!sel) return;
   const valorActual = sel.value;
-  sel.innerHTML = '<option value="">Selecciona capitán</option>';
+  sel.innerHTML = '<option value="">Elige bien, será determinante</option>';
   Object.values(seleccionados).forEach(j => {
     if (j.posicion === 'ENT') return; // el entrenador no puede ser capitán
     const opt = document.createElement('option');
@@ -158,7 +159,7 @@ async function loadLineup() {
   seleccionados = {};
   capitan = null;
   const sel = document.getElementById('capitan-select');
-  if (sel) sel.innerHTML = '<option value="">SELECCIONA UN CAPITÁN</option>';
+  if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
 
   const { data, error } = await db
     .from('jugadores')
@@ -174,7 +175,45 @@ async function loadLineup() {
     if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j);
   });
 
-  renderPitch();
+  if (currentUser) {
+    const { data: equipoGuardado } = await db
+      .from('mi_equipo')
+      .select('jugador_id, formacion, capitan')
+      .eq('user_id', currentUser.id)
+      .eq('jornada', JORNADA_ACTIVA);
+
+    if (equipoGuardado?.length) {
+      const formacion = equipoGuardado[0].formacion;
+      document.getElementById('formation-select').value = formacion;
+
+      const contadores = { POR:0, DEF:0, MED:0, DEL:0, ENT:0 };
+      const idsGuardados = equipoGuardado.map(e => e.jugador_id);
+      const jugadoresGuardados = data.filter(j => idsGuardados.includes(j.id));
+
+      const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+      jugadoresGuardados
+        .sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion))
+        .forEach(j => {
+          const slotId = `${j.posicion}-${contadores[j.posicion]}`;
+          seleccionados[slotId] = j;
+          contadores[j.posicion]++;
+        });
+
+      const capGuardado = equipoGuardado.find(e => e.capitan === true || e.capitan === 1);
+      const capitanIdGuardado = capGuardado ? capGuardado.jugador_id : null;
+
+      actualizarSelectCapitan();
+
+      if (capitanIdGuardado) {
+        document.getElementById('capitan-select').value = capitanIdGuardado;
+      }
+
+      capitan = capitanIdGuardado;
+      showToast('Alineación anterior cargada ✓');
+    }
+  }
+
+  setTimeout(() => renderPitch(), 100);
 }
 
 function renderPitch() {
@@ -212,7 +251,7 @@ function renderPitch() {
       slot.dataset.slot = slotId;
 
       if (jugador) {
-        const esCap = capitan === jugador.id;
+        const esCap = capitan !== null && String(capitan) === String(jugador.id);
         const circuloContenido = jugador.escudo_url
           ? `<img src="${jugador.escudo_url}" alt="${jugador.club}"
                width="28" height="28" style="object-fit:contain;border-radius:50%"
@@ -281,7 +320,10 @@ function openModal(slotId, posicion, cls) {
         ${escudo}
         <div>
           <div class="modal-player-name">${j.nombre}</div>
-          <div class="modal-player-meta">${j.club} · ${j.posicion} · ${j.puntos} pts</div>
+          <div class="modal-player-meta">
+            ${j.club} · ${j.posicion} · ${j.puntos} pts
+            ${j.rival ? `· vs ${j.rival} (${j.es_local ? '🏠' : '✈️'})` : ''}
+          </div>
         </div>
         <div class="modal-player-pts">${j.puntos}</div>
       </div>`;
@@ -319,8 +361,10 @@ document.getElementById('formation-select').addEventListener('change', renderPit
 
 // Select de capitán
 document.getElementById('capitan-select')?.addEventListener('change', e => {
-  capitan = e.target.value || null;
-  renderPitch();
+  if (e.isTrusted) {
+    capitan = e.target.value || null;
+    renderPitch();
+  }
 });
 
 // Guardar alineación

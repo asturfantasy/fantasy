@@ -426,3 +426,8 @@ html, body {
   letter-spacing: 4px;
   margin: 8px 0 0;
 }
+
+.es-capitan {
+  border-color: gold !important;
+  box-shadow: 0 0 12px rgba(255,215,0,0.5);
+}
