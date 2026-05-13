@@ -94,11 +94,11 @@ function loadHome() {
         </div>
         <div>
           <div class="team-name">${p.local.nombre}</div>
-          <div class="match-date">${p.fecha}</div>
+          <div class="match-date"></div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:0 14px">
-        <div class="match-vs">⚽ ${p.estadio}</div>
+        <div class="match-vs">${p.estadio}</div>
         <div class="match-date">${p.fecha}</div>
       </div>
       <div class="match-team right">
@@ -109,7 +109,7 @@ function loadHome() {
         </div>
         <div style="text-align:right">
           <div class="team-name">${p.visitante.nombre}</div>
-          <div class="match-date">${p.visitante.nombre}</div>
+          <div class="match-date"></div>
         </div>
       </div>
     </div>
