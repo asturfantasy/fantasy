@@ -289,14 +289,28 @@ function openModal(slotId, posicion, cls) {
   const colores    = { gk:'var(--amber)', def:'var(--blue)', mid:'var(--ink)', fwd:'var(--red)', ent:'black' };
   const textoCols  = { gk:'var(--ink)',   def:'white',       mid:'var(--cream)', fwd:'white',    ent:'white' };
 
-  list.innerHTML = `
-    <div style="padding:12px 20px;border-bottom:1px solid var(--cream-dark);position:sticky;top:0;background:var(--cream);z-index:1">
-      <input id="modal-search" type="text" placeholder="Buscar jugador..."
-        style="width:100%;padding:8px 12px;font-family:var(--font-mono);font-size:13px;
-               border:2px solid var(--ink);border-radius:4px;background:var(--white);color:var(--ink)">
-    </div>
-    <div id="modal-players"></div>
-  `;
+ list.innerHTML = `
+     <div style="padding:12px 20px;border-bottom:1px solid var(--cream-dark);position:sticky;top:0;background:var(--cream);z-index:1">
+       <input id="modal-search" type="text" placeholder="Buscar jugador..."
+         style="width:100%;padding:8px 12px;font-family:var(--font-mono);font-size:13px;
+                border:2px solid var(--ink);border-radius:4px;background:var(--white);color:var(--ink);margin-bottom:8px">
+       <button id="btn-vaciar-posicion"
+         style="width:100%;padding:8px;background:#8b6914;color:white;border:none;border-radius:4px;
+                font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:1px;
+                text-transform:uppercase;cursor:pointer;">
+         🗑 Vaciar posición
+       </button>
+     </div>
+     <div id="modal-players"></div>
+   `;
+
+   document.getElementById('btn-vaciar-posicion').addEventListener('click', () => {
+     delete seleccionados[slotId];
+     if (capitan === seleccionados[slotId]?.id) capitan = null;
+     closeModal();
+     renderPitch();
+     actualizarSelectCapitan();
+   });
 
   const renderLista = (filtro = '') => {
     const filtrados = jugadoresPorPos[posicion].filter(j =>
@@ -357,8 +371,29 @@ document.getElementById('modal-overlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
-document.getElementById('formation-select').addEventListener('change', renderPitch);
+document.getElementById('formation-select').addEventListener('change', () => {
+  const formacion = document.getElementById('formation-select').value;
+  const { def, mid, fwd } = FORMACIONES[formacion];
 
+  // Limpiar slots que sobren según la nueva formación
+  const maxPorPos = { POR:1, DEF:def, MED:mid, DEL:fwd, ENT:1 };
+
+  Object.keys(seleccionados).forEach(slotId => {
+    const [pos, idx] = slotId.split('-');
+    if (parseInt(idx) >= maxPorPos[pos]) {
+      // Si el jugador eliminado era capitán, resetear capitán
+      if (capitan === seleccionados[slotId]?.id) {
+        capitan = null;
+        const sel = document.getElementById('capitan-select');
+        if (sel) sel.value = '';
+      }
+      delete seleccionados[slotId];
+    }
+  });
+
+  actualizarSelectCapitan();
+  renderPitch();
+});
 // Select de capitán
 document.getElementById('capitan-select')?.addEventListener('change', e => {
   if (e.isTrusted) {
@@ -367,6 +402,7 @@ document.getElementById('capitan-select')?.addEventListener('change', e => {
   }
 });
 
+// Guardar alineación
 // Guardar alineación
 document.getElementById('btn-save-lineup').addEventListener('click', async () => {
   if (!currentUser) { showToast('Debes iniciar sesión', true); return; }
@@ -395,6 +431,26 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   const { error } = await db.from('mi_equipo').insert(filas);
   if (error) showToast('Error al guardar: ' + error.message, true);
   else       showToast('Alineación guardada ✓');
+});
+
+// Vaciar alineación
+document.getElementById('btn-clear-lineup').addEventListener('click', async () => {
+  if (!currentUser) return;
+
+  const confirmar = confirm('¿Seguro que quieres vaciar tu alineación?');
+  if (!confirmar) return;
+
+  await db.from('mi_equipo').delete()
+    .eq('user_id', currentUser.id)
+    .eq('jornada', JORNADA_ACTIVA);
+
+  seleccionados = {};
+  capitan = null;
+  const sel = document.getElementById('capitan-select');
+  if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
+
+  renderPitch();
+  showToast('Alineación vaciada ✓');
 });
 
 
