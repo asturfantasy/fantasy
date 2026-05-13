@@ -97,7 +97,7 @@ function loadHome() {
           <div class="match-date"></div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:0 14px">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 6px;min-width:80px;max-width:90px">
         <div class="match-vs">${p.estadio}</div>
         <div class="match-date">${p.fecha}</div>
       </div>
