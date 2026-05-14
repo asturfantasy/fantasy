@@ -5,6 +5,7 @@
 /* ── 1. UTILIDADES ───────────────────────────────────────── */
 
 let currentUser = null;
+let cambiosSinGuardar = false;
 
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
@@ -67,6 +68,13 @@ document.addEventListener('click', e => {
 });
 
 function goTo(screenId) {
+  const screenActiva = document.querySelector('.screen.active');
+  if (cambiosSinGuardar && screenActiva?.id === 'screen-lineup' && screenId !== 'lineup') {
+    const confirmar = confirm('⚠️ No has guardado los cambios. ¿Seguro que quieres salir?');
+    if (!confirmar) return;
+    cambiosSinGuardar = false;
+  }
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screenId);
   if (el) el.classList.add('active');
@@ -210,6 +218,7 @@ function actualizarSelectCapitan() {
 
 async function loadLineup() {
   document.getElementById('lineup-jornada').textContent = JORNADA_ACTIVA;
+  cambiosSinGuardar = false;
     const deadlineEl = document.getElementById('deadline-info');
     if (deadlineEl) {
       const fecha = new Date(DEADLINE_JORNADA);
@@ -305,9 +314,27 @@ async function loadLineup() {
 
   if (error) { showToast('Error cargando jugadores', true); return; }
 
+  // Cargar puntos totales de cada jugador
+  const { data: rankingData } = await db
+    .from('ranking_jugadores')
+    .select('nombre, club, puntos_total');
+
+  const puntosMap = {};
+  (rankingData || []).forEach(r => {
+    puntosMap[`${r.nombre}-${r.club}`] = r.puntos_total;
+  });
+
+  // Añadir puntos_total a cada jugador
+  (data || []).forEach(j => {
+    j.puntos_total = puntosMap[`${j.nombre}-${j.club}`] ?? j.puntos;
+  });
+
   jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
   (data || []).forEach(j => {
     if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j);
+  });
+  Object.keys(jugadoresPorPos).forEach(pos => {
+    jugadoresPorPos[pos].sort((a, b) => (b.puntos_total ?? 0) - (a.puntos_total ?? 0));
   });
 
   if (currentUser) {
@@ -470,11 +497,11 @@ function openModal(slotId, posicion, cls) {
         <div>
           <div class="modal-player-name">${j.nombre}</div>
           <div class="modal-player-meta">
-            ${j.club} · ${j.posicion} · ${j.puntos} pts
+            ${j.club} · ${j.posicion}
             ${j.rival ? `· vs ${j.rival} (${j.es_local ? '🏠' : '✈️'})` : ''}
           </div>
         </div>
-        <div class="modal-player-pts">${j.puntos}</div>
+        <div class="modal-player-pts">${j.puntos_total}</div>
       </div>`;
     }).join('');
 
@@ -482,6 +509,7 @@ function openModal(slotId, posicion, cls) {
       el.addEventListener('click', () => {
         const id = el.dataset.id;
         seleccionados[slotId] = jugadoresPorPos[posicion].find(j => j.id === id);
+        cambiosSinGuardar = true;
         closeModal();
         renderPitch();
         actualizarSelectCapitan();
@@ -533,6 +561,7 @@ document.getElementById('formation-select').addEventListener('change', () => {
 document.getElementById('capitan-select')?.addEventListener('change', e => {
   if (e.isTrusted) {
     capitan = e.target.value || null;
+    cambiosSinGuardar = true;
     renderPitch();
   }
 });
@@ -565,8 +594,11 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
 
   const { error } = await db.from('mi_equipo').insert(filas);
   if (error) showToast('Error al guardar: ' + error.message, true);
-  else       showToast('Alineación guardada ✓');
-});
+  else {
+    cambiosSinGuardar = false;
+    showToast('Alineación guardada ✓');
+  }
+  });
 
 // Vaciar alineación
 document.getElementById('btn-clear-lineup').addEventListener('click', async () => {
