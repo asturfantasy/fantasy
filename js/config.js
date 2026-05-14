@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://rtmclmqzasktshlzwcyn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8aNRtGX0cHoNcaJHv9ASOw_Fz-3Of-2';
 
-const JORNADA_ACTIVA = 1;
+const JORNADA_ACTIVA = 35;
 
 // Actualiza los partidos cada jornada.
 // escudo_url: URL del escudo del equipo (opcional, si no hay se muestra la abreviatura)

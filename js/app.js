@@ -621,7 +621,7 @@ async function loadMyTeam() {
 const medalClass = pos => pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
 
 async function loadRanking() {
-  const jornada = JORNADA_ACTIVA - 1;
+  const jornada = JORNADA_ACTIVA;
   document.getElementById('ranking-jornada-num').textContent = jornada;
 
   // Eventos de las pestañas
@@ -676,11 +676,8 @@ async function loadRanking() {
 
   // ── Ranking jugadores ──
   const { data: jugadores } = await db
-    .from('jugadores')
-    .select('nombre, club, posicion, puntos, escudo_url')
-    .eq('jornada', JORNADA_ACTIVA)
-    .neq('posicion', 'ENT')
-    .order('puntos', { ascending: false });
+    .from('ranking_jugadores')
+    .select('*');
 
   const clubes = [...new Set((jugadores || []).map(j => j.club))].sort();
   const posiciones = ['POR','DEF','MED','DEL'];
@@ -729,7 +726,7 @@ async function loadRanking() {
           ${j.escudo_url ? `<img src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
           <span class="rank-team">${j.club}</span>
         </td>
-        <td><div class="rank-pts">${j.puntos}</div></td>
+        <td><div class="rank-pts">${j.puntos_total}</div></td>
       </tr>
     `).join('');
   };
