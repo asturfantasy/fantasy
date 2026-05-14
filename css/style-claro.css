@@ -441,3 +441,41 @@ html, body {
   letter-spacing: 4px;
   margin: 8px 0 0;
 }
+
+.deadline-info {
+  margin: 12px 24px 0;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.deadline-abierto {
+  display: block;
+  background: black;
+  border: 1px solid var(--black);
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  margin-top: 8px;
+}
+.deadline-abierto-card {
+  display: block;
+  background: #AB0E0E;
+  border: 1px solid var #AB0E0E;
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  margin-top: 8px;
+}
+.deadline-cerrado {
+  display: block;
+  background: rgba(220,38,38,0.08);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+}

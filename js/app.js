@@ -14,6 +14,10 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+function jornadadCerrada() {
+  return new Date() > new Date(DEADLINE_JORNADA);
+}
+
 function toggleUserMenu() {
   const menus = ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking'];
   const screenActiva = document.querySelector('.screen.active');
@@ -206,6 +210,87 @@ function actualizarSelectCapitan() {
 
 async function loadLineup() {
   document.getElementById('lineup-jornada').textContent = JORNADA_ACTIVA;
+    const deadlineEl = document.getElementById('deadline-info');
+    if (deadlineEl) {
+      const fecha = new Date(DEADLINE_JORNADA);
+      const opciones = { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' };
+      const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
+
+      if (jornadadCerrada()) {
+        deadlineEl.innerHTML = `<span class="deadline-cerrado">La jornada comenzó el ${fechaFormateada}</span>`;
+      } else {
+        deadlineEl.innerHTML = `
+          <span class="deadline-abierto">🏁 Podrás hacer tu once hasta el ${fechaFormateada}h</span>
+          <span class="deadline-abierto-card" style="margin-top:8px" id="countdown-box">
+                      <span id="countdown-timer">Calculando...</span>
+                    </span>
+          </span>
+        `;
+
+        // Cuenta atrás
+        const actualizarCuenta = () => {
+          const ahora = new Date();
+          const diff = new Date(DEADLINE_JORNADA) - ahora;
+
+          if (diff <= 0) {
+            document.getElementById('countdown-timer').textContent = '¡Plazo cerrado!';
+            clearInterval(intervalo);
+            return;
+          }
+
+          const dias    = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const horas   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+
+          const partes = [];
+          if (dias > 0)    partes.push(`${dias}d`);
+          if (horas > 0)   partes.push(`${horas}h`);
+          if (minutos > 0) partes.push(`${minutos}m`);
+          partes.push(`${segundos}s`);
+
+          document.getElementById('countdown-timer').textContent =
+            `⏳ Quedan ${partes.join(' ')} para el cierre de la jornada`;
+        };
+
+        actualizarCuenta();
+        const intervalo = setInterval(actualizarCuenta, 1000);
+      }
+    }
+    // Comprobar deadline
+   if (jornadadCerrada()) {
+     const pitch = document.getElementById('pitch');
+     pitch.querySelectorAll('.pitch-row').forEach(r => r.remove());
+     pitch.innerHTML = `
+       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                   height:300px;gap:16px;position:relative;z-index:1">
+         <div style="font-size:48px">🔒</div>
+         <div style="font-family:var(--font-display);font-size:28px;font-weight:700;
+                     color:white;letter-spacing:2px;text-align:center">
+           JORNADA CERRADA
+         </div>
+         <div style="font-family:var(--font-mono);font-size:12px;color:rgba(255,255,255,0.6);
+                     text-align:center;letter-spacing:1px">
+           La J${JORNADA_ACTIVA} ya ha empezado<br>Es tarde para modificar tu alineación
+         </div>
+       </div>
+     `;
+     document.getElementById('btn-save-lineup').style.display = 'none';
+     document.getElementById('btn-clear-lineup').style.display = 'none';
+     document.getElementById('capitan-select').closest('.capitan-selector').style.display = 'none';
+     document.querySelector('.capitan-label') && (document.querySelector('.capitan-label').style.display = 'none');
+     const btnConsultar = document.getElementById('btn-consultar-equipo');
+     if (btnConsultar) btnConsultar.style.display = 'block';
+     return;
+   }
+   // Restaurar botones y selector por si venía de jornada cerrada
+     document.getElementById('btn-save-lineup').style.display = '';
+     document.getElementById('btn-clear-lineup').style.display = '';
+     const capSelector = document.querySelector('.capitan-selector');
+     if (capSelector) capSelector.style.display = '';
+     const btnConsultar = document.getElementById('btn-consultar-equipo');
+     if (btnConsultar) btnConsultar.style.display = 'none';
+
   seleccionados = {};
   capitan = null;
   const sel = document.getElementById('capitan-select');
@@ -259,7 +344,7 @@ async function loadLineup() {
       }
 
       capitan = capitanIdGuardado;
-      showToast('Alineación anterior cargada ✓');
+      //showToast();
     }
   }
 
