@@ -112,7 +112,7 @@
   </div>
   <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
   <div class="capitan-selector">
-    <p class="capitan-label">Selecciona a tu capitán, su puntuación valdrá doble</p>
+    <p class="capitan-label">¡Selecciona a tu capitán! Puntuará doble</p>
     <select id="capitan-select" class="formation-select">
       <option value="">— Elige bien, será determinante —</option>
     </select>
@@ -195,6 +195,7 @@
       <button class="ranking-tab active" data-rtab="semanal">Jornada en juego</button>
       <button class="ranking-tab" data-rtab="general">General</button>
       <button class="ranking-tab" data-rtab="jugadores">Jugadores</button>
+      <button class="ranking-tab" data-rtab="once">Once ideal</button>
     </div>
     <div id="rtab-semanal" class="rtab-content">
       <table class="ranking-table">
@@ -213,6 +214,12 @@
         <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
         <tbody id="ranking-jugadores-body"></tbody>
       </table>
+    </div>
+    <div id="rtab-once" class="rtab-content" style="display:none">
+      <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <select id="once-jornada-select" class="formation-select"></select>
+      </div>
+      <div id="once-container"></div>
     </div>
   </main>
 </div>

@@ -851,6 +851,20 @@ async function loadRanking() {
   renderJugadores();
   document.getElementById('filtro-club').addEventListener('change', renderJugadores);
   document.getElementById('filtro-pos').addEventListener('change', renderJugadores);
+
+  // ── Once de la semana ──
+    const selectOnce = document.getElementById('once-jornada-select');
+    if (selectOnce) {
+      selectOnce.innerHTML = '';
+      for (let i = JORNADA_ACTIVA; i >= 1; i--) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Jornada ${i}`;
+        selectOnce.appendChild(opt);
+      }
+      loadOnce(JORNADA_ACTIVA);
+      selectOnce.addEventListener('change', e => loadOnce(parseInt(e.target.value)));
+    }
 }
 
 
@@ -871,6 +885,103 @@ async function guardarNombreEquipo() {
 }
 
 document.getElementById('btn-guardar-equipo')?.addEventListener('click', guardarNombreEquipo);
+
+async function loadOnce(jornada) {
+  const container = document.getElementById('once-container');
+  container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
+
+  const { data, error } = await db
+    .from('jugadores')
+    .select('nombre, club, posicion, puntos, escudo_url')
+    .eq('jornada', jornada)
+    .neq('posicion', 'ENT')
+    .order('puntos', { ascending: false });
+
+  if (error || !data?.length) {
+    container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>';
+    return;
+  }
+
+  const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
+  data.forEach(j => porPos[j.posicion]?.push(j));
+
+  const portero = porPos.POR.slice(0, 1);
+  const defs = porPos.DEF.sort((a, b) => b.puntos - a.puntos);
+  const meds = porPos.MED.sort((a, b) => b.puntos - a.puntos);
+  const dels = porPos.DEL.sort((a, b) => b.puntos - a.puntos);
+
+  let defOnce = defs.slice(0, 3);
+  let medOnce = meds.slice(0, 3);
+  let delOnce = dels.slice(0, 1);
+
+  const candidatos = [
+    ...defs.slice(3, 5).map(j => ({ ...j, _pos: 'DEF' })),
+    ...meds.slice(3, 4).map(j => ({ ...j, _pos: 'MED' })),
+    ...dels.slice(1, 3).map(j => ({ ...j, _pos: 'DEL' })),
+  ].sort((a, b) => b.puntos - a.puntos);
+
+  let huecos = 3;
+  for (const c of candidatos) {
+    if (huecos === 0) break;
+    if (c._pos === 'DEF' && defOnce.length < 5) { defOnce.push(c); huecos--; }
+    else if (c._pos === 'MED' && medOnce.length < 4) { medOnce.push(c); huecos--; }
+    else if (c._pos === 'DEL' && delOnce.length < 3) { delOnce.push(c); huecos--; }
+  }
+
+  const filas = [
+    { label: '🧤 PORTERO',       jugadores: portero },
+    { label: '🛑 DEFENSAS',       jugadores: defOnce },
+    { label: '🧠 MEDIOCENTROS', jugadores: medOnce },
+    { label: '⚽ DELANTEROS',     jugadores: delOnce },
+  ];
+
+  const totalPuntos = [...portero, ...defOnce, ...medOnce, ...delOnce]
+    .reduce((acc, j) => acc + j.puntos, 0);
+    if (totalPuntos === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-family:var(--font-display);font-size:18px;letter-spacing:1px">Aún no tenemos el once de la jornada</div>';
+        return;
+      }
+
+  const formacionOnce = `${defOnce.length}-${medOnce.length}-${delOnce.length}`;
+
+    container.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  margin-bottom:12px;">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:700;
+                    color:var(--neon);letter-spacing:2px">
+          Formación: ${formacionOnce}
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:1px">
+          TOTAL: <strong style="color:var(--neon)">${totalPuntos} pts</strong>
+        </div>
+      </div>
+    ${filas.map(fila => `
+      <div style="margin-bottom:20px">
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:700;
+                    letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);
+                    border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:10px">
+          ${fila.label}
+        </div>
+        ${fila.jugadores.map(j => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;
+                      border-bottom:1px solid var(--border)">
+            ${j.escudo_url
+              ? `<img src="${j.escudo_url}" width="28" height="28" style="object-fit:contain" onerror="this.style.display='none'">`
+              : `<div style="width:28px;height:28px;background:var(--surface);border-radius:50%;
+                             display:flex;align-items:center;justify-content:center;
+                             font-family:var(--font-display);font-size:10px">${j.club}</div>`
+            }
+            <div style="flex:1">
+              <div style="font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--text)">${j.nombre}</div>
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${j.club} · ${j.posicion}</div>
+            </div>
+            <div style="font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--neon)">${j.puntos}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+  `;
+}
 
 (async function init() {
   const { data: { session } } = await db.auth.getSession();
