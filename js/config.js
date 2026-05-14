@@ -4,15 +4,15 @@ const SUPABASE_KEY = 'sb_publishable_8aNRtGX0cHoNcaJHv9ASOw_Fz-3Of-2';
 const JORNADA_ACTIVA = 35;
 // Fecha y hora límite para modificar la alineación
 // Formato: 'YYYY-MM-DDTHH:MM:SS' en hora local
-const DEADLINE_JORNADA = '2026-05-17T18:00:00';
+const DEADLINE_JORNADA = '2026-05-17T17:00:00';
 
 // Actualiza los partidos cada jornada.
 // escudo_url: URL del escudo del equipo (opcional, si no hay se muestra la abreviatura)
 const PARTIDOS = [
   {
     local:     { nombre: 'MOSCONIA',  abrev: 'MOS', escudo_url: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/sign/escudos/MosconiaEscudo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMzdiOGIxYS1lMzkzLTRjNjMtOTNlNS0yNThmOGZlZWVjZDEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlc2N1ZG9zL01vc2NvbmlhRXNjdWRvLnBuZyIsImlhdCI6MTc3ODYwNDkwNCwiZXhwIjoyMjUxNjQ0OTA0fQ.5OFUtjz62YVtkT0NDEUmBD4I4LVTENItKTksoRsLmkg' },
-    visitante: { nombre: 'COVADONGA', abrev: 'COV',  escudo_url: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/sign/escudos/CovadongaEscudo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMzdiOGIxYS1lMzkzLTRjNjMtOTNlNS0yNThmOGZlZWVjZDEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlc2N1ZG9zL0NvdmFkb25nYUVzY3Vkby5wbmciLCJpYXQiOjE3Nzg2MDU1MjUsImV4cCI6MjI1MTY0NTUyNX0.KLrHqbsHfolsib7Yzq8TILqjjU5NJ7vtugG-BhAobVI' },
-    fecha:     'Domingo 17, 18:00h',
+    visitante: { nombre: 'COVADONGA', abrev: 'COV',  escudo_url: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/sign/escudos/OtroCovadongaEscudo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMzdiOGIxYS1lMzkzLTRjNjMtOTNlNS0yNThmOGZlZWVjZDEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlc2N1ZG9zL090cm9Db3ZhZG9uZ2FFc2N1ZG8ucG5nIiwiaWF0IjoxNzc4NzU5NTg5LCJleHAiOjIyNTE3OTk1ODl9.JeT0p-_VGffI85ecrgCUZKVcCRrK7kYxo1eFTn__x5s' },
+    fecha:     'Domingo 17, 17:00h',
     estadio:   'Marqués Vega de Anzo',
   },
   {

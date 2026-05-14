@@ -143,7 +143,7 @@ function loadHome() {
       <div class="match-team">
         <div class="crest" style="background:${p.local.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.local.escudo_url
-            ? `<img src="${p.local.escudo_url}" alt="${p.local.abrev}" width="56" height="56" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
+            ? `<img src="${p.local.escudo_url}" alt="${p.local.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
             : p.local.abrev}
         </div>
         <div>
@@ -158,7 +158,7 @@ function loadHome() {
       <div class="match-team right">
         <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.visitante.escudo_url
-            ? `<img src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="56" height="56" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
+            ? `<img src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
             : p.visitante.abrev}
         </div>
         <div style="text-align:right">
