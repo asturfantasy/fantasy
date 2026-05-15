@@ -422,7 +422,7 @@ function renderPitch() {
           : jugador.nombre.substring(0,3).toUpperCase();
 
         slot.innerHTML = `
-          <div class="player-circle ${fila.cls} ${esCap ? 'es-capitan' : ''}" style="overflow:hidden;position:relative">
+         <div class="player-circle ${fila.cls} ${esCap ? 'es-capitan' : ''}" style="overflow:visible;position:relative">
             ${circuloContenido}
             ${esCap ? '<span class="cap-badge">C</span>' : ''}
           </div>

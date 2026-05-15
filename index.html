@@ -16,7 +16,7 @@
   <div class="login-card">
     <span class="login-badge">⚽</span>
     <h1 class="login-title">ASTUR<span>FANTASY</span></h1>
-    <p class="login-sub">La Tercera como nunca antes la habías vivido</p>
+    <p class="login-sub">La Tercera Federación asturiana como nunca antes la habías vivido</p>
     <button id="btn-google-login" class="btn-google">
       <div class="google-g">🗝️️</div>
       Inicia sesión con tu cuenta de Google
@@ -39,7 +39,7 @@
       <div id="user-menu" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name">Bienvenido</div>
         <button class="user-menu-logout" id="btn-logout">Cerrar sesión</button>
-        <button class="btn-toggle-theme" id="btn-toggle-theme">Modo claro</button>
+        <button class="btn-toggle-theme" id="btn-toggle-theme">Cambiar modo</button>
       </div>
     </div>
   </nav>
@@ -92,7 +92,7 @@
       <div id="user-menu-lineup" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-lineup">Bienvenido</div>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-        <button class="btn-toggle-theme" onclick="toggleTheme()">Modo claro</button>
+        <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
       </div>
     </div>
   </nav>
@@ -123,8 +123,8 @@
     </select>
   </div>
   <br>
-  <button id="btn-save-lineup" class="btn-primary">GUARDAR ALINEACIÓN</button>
-  <button id="btn-clear-lineup" class="btn-clear">VACIAR ALINEACIÓN</button>
+  <button id="btn-save-lineup" class="btn-primary">🔐 GUARDAR ALINEACIÓN</button>
+  <button id="btn-clear-lineup" class="btn-clear">🗑️ VACIAR ALINEACIÓN</button>
 </div>
 
 <!-- MI EQUIPO -->
@@ -142,7 +142,7 @@
       <div id="user-menu-myteam" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-myteam">Bienvenido</div>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-        <button class="btn-toggle-theme" onclick="toggleTheme()">Modo claro</button>
+        <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
       </div>
     </div>
   </nav>
@@ -153,16 +153,18 @@
   </div>
   <main class="page-body">
     <div id="myteam-banner" class="myteam-banner" style="display:none"></div>
-    <div id="nombre-equipo-form" style="display:flex;gap:8px;align-items:center;margin:0 0 16px">
-      <input id="input-nombre-equipo" type="text" placeholder="¡Dale un nombre a tu equipo!"
-             style="flex:1;padding:8px 12px;font-family:var(--font-display);font-size:14px;
-             background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px">
-      <button id="btn-guardar-equipo"
-              style="padding:8px 16px;background:var(--neon);color:var(--bg);border:none;border-radius:8px;
-              font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer">
-        Guardar nombre
-      </button>
-    </div>
+      <div id="nombre-equipo-form" style="display:flex;flex-direction:column;gap:8px;margin:0 0 16px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="input-nombre-equipo" type="text" placeholder="¡Dale un nombre a tu equipo!" maxlength="25"
+                     style="flex:1;min-width:200px;padding:8px 12px;font-family:var(--font-display);font-size:14px;
+           background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px">
+              <button id="btn-guardar-equipo"
+                      style="padding:8px 16px;background:var(--neon);color:var(--bg);border:none;border-radius:8px;
+            font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap">
+                  Guardar nombre
+              </button>
+          </div>
+      </div>
     <div id="myteam-empty" class="empty-state" style="display:none">
       <p>Todavía no has guardado tu alineación para esta jornada.</p>
     </div>
@@ -185,7 +187,7 @@
       <div id="user-menu-ranking" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-ranking">Bienvenido</div>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-        <button class="btn-toggle-theme" onclick="toggleTheme()">Modo claro</button>
+        <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
       </div>
     </div>
   </nav>
@@ -247,7 +249,7 @@
             <div id="user-menu-criterios" class="user-menu" style="display:none">
                 <div class="user-menu-name" id="user-menu-name-criterios">Bienvenido</div>
                 <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-                <button class="btn-toggle-theme" onclick="toggleTheme()">Modo claro</button>
+                <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
             </div>
         </div>
     </nav>
