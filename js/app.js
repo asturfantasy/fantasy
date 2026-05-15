@@ -752,25 +752,42 @@ async function loadRanking() {
   });
 
   // ── Clasificación semanal ──
-  const { data: semanal } = await db
-    .from('clasificacion_automatica')
-    .select('*')
-    .eq('jornada', jornada)
-    .order('puntos', { ascending: false });
+  // ── Clasificación semanal con select ──
+    const selectSemanal = document.getElementById('semanal-jornada-select');
+    if (selectSemanal) {
+      selectSemanal.innerHTML = '';
+      for (let i = JORNADA_ACTIVA; i >= 1; i--) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Jornada ${i}`;
+        selectSemanal.appendChild(opt);
+      }
+    }
 
-  const tbody = document.getElementById('ranking-body');
-  if (!semanal?.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ${jornada}</td></tr>`;
-  } else {
-    tbody.innerHTML = semanal.map((r, i) => `
-      <tr class="${medalClass(i+1)}">
-        <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
-        <td><div class="rank-name">${r.nombre}</div></td>
-        <td><div class="rank-team">${r.nombre_equipo}</div></td>
-        <td><div class="rank-pts">${r.puntos}</div></td>
-      </tr>
-    `).join('');
-  }
+    const cargarSemanal = async (jornadaSel) => {
+      const { data: semanal } = await db
+        .from('clasificacion_automatica')
+        .select('*')
+        .eq('jornada', jornadaSel)
+        .order('puntos', { ascending: false });
+
+      const tbody = document.getElementById('ranking-body');
+      if (!semanal?.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ${jornadaSel}</td></tr>`;
+      } else {
+        tbody.innerHTML = semanal.map((r, i) => `
+          <tr class="${medalClass(i+1)}">
+            <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+            <td><div class="rank-name">${r.nombre}</div></td>
+            <td><div class="rank-team">${r.nombre_equipo}</div></td>
+            <td><div class="rank-pts">${r.puntos}</div></td>
+          </tr>
+        `).join('');
+      }
+    };
+
+    cargarSemanal(JORNADA_ACTIVA);
+    selectSemanal?.addEventListener('change', e => cargarSemanal(parseInt(e.target.value)));
 
   // ── Clasificación general ──
   const { data: general } = await db
@@ -809,6 +826,9 @@ async function loadRanking() {
         <option value="">Todas las posiciones</option>
         ${posiciones.map(p => `<option value="${p}">${p}</option>`).join('')}
       </select>
+      <button id="btn-reset-filtros"">
+              Reiniciar filtros
+            </button>
     </div>
     <table class="ranking-table">
       <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
@@ -851,6 +871,11 @@ async function loadRanking() {
   renderJugadores();
   document.getElementById('filtro-club').addEventListener('change', renderJugadores);
   document.getElementById('filtro-pos').addEventListener('change', renderJugadores);
+  document.getElementById('btn-reset-filtros').addEventListener('click', () => {
+      document.getElementById('filtro-club').value = '';
+      document.getElementById('filtro-pos').value = '';
+      renderJugadores();
+    });
 
   // ── Once de la semana ──
     const selectOnce = document.getElementById('once-jornada-select');

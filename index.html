@@ -192,17 +192,20 @@
   <main class="page-body">
     <div class="section-label" style="margin-bottom:16px">Estadísticas</div>
     <div class="ranking-tabs">
-      <button class="ranking-tab active" data-rtab="semanal">Jornada en juego</button>
+        <button class="ranking-tab active" data-rtab="semanal">Jornada</button>
       <button class="ranking-tab" data-rtab="general">General</button>
       <button class="ranking-tab" data-rtab="jugadores">Jugadores</button>
       <button class="ranking-tab" data-rtab="once">Once ideal</button>
     </div>
-    <div id="rtab-semanal" class="rtab-content">
-      <table class="ranking-table">
-        <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Pts</th></tr></thead>
-        <tbody id="ranking-body"></tbody>
-      </table>
-    </div>
+      <div id="rtab-semanal" class="rtab-content">
+          <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+              <select id="semanal-jornada-select" class="formation-select"></select>
+          </div>
+          <table class="ranking-table">
+              <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Pts</th></tr></thead>
+              <tbody id="ranking-body"></tbody>
+          </table>
+      </div>
     <div id="rtab-general" class="rtab-content" style="display:none">
       <table class="ranking-table">
         <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
