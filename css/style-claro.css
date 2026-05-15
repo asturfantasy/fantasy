@@ -403,6 +403,7 @@ html, body {
 
 /* ── RESPONSIVE ── */
 @media (max-width:720px) {
+  .page-body { overflow-x: hidden; }
   .navbar { flex-wrap: wrap; height: auto; padding: 8px 12px; gap: 6px; }
   .nav-tabs { display: flex; order: 3; width: 100%; justify-content: space-between; gap: 2px; }
   .nav-tab { flex: 1; text-align: center; font-size: 9px; padding: 6px 4px; }
@@ -413,16 +414,19 @@ html, body {
   .login-card { width: 92%; padding: 32px 24px; }
   .jornada-side { display: none; }
   .match-card { padding: 10px 8px; }
-    .match-team { gap: 6px; }
-    .crest { width: 44px; height: 44px; }
-    .crest img { width: 38px; height: 38px; }
-    .team-name { font-size: 12px; }
-    .match-vs { padding: 0 6px; font-size: 9px; }
-    .match-date { font-size: 9px; }
-    #rtab-once { overflow-x: hidden; }
-    #once-container { width: 100%; overflow-x: hidden; }
-    #once-container > div { word-break: break-word; }
-    #once-container img { flex-shrink: 0; }
+  .match-team { gap: 6px; }
+  .crest { width: 44px; height: 44px; }
+  .crest img { width: 38px; height: 38px; }
+  .team-name { font-size: 12px; }
+  .match-vs { padding: 0 6px; font-size: 9px; }
+  .match-date { font-size: 9px; }
+  #rtab-once { overflow-x: hidden; }
+  #once-container { width: 100%; overflow-x: hidden; }
+  #once-container > div { word-break: break-word; }
+  #once-container img { flex-shrink: 0; }
+  .ranking-tabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .ranking-tabs::-webkit-scrollbar { display: none; }
+  .ranking-tab { flex-shrink: 0; }
 }
 
 #once-container .rank-name {

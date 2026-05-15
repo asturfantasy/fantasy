@@ -398,6 +398,7 @@ html, body {
 
 /* ── RESPONSIVE ── */
 @media (max-width:720px) {
+.page-body { overflow-x: hidden; }
   .navbar { flex-wrap: wrap; height: auto; padding: 8px 12px; gap: 6px; }
   .nav-tabs { display: flex; order: 3; width: 100%; justify-content: space-between; gap: 2px; }
   .nav-tab { flex: 1; text-align: center; font-size: 9px; padding: 6px 4px; }
@@ -418,6 +419,14 @@ html, body {
   #once-container { width: 100%; overflow-x: hidden; }
   #once-container > div { word-break: break-word; }
   #once-container img { flex-shrink: 0; }
+  .ranking-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ranking-tabs::-webkit-scrollbar { display: none; }
+  .ranking-tab { flex-shrink: 0; }
 }
 #once-container .rank-name {
   white-space: nowrap;
