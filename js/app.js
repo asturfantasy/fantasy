@@ -827,6 +827,10 @@ async function loadRanking() {
         <option value="">Todas las posiciones</option>
         ${posiciones.map(p => `<option value="${p}">${p}</option>`).join('')}
       </select>
+      <input id="filtro-nombre" type="text" placeholder="Buscar jugador..."
+              style="padding:8px 12px;font-family:var(--font-mono);font-size:13px;
+                     background:var(--surface);color:var(--text);border:1px solid var(--border);
+                     border-radius:8px;min-width:160px;">
       <button id="btn-reset-filtros"">
               Reiniciar filtros
             </button>
@@ -838,12 +842,14 @@ async function loadRanking() {
   `;
 
   const renderJugadores = () => {
-    const club = document.getElementById('filtro-club').value;
-    const pos  = document.getElementById('filtro-pos').value;
+    const club    = document.getElementById('filtro-club').value;
+    const pos     = document.getElementById('filtro-pos').value;
+    const nombre  = document.getElementById('filtro-nombre').value.toLowerCase();
 
     const filtrados = (jugadores || []).filter(j =>
-      (!club || j.club === club) &&
-      (!pos  || j.posicion === pos)
+      (!club   || j.club === club) &&
+      (!pos    || j.posicion === pos) &&
+      (!nombre || j.nombre.toLowerCase().includes(nombre))
     );
 
     const tbody = document.getElementById('ranking-jugadores-body');
@@ -872,11 +878,13 @@ async function loadRanking() {
   renderJugadores();
   document.getElementById('filtro-club').addEventListener('change', renderJugadores);
   document.getElementById('filtro-pos').addEventListener('change', renderJugadores);
+  document.getElementById('filtro-nombre').addEventListener('input', renderJugadores);
   document.getElementById('btn-reset-filtros').addEventListener('click', () => {
-      document.getElementById('filtro-club').value = '';
-      document.getElementById('filtro-pos').value = '';
-      renderJugadores();
-    });
+    document.getElementById('filtro-club').value = '';
+    document.getElementById('filtro-pos').value = '';
+    document.getElementById('filtro-nombre').value = '';
+    renderJugadores();
+  });
 
   // ── Once de la semana ──
     const selectOnce = document.getElementById('once-jornada-select');
