@@ -98,16 +98,18 @@
   </nav>
   <div class="round-header">
     <div class="round-badge">Jornada <span id="lineup-jornada">—</span></div>
-    <select id="formation-select" class="formation-select">
-      <option>4-3-3</option>
-      <option>4-4-2</option>
-      <option>4-5-1</option>
-      <option>3-4-3</option>
-      <option>3-5-2</option>
-      <option>5-3-2</option>
-    </select>
   </div>
-  <div id="deadline-info" class="deadline-info"></div>
+    <div id="deadline-info" class="deadline-info"></div>
+    <div style="padding:8px 24px;display:flex;justify-content:center;align-items:center;gap:12px">
+        <select id="formation-select" class="formation-select" style="font-size:14px;padding:6px 10px">
+            <option>4-3-3</option>
+            <option>4-4-2</option>
+            <option>4-5-1</option>
+            <option>3-4-3</option>
+            <option>3-5-2</option>
+            <option>5-3-2</option>
+        </select>
+    </div>
   <div class="pitch-wrapper">
     <div id="pitch" class="pitch">
       <div class="pitch-stripes" id="pitch-stripes"></div>
@@ -116,13 +118,15 @@
     </div>
   </div>
   <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
-  <div class="capitan-selector">
-    <p class="capitan-label">¡Selecciona a tu capitán! Puntuará doble</p>
-    <select id="capitan-select" class="formation-select">
-      <option value="">— Elige bien, será determinante —</option>
-    </select>
-  </div>
-  <br>
+    <div style="padding:0 24px;margin-bottom:8px">
+        <div class="capitan-card">
+            <div class="capitan-card-titulo">⭐ Selecciona a tu capitán</div>
+            <div class="capitan-card-sub">Su puntuación valdrá el doble</div>
+            <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px;background:white;color:black">
+                <option value="">— Elige bien, será determinante —</option>
+            </select>
+        </div>
+    </div>
   <button id="btn-save-lineup" class="btn-primary">🔐 GUARDAR ALINEACIÓN</button>
   <button id="btn-clear-lineup" class="btn-clear">🗑️ VACIAR ALINEACIÓN</button>
 </div>
@@ -209,13 +213,13 @@
               <select id="semanal-jornada-select" class="formation-select"></select>
           </div>
           <table class="ranking-table">
-              <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Pts</th></tr></thead>
+              <thead><tr><th>#</th><th>Equipo</th><th style="text-align:right">Pts</th></tr></thead>
               <tbody id="ranking-body"></tbody>
           </table>
       </div>
     <div id="rtab-general" class="rtab-content" style="display:none">
       <table class="ranking-table">
-        <thead><tr><th>#</th><th>Mánager</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
+          <thead><tr><th>#</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
         <tbody id="ranking-general-body"></tbody>
       </table>
     </div>

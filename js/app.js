@@ -774,12 +774,11 @@ async function loadRanking() {
 
       const tbody = document.getElementById('ranking-body');
       if (!semanal?.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ${jornadaSel}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ${jornadaSel}</td></tr>`;
       } else {
         tbody.innerHTML = semanal.map((r, i) => `
           <tr class="${medalClass(i+1)}">
             <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
-            <td><div class="rank-name">${r.nombre}</div></td>
             <td><div class="rank-team">${r.nombre_equipo}</div></td>
             <td><div class="rank-pts">${r.puntos}</div></td>
           </tr>
@@ -797,12 +796,11 @@ async function loadRanking() {
 
   const tbodyGeneral = document.getElementById('ranking-general-body');
   if (!general?.length) {
-    tbodyGeneral.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>`;
+    tbodyGeneral.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>`;
   } else {
     tbodyGeneral.innerHTML = general.map((r, i) => `
       <tr class="${medalClass(i+1)}">
         <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
-        <td><div class="rank-name">${r.nombre}</div></td>
         <td><div class="rank-team">${r.nombre_equipo}</div></td>
         <td><div class="rank-pts">${r.puntos_total}</div></td>
       </tr>
@@ -915,7 +913,7 @@ async function guardarNombreEquipo() {
   }, { onConflict: 'user_id' });
 
   if (error) showToast('Error al guardar: ' + error.message, true);
-  else showToast('Nombre de equipo guardado ✓');
+  else showToast('Nombre de equipo guardado');
 }
 
 document.getElementById('btn-guardar-equipo')?.addEventListener('click', guardarNombreEquipo);

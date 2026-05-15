@@ -682,4 +682,24 @@ html, body {
 }
 .criterio-pts.neg { color: var(--red); }
 
-
+.capitan-card {
+  background: gold;
+  border: 1px solid gold;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  text-align: center;
+}
+.capitan-card-titulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: black;
+  margin-bottom: 4px;
+}
+.capitan-card-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(0,0,0,0.6);
+  letter-spacing: 1px;
+}
