@@ -68,6 +68,11 @@
         <span class="action-label">RANKINGS</span>
         <span class="action-desc">Consulta las clasificaciones</span>
       </button>
+        <button class="action-btn" data-target="criterios">
+            <span class="action-icon">➕</span>
+            <span class="action-label">PUNTUACIÓN</span>
+            <span class="action-desc">Criterios a seguir</span>
+        </button>
     </div>
   </main>
 </div>
@@ -225,6 +230,78 @@
       <div id="once-container"></div>
     </div>
   </main>
+</div>
+
+<!-- CRITERIOS DE PUNTUACIÓN -->
+<div id="screen-criterios" class="screen">
+    <nav class="navbar">
+        <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+        <div class="nav-tabs">
+            <button class="nav-tab" data-target="home">INICIO</button>
+            <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
+            <button class="nav-tab" data-target="myteam">MI EQUIPO</button>
+            <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
+        </div>
+        <div class="nav-user">
+            <div class="avatar" id="nav-avatar-criterios" onclick="toggleUserMenu()">??</div>
+        </div>
+    </nav>
+    <div class="jornada-banner">
+        <span class="jornada-num" style="font-size:20px;margin-left:8px">CRITERIOS DE PUNTUACIÓN</span>
+    </div>
+    <main class="page-body">
+        <div id="criterios-container">
+
+            <div class="criterio-card">
+                <div class="criterio-titulo">⚽ Participación</div>
+                <div class="criterio-fila"><span>Titular</span><span class="criterio-pts">+1</span></div>
+            </div>
+
+            <div class="criterio-card">
+                <div class="criterio-titulo">🧤 Portería a cero (debe ser titular)</div>
+                <div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+3</span></div>
+                <div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+2</span></div>
+                <div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+1</span></div>
+            </div>
+
+            <div class="criterio-card">
+                <div class="criterio-titulo">📰 La Nueva España</div>
+                <div class="criterio-fila"><span>SC</span><span class="criterio-pts">0</span></div>
+                <div class="criterio-fila"><span>1</span><span class="criterio-pts">+2</span></div>
+                <div class="criterio-fila"><span>2</span><span class="criterio-pts">+6</span></div>
+                <div class="criterio-fila"><span>3</span><span class="criterio-pts">+10</span></div>
+            </div>
+
+            <div class="criterio-card">
+                <div class="criterio-titulo">🥅 Goles anotados</div>
+                <div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+6</span></div>
+                <div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+5</span></div>
+                <div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+4</span></div>
+                <div class="criterio-fila"><span>Delantero</span><span class="criterio-pts">+3</span></div>
+            </div>
+
+            <div class="criterio-card">
+                <div class="criterio-titulo">🎯 Penaltis</div>
+                <div class="criterio-fila"><span>Gol de penalti, independientemente de su posición</span><span class="criterio-pts">+3</span></div>
+                <div class="criterio-fila"><span>Penalti fallado, independientemente de su posición</span><span class="criterio-pts neg">-3</span></div>
+                <div class="criterio-fila"><span>Penalti parado</span><span class="criterio-pts">+3</span></div>
+            </div>
+
+            <div class="criterio-card">
+                <div class="criterio-titulo">🎁 Otras acciones</div>
+                <div class="criterio-fila"><span>Asistencia (último jugador previo)</span><span class="criterio-pts">+1</span></div>
+                <div class="criterio-fila"><span>Gol en propia puerta</span><span class="criterio-pts neg">-2</span></div>
+            </div>
+
+            <div class="criterio-card">
+                <div class="criterio-titulo">🟨🟥 Tarjetas</div>
+                <div class="criterio-fila"><span>Amarilla</span><span class="criterio-pts neg">-1</span></div>
+                <div class="criterio-fila"><span>Doble amarilla</span><span class="criterio-pts neg">-3</span></div>
+                <div class="criterio-fila"><span>Roja directa</span><span class="criterio-pts neg">-5</span></div>
+            </div>
+
+        </div>
+    </main>
 </div>
 
 <!-- MODAL selector de jugador -->

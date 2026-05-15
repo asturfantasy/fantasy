@@ -79,14 +79,14 @@ function goTo(screenId) {
   const el = document.getElementById('screen-' + screenId);
   if (el) el.classList.add('active');
   window.scrollTo(0, 0);
-  const loaders = { home: loadHome, lineup: loadLineup, myteam: loadMyTeam, ranking: loadRanking };
+  const loaders = { home: loadHome, lineup: loadLineup, myteam: loadMyTeam, ranking: loadRanking, criterios: () => {} };
   if (loaders[screenId]) loaders[screenId]();
 }
 
 function updateNavUser(user) {
   const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
   const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  ['', '-lineup', '-myteam', '-ranking'].forEach(s => {
+  ['', '-lineup', '-myteam', '-ranking', '-criterios'].forEach(s => {
     const av = document.getElementById('nav-avatar' + s);
     const un = document.getElementById('nav-username' + s);
     const mn = document.getElementById('user-menu-name' + (s || ''));
