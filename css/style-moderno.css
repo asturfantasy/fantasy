@@ -414,8 +414,17 @@ html, body {
   .team-name { font-size: 12px; }
   .match-vs { padding: 0 6px; font-size: 9px; }
   .match-date { font-size: 9px; }
+  #rtab-once { overflow-x: hidden; }
+  #once-container { width: 100%; overflow-x: hidden; }
+  #once-container > div { word-break: break-word; }
+  #once-container img { flex-shrink: 0; }
 }
-
+#once-container .rank-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
 .saved-pts-high {
   font-family: var(--font-display);
   font-size: 25px;
