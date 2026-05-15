@@ -20,12 +20,13 @@ function jornadadCerrada() {
 }
 
 function toggleUserMenu() {
-  const menus = ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking'];
+  const menus = ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking', 'user-menu-criterios'];
   const screenActiva = document.querySelector('.screen.active');
-  const menuId = screenActiva?.id === 'screen-home'     ? 'user-menu' :
-                 screenActiva?.id === 'screen-lineup'   ? 'user-menu-lineup' :
-                 screenActiva?.id === 'screen-myteam'   ? 'user-menu-myteam' :
-                 screenActiva?.id === 'screen-ranking'  ? 'user-menu-ranking' : 'user-menu';
+  const menuId = screenActiva?.id === 'screen-home'      ? 'user-menu' :
+                 screenActiva?.id === 'screen-lineup'    ? 'user-menu-lineup' :
+                 screenActiva?.id === 'screen-myteam'    ? 'user-menu-myteam' :
+                 screenActiva?.id === 'screen-ranking'   ? 'user-menu-ranking' :
+                 screenActiva?.id === 'screen-criterios' ? 'user-menu-criterios' : 'user-menu';
 
   menus.forEach(id => {
     const m = document.getElementById(id);
