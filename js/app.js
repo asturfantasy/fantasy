@@ -30,7 +30,7 @@ async function mostrarHistorial(nombre, club) {
 
   const { data, error } = await db
       .from('jugadores')
-      .select('jornada, total_jornada, escudo_url')
+      .select('jornada, total_jornada, escudo_url, foto_url')
       .eq('nombre', nombre)
       .eq('club', club)
       .order('jornada', { ascending: true });
@@ -43,6 +43,7 @@ async function mostrarHistorial(nombre, club) {
   const maxPts = Math.max(...data.map(d => d.total_jornada), 1);
   const total = data.reduce((acc, d) => acc + d.total_jornada, 0);
   const escudo = data[0]?.escudo_url || '';
+  const foto = data[0]?.foto_url || '';
 
   content.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;
@@ -51,7 +52,7 @@ async function mostrarHistorial(nombre, club) {
                   border:2px solid var(--border);display:flex;align-items:center;
                   justify-content:center;font-family:var(--font-display);font-size:22px;
                   color:var(--text-muted);flex-shrink:0;position:relative">
-        ${nombre.substring(0,2).toUpperCase()}
+        ${foto ? `<img src="${foto}" width="64" height="64" style="object-fit:cover;border-radius:50%">` : nombre.substring(0,2).toUpperCase()}
         ${escudo ? `<img src="${escudo}" width="20" height="20"
                         style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                                border-radius:50%;background:var(--bg2);border:1px solid var(--border)">` : ''}
