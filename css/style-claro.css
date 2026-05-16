@@ -465,7 +465,7 @@ html, body {
   border: 1px solid var(--red);
   border-radius: var(--radius-sm);
   padding: 7px 12px;
-  margin-bottom: 10px;
+  margin-top: 5px;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 12px;
