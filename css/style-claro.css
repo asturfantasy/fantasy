@@ -326,13 +326,13 @@ html, body {
   box-shadow: 0 4px 12px var(--neon-glow);
 }
 .btn-primary:hover { background: var(--neon-dark); transform: translateY(-1px); }
-#btn-save-lineup { background: #7f1d1d; color: white; box-shadow: none; }
-#btn-save-lineup:hover { background: #991b1b; }
+#btn-save-lineup { background: #dc2626; color: white; box-shadow: none; }
+#btn-save-lineup:hover { background: #ef4444;}
 .page-body .btn-primary { width: auto; margin: 0; }
 
 /* ── BOTÓN VACIAR ── */
 .btn-clear {
-  background: #8b6914;
+  background: var(--neon);
   color: white;
   border: none;
   border-radius: var(--radius-sm);
@@ -347,7 +347,7 @@ html, body {
   margin: 0 24px 20px;
   transition: all 0.2s;
 }
-.btn-clear:hover { background: #a07820; }
+.btn-clear:hover { background: var(--neon-dark); }
 
 /* ── MI EQUIPO ── */
 .squad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -507,7 +507,7 @@ html, body {
 }
 .deadline-abierto-card {
   display: block;
-  background: #AB0E0E;
+  background: var(--neon);
   border: 1px solid var #AB0E0E;
   color: var(--white);
   border-radius: var(--radius-sm);
@@ -588,8 +588,8 @@ html, body {
 .criterio-pts.neg { color: var(--red); }
 
 .capitan-card {
-  background: gold;
-  border: 1px solid gold;
+  background: black;
+  border: 1px solid black;
   border-radius: var(--radius);
   padding: 16px 20px;
   text-align: center;
@@ -599,12 +599,12 @@ html, body {
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 1px;
-  color: black;
+  color: white;
   margin-bottom: 4px;
 }
 .capitan-card-sub {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: rgba(0,0,0,0.6);
+  color: white;
   letter-spacing: 1px;
 }

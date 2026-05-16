@@ -343,13 +343,13 @@ html, body {
   letter-spacing: 0.5px;
   cursor: pointer;
   width: calc(100% - 48px);
-  margin: 8px 24px 20px;
+  margin: 8px 24px 8px;
   transition: all 0.2s;
   box-shadow: 0 0 20px var(--neon-glow);
 }
 .btn-primary:hover { background: var(--neon-dark); box-shadow: 0 0 30px rgba(0,230,118,0.3); transform: translateY(-1px); }
-#btn-save-lineup { background: #7f1d1d; color: white; box-shadow: none; }
-#btn-save-lineup:hover { background: #991b1b; box-shadow: 0 0 20px rgba(239,68,68,0.2); }
+#btn-save-lineup { background: #dc2626;  color: white; box-shadow: none; }
+#btn-save-lineup:hover { background: #ef4444; }
 .page-body .btn-primary { width: auto; margin: 0; }
 
 /* ── MI EQUIPO ── */
@@ -471,8 +471,8 @@ html, body {
 }
 
 .btn-clear {
-  background: #8b6914;
-  color: white;
+  background: var(--neon);
+  color: var(--surface2);
   border: none;
   border-radius: 4px;
   padding: 14px 20px;
@@ -483,11 +483,11 @@ html, body {
   text-transform: uppercase;
   cursor: pointer;
   width: calc(100% - 48px);
-  margin: 0 24px 8px;
+  margin: 0 24px 20px;
   transition: all 0.2s;
 }
 
-.btn-clear:hover { background: #a07820; }
+.btn-clear:hover { background: var(--white); color: var(--bg); }
 
 .ranking-tabs {
   display: flex;
@@ -604,9 +604,9 @@ html, body {
 }
 .deadline-abierto-card {
   display: block;
-  background: #AB0E0E;
+  background: var(--neon);
   border: 1px solid var #AB0E0E;
-  color: var(--white);
+  color: var(--black);
   border-radius: var(--radius-sm);
   padding: 12px 20px;
   margin-top: 8px;
@@ -683,8 +683,8 @@ html, body {
 .criterio-pts.neg { color: var(--red); }
 
 .capitan-card {
-  background: gold;
-  border: 1px solid gold;
+  background: white;
+  border: 1px solid white;
   border-radius: var(--radius);
   padding: 16px 20px;
   text-align: center;
@@ -700,6 +700,6 @@ html, body {
 .capitan-card-sub {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: rgba(0,0,0,0.6);
+  color: black;
   letter-spacing: 1px;
 }
