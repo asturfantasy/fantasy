@@ -19,6 +19,70 @@ function jornadadCerrada() {
   return new Date() > new Date(DEADLINE_JORNADA);
 }
 
+async function mostrarHistorial(nombre, club) {
+  const modal = document.getElementById('modal-historial');
+  const content = document.getElementById('historial-content');
+  const titulo = document.getElementById('historial-titulo');
+
+  titulo.textContent = `${nombre} · ${club}`;
+  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+  modal.classList.add('open');
+
+  const { data, error } = await db
+      .from('jugadores')
+      .select('jornada, total_jornada, escudo_url')
+      .eq('nombre', nombre)
+      .eq('club', club)
+      .order('jornada', { ascending: true });
+
+  if (error || !data?.length) {
+    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>';
+    return;
+  }
+
+  const maxPts = Math.max(...data.map(d => d.total_jornada), 1);
+  const total = data.reduce((acc, d) => acc + d.total_jornada, 0);
+  const escudo = data[0]?.escudo_url || '';
+
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;
+                padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--surface);
+                  border:2px solid var(--border);display:flex;align-items:center;
+                  justify-content:center;font-family:var(--font-display);font-size:22px;
+                  color:var(--text-muted);flex-shrink:0;position:relative">
+        ${nombre.substring(0,2).toUpperCase()}
+        ${escudo ? `<img src="${escudo}" width="20" height="20"
+                        style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
+                               border-radius:50%;background:var(--bg2);border:1px solid var(--border)">` : ''}
+      </div>
+      <div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--text)">${nombre}</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${club}</div>
+      </div>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);
+                text-align:right;margin-bottom:16px;letter-spacing:1px">
+      TOTAL ACUMULADO: <strong style="color:var(--neon)">${total} pts</strong>
+    </div>
+    ${data.map(d => `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);
+                    width:28px;text-align:right;flex-shrink:0">J${d.jornada}</div>
+        <div style="flex:1;background:var(--surface);border-radius:4px;height:24px;overflow:hidden">
+          <div style="height:100%;width:${Math.max((d.total_jornada / maxPts) * 100, 0)}%;
+                      background:var(--neon);border-radius:4px;
+                      display:flex;align-items:center;justify-content:flex-end;
+                      padding-right:6px;transition:width 0.3s;min-width:${d.total_jornada > 0 ? '24px' : '0'}">
+            ${d.total_jornada > 0 ? `<span style="font-family:var(--font-display);font-size:12px;color:${d.total_jornada > 0 ? 'var(--bg)' : 'transparent'};font-weight:700">${d.total_jornada}</span>` : ''}
+          </div>
+        </div>
+        ${d.total_jornada <= 0 ? `<span style="font-family:var(--font-display);font-size:12px;color:var(--text-muted)">0</span>` : ''}
+      </div>
+    `).join('')}
+  `;
+}
+
 function toggleUserMenu() {
   const menus = ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking', 'user-menu-criterios'];
   const screenActiva = document.querySelector('.screen.active');
@@ -534,6 +598,12 @@ document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('modal-overlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
+document.getElementById('historial-close')?.addEventListener('click', () => {
+  document.getElementById('modal-historial').classList.remove('open');
+});
+document.getElementById('modal-historial')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
 
 document.getElementById('formation-select').addEventListener('change', () => {
   const formacion = document.getElementById('formation-select').value;
@@ -861,7 +931,8 @@ async function loadRanking() {
       <tr class="${medalClass(i+1)}">
         <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
         <td>
-          <div class="rank-name">${j.nombre}</div>
+          <div class="rank-name" style="cursor:pointer;text-decoration:underline"
+               onclick="mostrarHistorial('${j.nombre}', '${j.club}')">${j.nombre}</div>
           <div class="rank-team">${j.posicion}</div>
         </td>
         <td>
