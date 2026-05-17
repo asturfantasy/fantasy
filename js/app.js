@@ -402,8 +402,7 @@ function loadHome() {
 
   const container = document.getElementById('matches-container');
   container.innerHTML = PARTIDOS.map(p => `
-    <div class="match-card" style="cursor:pointer"
-         onclick="mostrarPartido('${p.local.abrev}', '${p.visitante.abrev}', '${p.local.nombre}', '${p.visitante.nombre}')">
+    <div class="match-card">
       <div class="match-team">
         <div class="crest" style="background:${p.local.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.local.escudo_url
@@ -415,9 +414,27 @@ function loadHome() {
           <div class="match-date"></div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 6px;min-width:80px;max-width:90px">
-        <div class="match-vs">${p.estadio}</div>
-        <div class="match-date">${p.fecha}</div>
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 6px;min-width:140px;max-width:160px">
+        ${p.resultado?.finalizado ? `
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;
+                      color:var(--text);letter-spacing:2px">
+            ${p.resultado.local} - ${p.resultado.visitante}
+          </div>
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;
+                      color:var(--neon);text-transform:uppercase;margin-bottom:2px">Final</div>
+        ` : `
+          <div class="match-vs">${p.estadio}</div>
+          <div class="match-date">${p.fecha}</div>
+        `}
+        <button onclick="mostrarPartido('${p.local.abrev}', '${p.visitante.abrev}', '${p.local.nombre}', '${p.visitante.nombre}')"
+          style="background:var(--neon);color:var(--bg);border:none;border-radius:20px;
+                 padding:6px 14px;cursor:pointer;font-family:var(--font-display);
+                 font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+                 margin-top:6px;transition:all 0.2s;box-shadow:0 2px 8px var(--neon-glow);width:100%"
+          onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px var(--neon-glow)'"
+          onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 8px var(--neon-glow)'">
+          Consultar puntos
+        </button>
       </div>
       <div class="match-team right">
         <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
