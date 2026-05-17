@@ -436,8 +436,8 @@ html, body {
   .squad-grid { grid-template-columns: 1fr; }
   .login-card { width: 92%; padding: 32px 24px; }
   .jornada-side { display: none; }
-  .match-card { padding: 10px 8px; }
-  .match-team { gap: 6px; }
+  .match-card { padding: 10px 8px; flex-wrap: wrap; }
+  .match-team { gap: 6px; flex: 1; min-width: 80px; }
   .crest { width: 44px; height: 44px; }
   .crest img { width: 38px; height: 38px; }
   .team-name { font-size: 12px; }
@@ -450,6 +450,8 @@ html, body {
   .ranking-tabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .ranking-tabs::-webkit-scrollbar { display: none; }
   .ranking-tab { flex-shrink: 0; }
+  #modal-partido .modal { width: 98vw; }
+  #partido-content { padding: 10px; }
 }
 
 #once-container .rank-name {
@@ -517,9 +519,9 @@ html, body {
 }
 .deadline-cerrado {
   display: block;
-  background: rgba(220,38,38,0.08);
+  background: red;
   border: 1px solid var(--red);
-  color: var(--red);
+  color: var(--white);
   border-radius: var(--radius-sm);
   padding: 12px 20px;
 }

@@ -94,7 +94,11 @@ async function mostrarPartido(localAbrev, visitanteAbrev, localNombre, visitante
   const content = document.getElementById('partido-content');
   const titulo = document.getElementById('partido-titulo');
 
-  titulo.textContent = `${localNombre} vs ${visitanteNombre}`;
+  const resultadoPartido = PARTIDOS.find(p => p.local.abrev === localAbrev);
+  const marcador = resultadoPartido?.resultado?.finalizado
+    ? ` ${resultadoPartido.resultado.local} - ${resultadoPartido.resultado.visitante}`
+    : '';
+  titulo.textContent = `${localNombre}${marcador} ${visitanteNombre}`;
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
 
@@ -179,7 +183,7 @@ const renderJugador = (j, alineacion = 'left') => `
   const totalVisitante = visitante.reduce((acc, j) => acc + (j.total_jornada || 0), 0);
 
   content.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;
                 max-height:60vh;overflow-y:auto;padding-right:4px">
       <div>
         <div style="font-family:var(--font-display);font-weight:700;font-size:14px;
@@ -414,7 +418,7 @@ function loadHome() {
           <div class="match-date"></div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 6px;min-width:140px;max-width:160px">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 4px;min-width:100px;max-width:120px">
         ${p.resultado?.finalizado ? `
           <div style="font-family:var(--font-display);font-size:18px;font-weight:700;
                       color:var(--text);letter-spacing:2px">
@@ -559,8 +563,8 @@ async function loadLineup() {
      `;
      document.getElementById('btn-save-lineup').style.display = 'none';
      document.getElementById('btn-clear-lineup').style.display = 'none';
-     document.getElementById('capitan-select').closest('.capitan-selector').style.display = 'none';
-     document.querySelector('.capitan-label') && (document.querySelector('.capitan-label').style.display = 'none');
+     const capitanWrapper = document.getElementById('capitan-wrapper');
+     if (capitanWrapper) capitanWrapper.style.display = 'none';
      const btnConsultar = document.getElementById('btn-consultar-equipo');
      if (btnConsultar) btnConsultar.style.display = 'block';
      return;
@@ -568,8 +572,8 @@ async function loadLineup() {
    // Restaurar botones y selector por si venía de jornada cerrada
      document.getElementById('btn-save-lineup').style.display = '';
      document.getElementById('btn-clear-lineup').style.display = '';
-     const capSelector = document.querySelector('.capitan-selector');
-     if (capSelector) capSelector.style.display = '';
+     const capitanWrapper = document.getElementById('capitan-wrapper');
+     if (capitanWrapper) capitanWrapper.style.display = '';
      const btnConsultar = document.getElementById('btn-consultar-equipo');
      if (btnConsultar) btnConsultar.style.display = 'none';
 

@@ -49,6 +49,20 @@
     <span class="jornada-side" id="home-bienvenida"></span>
   </div>
   <main class="page-body">
+      <div style="background:var(--yellow);border-radius:20px;padding:10px 20px;
+            margin-bottom:16px;text-align:center;
+            font-family:var(--font-display);font-weight:700;font-size:10px;
+            letter-spacing:1px;text-transform:uppercase;color:var(--black);
+            box-shadow:0 2px 8px var(--neon-glow)">
+          Los puntos de la JORNADA 35 estarán disponibles durante el lunes 18 de mayo
+      </div>
+      <div style="background:var(--yellow);border-radius:20px;padding:10px 20px;
+            margin-bottom:16px;text-align:center;
+            font-family:var(--font-display);font-weight:700;font-size:10px;
+            letter-spacing:1px;text-transform:uppercase;color:var(--black);
+            box-shadow:0 2px 8px var(--neon-glow)">
+          La JORNADA 36 se activará el martes 19 de mayo
+      </div>
     <div class="section-label"><strong>PLAYOFFS AUTONÓMICOS - SEMIFINALES IDA</strong></div>
     <div id="matches-container" class="matches-grid"></div>
     <div class="section-label" style="margin-top:28px;margin-bottom:14px"><strong>HORA DE LA ACCIÓN</strong></div>
@@ -117,18 +131,18 @@
       <div class="pitch-center-circle"></div>
     </div>
   </div>
-  <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
-    <div style="padding:0 24px;margin-bottom:8px">
+    <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
+    <div id="capitan-wrapper" style="padding:0 24px;margin-bottom:8px">
         <div class="capitan-card">
             <div class="capitan-card-titulo">⭐ Selecciona un capitán</div>
             <div class="capitan-card-sub">Su puntuación valdrá el doble</div>
-            <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px">
+            <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px;background:var(--bg2);color:var(--text)">
                 <option value="">— Elige bien, será determinante —</option>
             </select>
         </div>
     </div>
-  <button id="btn-save-lineup" class="btn-primary">🔐 GUARDAR ALINEACIÓN</button>
-  <button id="btn-clear-lineup" class="btn-clear">🗑️ VACIAR ALINEACIÓN</button>
+    <button id="btn-save-lineup" class="btn-primary">🔐 GUARDAR ALINEACIÓN</button>
+    <button id="btn-clear-lineup" class="btn-clear">🗑️ VACIAR ALINEACIÓN</button>
 </div>
 
 <!-- MI EQUIPO -->

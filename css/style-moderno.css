@@ -425,14 +425,16 @@ html, body {
   .navbar { flex-wrap: wrap; height: auto; padding: 8px 12px; gap: 6px; }
   .nav-tabs { display: flex; order: 3; width: 100%; justify-content: space-between; gap: 2px; }
   .nav-tab { flex: 1; text-align: center; font-size: 9px; padding: 6px 4px; }
+  #modal-partido .modal { width: 98vw; }
+  #partido-content { padding: 10px; }
   .nav-logo { font-size: 18px; }
   .nav-user { gap: 6px; font-size: 11px; }
   .action-grid { grid-template-columns: 1fr; }
   .squad-grid { grid-template-columns: 1fr; }
   .login-card { width: 92%; padding: 32px 24px; }
   .jornada-side { display: none; }
-  .match-card { padding: 10px 8px; }
-  .match-team { gap: 6px; }
+  .match-card { padding: 10px 8px; flex-wrap: wrap; }
+  .match-team { gap: 6px; flex: 1; min-width: 80px; }
   .crest { width: 44px; height: 44px; }
   .crest img { width: 38px; height: 38px; }
   .team-name { font-size: 12px; }
