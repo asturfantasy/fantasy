@@ -19,21 +19,21 @@ function jornadadCerrada() {
   return new Date() > new Date(DEADLINE_JORNADA);
 }
 
-async function mostrarHistorial(nombre, club) {
+async function mostrarHistorial(nombre, club, posicion) {
   const modal = document.getElementById('modal-historial');
   const content = document.getElementById('historial-content');
   const titulo = document.getElementById('historial-titulo');
 
-  titulo.textContent = `${nombre} · ${club}`;
+  titulo.textContent = nombre;
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
 
   const { data, error } = await db
-      .from('jugadores')
-      .select('jornada, total_jornada, escudo_url, foto_url')
-      .eq('nombre', nombre)
-      .eq('club', club)
-      .order('jornada', { ascending: true });
+    .from('jugadores')
+    .select('jornada, total_jornada, escudo_url, foto_url, rival, es_local')
+    .eq('nombre', nombre)
+    .eq('club', club)
+    .order('jornada', { ascending: true });
 
   if (error || !data?.length) {
     content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>';
@@ -59,7 +59,7 @@ async function mostrarHistorial(nombre, club) {
       </div>
       <div>
         <div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--text)">${nombre}</div>
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${club}</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${posicion}</div>
       </div>
     </div>
     <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);
@@ -68,8 +68,13 @@ async function mostrarHistorial(nombre, club) {
     </div>
     ${data.map(d => `
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);
-                    width:28px;text-align:right;flex-shrink:0">J${d.jornada}</div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:80px">
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">J${d.jornada}</span>
+          ${d.rival ? `
+            <span style="font-size:10px">${d.es_local ? '🏠' : '✈️'}</span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${d.rival}</span>
+          ` : ''}
+        </div>
         <div style="flex:1;background:var(--surface);border-radius:4px;height:24px;overflow:hidden">
           <div style="height:100%;width:${Math.max((d.total_jornada / maxPts) * 100, 0)}%;
                       background:var(--neon);border-radius:4px;
@@ -480,15 +485,22 @@ function renderPitch() {
 
       if (jugador) {
         const esCap = capitan !== null && String(capitan) === String(jugador.id);
-        const circuloContenido = jugador.escudo_url
-          ? `<img src="${jugador.escudo_url}" alt="${jugador.club}"
-               width="28" height="28" style="object-fit:contain;border-radius:50%"
-               onerror="this.outerHTML='${jugador.nombre.substring(0,3).toUpperCase()}'">`
+        const circuloContenido = jugador.foto_url
+          ? `<img src="${jugador.foto_url}" alt="${jugador.nombre}"
+               width="46" height="46" style="object-fit:cover;border-radius:50%"
+               onerror="this.style.display='none'">`
           : jugador.nombre.substring(0,3).toUpperCase();
 
+        const escudoCirculo = jugador.escudo_url
+          ? `<img src="${jugador.escudo_url}" alt="${jugador.club}" width="16" height="16"
+               style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
+                      border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
+          : '';
+
         slot.innerHTML = `
-         <div class="player-circle ${fila.cls} ${esCap ? 'es-capitan' : ''}" style="overflow:visible;position:relative">
+          <div class="player-circle ${fila.cls} ${esCap ? 'es-capitan' : ''}" style="overflow:visible;position:relative">
             ${circuloContenido}
+            ${escudoCirculo}
             ${esCap ? '<span class="cap-badge">C</span>' : ''}
           </div>
           <div class="player-name">${jugador.nombre}</div>
@@ -668,7 +680,7 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   if (error) showToast('Error al guardar: ' + error.message, true);
   else {
     cambiosSinGuardar = false;
-    showToast('Alineación guardada ✓');
+    showToast('Alineación guardada');
   }
   });
 
@@ -723,15 +735,19 @@ async function loadMyTeam() {
 
   empty.style.display = 'none';
 
-  // Obtener escudos
+  // Obtener escudos y fotos
   const ids = data.map(j => j.jugador_id);
   const { data: jugData } = await db
     .from('jugadores')
-    .select('id, escudo_url')
+    .select('id, escudo_url, foto_url')
     .in('id', ids);
 
   const escudoMap = {};
-  (jugData || []).forEach(j => escudoMap[j.id] = j.escudo_url);
+  const fotoMap = {};
+  (jugData || []).forEach(j => {
+    escudoMap[j.id] = j.escudo_url;
+    fotoMap[j.id] = j.foto_url;
+  });
 
   // Obtener capitán
   const { data: capData } = await db
@@ -767,9 +783,11 @@ async function loadMyTeam() {
 
   grid.innerHTML = sorted.map(j => {
     const escudo = escudoMap[j.jugador_id];
-    const avatarContenido = escudo
-      ? `<img src="${escudo}" alt="${j.club}" width="30" height="30"
-           style="object-fit:contain"
+    const foto = fotoMap[j.jugador_id];
+
+    const avatarContenido = foto
+      ? `<img src="${foto}" width="40" height="40"
+           style="object-fit:cover;border-radius:50%"
            onerror="this.style.display='none'">`
       : j.nombre.substring(0,2).toUpperCase();
 
@@ -778,8 +796,13 @@ async function loadMyTeam() {
 
     return `<div class="player-card ${esCapitan ? 'card-capitan' : ''}">
       <div class="pc-avatar"
-           style="background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:hidden">
+           style="position:relative;background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:visible">
         ${avatarContenido}
+        ${escudo
+          ? `<img src="${escudo}" width="14" height="14"
+                 style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
+                        border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
+          : ''}
       </div>
       <div class="pc-info">
         <div class="pc-name">${j.nombre} ${esCapitan ? '⭐' : ''}</div>
@@ -801,6 +824,8 @@ async function loadMyTeam() {
   const inputNombre = document.getElementById('input-nombre-equipo');
   if (inputNombre && equipoData?.nombre_equipo) {
     inputNombre.value = equipoData.nombre_equipo;
+    document.querySelectorAll('.menu-nombre-equipo, #menu-nombre-equipo')
+      .forEach(el => el.value = equipoData.nombre_equipo);
   }
 }
 
@@ -933,8 +958,8 @@ async function loadRanking() {
         <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
         <td>
           <div class="rank-name" style="cursor:pointer;text-decoration:underline"
-               onclick="mostrarHistorial('${j.nombre}', '${j.club}')">${j.nombre}</div>
-          <div class="rank-team">${j.posicion}</div>
+                       onclick="mostrarHistorial('${j.nombre}', '${j.club}', '${j.posicion}')">${j.nombre}</div>
+                  <div class="rank-team">${j.posicion}</div>
         </td>
         <td>
           ${j.escudo_url ? `<img src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
