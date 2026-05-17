@@ -295,6 +295,7 @@ html, body {
 /* ── MODAL ── */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
+#modal-desglose { z-index: 300; }
 .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 360px; max-height: 70vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.15); }
 .modal-header { background: var(--bg3); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
 .modal-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text); }
