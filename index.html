@@ -49,14 +49,11 @@
     <span class="jornada-side" id="home-bienvenida"></span>
   </div>
   <main class="page-body">
-      <div style="background:var(--yellow);border-radius:20px;padding:10px 20px;
-            margin-bottom:16px;text-align:center;
-            font-family:var(--font-display);font-weight:700;font-size:10px;
-            letter-spacing:1px;text-transform:uppercase;color:var(--black);
-            box-shadow:0 2px 8px var(--neon-glow)">
-          La JORNADA 36 se activará el martes 19 de mayo
-      </div>
-    <div class="section-label"><strong>PLAYOFFS AUTONÓMICOS - SEMIFINALES IDA</strong></div>
+      <button class="action-btn" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:16px">
+          <span class="action-label">PUNTOS J<span id="btn-jornada-visible"></span></span>
+          <span class="action-desc">Consulta los puntos de la pasada jornada</span>
+      </button>
+    <div class="section-label"><strong>PLAYOFFS AUTONÓMICOS - SEMIFINALES VUELTA</strong></div>
     <div id="matches-container" class="matches-grid"></div>
     <div class="section-label" style="margin-top:28px;margin-bottom:14px"><strong>HORA DE LA ACCIÓN</strong></div>
     <div class="action-grid">
@@ -106,6 +103,7 @@
   <div class="round-header">
     <div class="round-badge">Jornada <span id="lineup-jornada">—</span></div>
   </div>
+    <div id="deadline-info" class="deadline-info"></div>
     <div id="presupuesto-info" style="display:flex;justify-content:space-between;
      align-items:center;padding:10px 24px;background:var(--bg2);
      border-bottom:1px solid var(--border)">
@@ -117,7 +115,6 @@
             125M
         </div>
     </div>
-    <div id="deadline-info" class="deadline-info"></div>
     <div style="padding:8px 24px;display:flex;justify-content:center;align-items:center;gap:12px">
         <select id="formation-select" class="formation-select" style="font-size:14px;padding:6px 10px">
             <option>4-3-3</option>
@@ -346,7 +343,7 @@
             <span class="modal-title" id="desglose-titulo">Desglose</span>
             <button class="modal-close" id="desglose-close">✕</button>
         </div>
-        <div style="padding:16px" id="desglose-content"></div>
+        <div style="padding:16px;overflow-y:auto;max-height:60vh" id="desglose-content"></div>
     </div>
 </div>
 
@@ -357,6 +354,21 @@
             <button class="modal-close" id="partido-close">✕</button>
         </div>
         <div style="padding:16px;overflow-y:auto;max-height:80vh" id="partido-content"></div>
+    </div>
+</div>
+
+<div id="modal-puntos-jornada" class="modal-overlay">
+    <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+            <span class="modal-title" id="puntos-jornada-titulo">Puntos Jornada</span>
+            <button class="modal-close" id="puntos-jornada-close">✕</button>
+        </div>
+        <div style="padding:16px">
+            <select id="puntos-equipo-select" class="formation-select" style="width:100%;margin-bottom:16px">
+                <option value="">— Selecciona un equipo —</option>
+            </select>
+            <div id="puntos-jornada-content"></div>
+        </div>
     </div>
 </div>
 

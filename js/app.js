@@ -15,6 +15,81 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+async function abrirConsultaPuntos() {
+  const modal = document.getElementById('modal-puntos-jornada');
+  const select = document.getElementById('puntos-equipo-select');
+  const content = document.getElementById('puntos-jornada-content');
+  const titulo = document.getElementById('puntos-jornada-titulo');
+
+  titulo.textContent = `Puntos Jornada ${JORNADA_VISIBLE}`;
+  content.innerHTML = '';
+  select.value = '';
+  modal.classList.add('open');
+
+  // Rellenar equipos
+  const clubes = [...new Set(PARTIDOS.flatMap(p => [p.local.abrev, p.visitante.abrev]))];
+  select.innerHTML = '<option value="">— Selecciona un equipo —</option>' +
+    clubes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  select.onchange = async () => {
+    const club = select.value;
+    if (!club) { content.innerHTML = ''; return; }
+
+    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+
+    const { data, error } = await db
+      .from('jugadores')
+      .select('nombre, posicion, total_jornada, foto_url, escudo_url, titular, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador')
+      .eq('club', club)
+      .eq('jornada', JORNADA_VISIBLE)
+      .order('total_jornada', { ascending: false });
+
+    if (error || !data?.length) {
+      content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>';
+      return;
+    }
+
+    const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+    const sorted = [...data].sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
+
+    content.innerHTML = sorted.map(j => `
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0;
+                  border-bottom:1px solid var(--border);cursor:pointer"
+           onclick="mostrarDesglose(${JSON.stringify(j).replace(/"/g, '&quot;')})">
+        <div style="position:relative;width:36px;height:36px;flex-shrink:0">
+          ${j.foto_url
+            ? `<img src="${j.foto_url}" width="36" height="36"
+                   style="object-fit:cover;border-radius:50%;border:1px solid var(--border)"
+                   onerror="this.style.display='none'">`
+            : `<div style="width:36px;height:36px;border-radius:50%;background:var(--surface);
+                           display:flex;align-items:center;justify-content:center;
+                           font-family:var(--font-display);font-size:13px;color:var(--text-muted)">
+                 ${j.nombre.substring(0,2).toUpperCase()}
+               </div>`
+          }
+          ${j.escudo_url
+            ? `<img src="${j.escudo_url}" width="14" height="14"
+                   style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
+                          border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
+            : ''}
+        </div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text)">${j.nombre}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${j.posicion}</div>
+        </div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">${j.total_jornada}</div>
+      </div>
+    `).join('');
+  };
+}
+
+document.getElementById('puntos-jornada-close')?.addEventListener('click', () => {
+  document.getElementById('modal-puntos-jornada').classList.remove('open');
+});
+document.getElementById('modal-puntos-jornada')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
 function actualizarPresupuesto() {
   const gastado = Object.values(seleccionados)
     .reduce((acc, j) => acc + (j.valor || 0), 0);
@@ -415,6 +490,9 @@ function loadHome() {
   const bienvenida = document.getElementById('home-bienvenida');
   if (bienvenida) bienvenida.textContent = '¡Bienvenido, ' + userName + '!';
 
+  const btnJ = document.getElementById('btn-jornada-visible');
+  if (btnJ) btnJ.textContent = JORNADA_VISIBLE;
+
   const container = document.getElementById('matches-container');
   container.innerHTML = PARTIDOS.map(p => `
     <div class="match-card">
@@ -441,15 +519,17 @@ function loadHome() {
           <div class="match-vs">${p.estadio}</div>
           <div class="match-date">${p.fecha}</div>
         `}
-        <button onclick="mostrarPartido('${p.local.abrev}', '${p.visitante.abrev}', '${p.local.nombre}', '${p.visitante.nombre}')"
-          style="background:var(--neon);color:var(--bg);border:none;border-radius:20px;
-                 padding:6px 14px;cursor:pointer;font-family:var(--font-display);
-                 font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;
-                 margin-top:6px;transition:all 0.2s;box-shadow:0 2px 8px var(--neon-glow);width:100%"
-          onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px var(--neon-glow)'"
-          onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 8px var(--neon-glow)'">
-          Consultar puntos
-        </button>
+        ${p.resultado?.finalizado ? `
+          <button onclick="mostrarPartido('${p.local.abrev}', '${p.visitante.abrev}', '${p.local.nombre}', '${p.visitante.nombre}')"
+            style="background:var(--neon);color:var(--bg);border:none;border-radius:20px;
+                   padding:6px 14px;cursor:pointer;font-family:var(--font-display);
+                   font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+                   margin-top:6px;transition:all 0.2s;box-shadow:0 2px 8px var(--neon-glow);width:100%"
+            onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px var(--neon-glow)'"
+            onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 8px var(--neon-glow)'">
+            Consultar puntos
+          </button>
+        ` : ''}
       </div>
       <div class="match-team right">
         <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
@@ -995,13 +1075,13 @@ async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion) {
 async function loadMyTeam() {
   if (!currentUser) return;
 
-  document.getElementById('myteam-jornada-num').textContent = JORNADA_ACTIVA;
+  document.getElementById('myteam-jornada-num').textContent = JORNADA_VISIBLE;
 
   const { data, error } = await db
     .from('mi_equipo_detalle')
     .select('*')
     .eq('user_id', currentUser.id)
-    .eq('jornada', JORNADA_ACTIVA)
+    .eq('jornada', JORNADA_VISIBLE)
     .order('posicion');
 
   const grid   = document.getElementById('myteam-grid');
@@ -1038,7 +1118,7 @@ async function loadMyTeam() {
     .from('mi_equipo')
     .select('jugador_id, capitan')
     .eq('user_id', currentUser.id)
-    .eq('jornada', JORNADA_ACTIVA)
+    .eq('jornada', JORNADA_VISIBLE)
     .eq('capitan', true)
     .single();
 
@@ -1058,8 +1138,8 @@ async function loadMyTeam() {
 
   banner.style.display = 'block';
   banner.innerHTML = `
-    <div class="saved-title">¡Este es tu once! Suerte</div>
-    <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_ACTIVA}</div>
+    <div class="saved-title">Este fue tu once la pasada jornada</div>
+    <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_VISIBLE}</div>
     <div class="saved-pts-high"><strong>${totalPuntos} PUNTOS</strong></div>
     <br>
     <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo?</button>
@@ -1121,8 +1201,7 @@ async function loadMyTeam() {
 const medalClass = pos => pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
 
 async function loadRanking() {
-  const jornada = JORNADA_ACTIVA;
-  document.getElementById('ranking-jornada-num').textContent = jornada;
+  document.getElementById('ranking-jornada-num').textContent = JORNADA_VISIBLE;
 
   // Eventos de las pestañas
   document.querySelectorAll('.ranking-tab').forEach(tab => {
@@ -1134,42 +1213,41 @@ async function loadRanking() {
     };
   });
 
-  // ── Clasificación semanal ──
   // ── Clasificación semanal con select ──
-    const selectSemanal = document.getElementById('semanal-jornada-select');
-    if (selectSemanal) {
-      selectSemanal.innerHTML = '';
-      for (let i = JORNADA_ACTIVA; i >= 1; i--) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = `Jornada ${i}`;
-        selectSemanal.appendChild(opt);
-      }
+  const cargarSemanal = async (jornadaSel) => {
+    const { data: semanal } = await db
+      .from('clasificacion_automatica')
+      .select('*')
+      .eq('jornada', jornadaSel)
+      .order('puntos', { ascending: false });
+
+    const tbody = document.getElementById('ranking-body');
+    if (!semanal?.length) {
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ${jornadaSel}</td></tr>`;
+    } else {
+      tbody.innerHTML = semanal.map((r, i) => `
+        <tr class="${medalClass(i+1)}">
+          <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+          <td><div class="rank-team">${r.nombre_equipo}</div></td>
+          <td><div class="rank-pts">${r.puntos}</div></td>
+        </tr>
+      `).join('');
     }
+  };
 
-    const cargarSemanal = async (jornadaSel) => {
-      const { data: semanal } = await db
-        .from('clasificacion_automatica')
-        .select('*')
-        .eq('jornada', jornadaSel)
-        .order('puntos', { ascending: false });
-
-      const tbody = document.getElementById('ranking-body');
-      if (!semanal?.length) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ${jornadaSel}</td></tr>`;
-      } else {
-        tbody.innerHTML = semanal.map((r, i) => `
-          <tr class="${medalClass(i+1)}">
-            <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
-            <td><div class="rank-team">${r.nombre_equipo}</div></td>
-            <td><div class="rank-pts">${r.puntos}</div></td>
-          </tr>
-        `).join('');
-      }
-    };
-
-    cargarSemanal(JORNADA_ACTIVA);
-    selectSemanal?.addEventListener('change', e => cargarSemanal(parseInt(e.target.value)));
+  const selectSemanal = document.getElementById('semanal-jornada-select');
+  if (selectSemanal) {
+    selectSemanal.innerHTML = '';
+    for (let i = JORNADA_ACTIVA; i >= 1; i--) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `Jornada ${i}`;
+      selectSemanal.appendChild(opt);
+    }
+    selectSemanal.value = JORNADA_VISIBLE;
+    cargarSemanal(JORNADA_VISIBLE);
+    selectSemanal.addEventListener('change', e => cargarSemanal(parseInt(e.target.value)));
+  }
 
   // ── Clasificación general ──
   const { data: general } = await db
@@ -1208,12 +1286,10 @@ async function loadRanking() {
         ${posiciones.map(p => `<option value="${p}">${p}</option>`).join('')}
       </select>
       <input id="filtro-nombre" type="text" placeholder="Buscar jugador..."
-              style="padding:8px 12px;font-family:var(--font-mono);font-size:13px;
-                     background:var(--surface);color:var(--text);border:1px solid var(--border);
-                     border-radius:8px;min-width:160px;">
-      <button id="btn-reset-filtros"">
-              Reiniciar filtros
-            </button>
+        style="padding:8px 12px;font-family:var(--font-mono);font-size:13px;
+               background:var(--surface);color:var(--text);border:1px solid var(--border);
+               border-radius:8px;min-width:160px;">
+      <button id="btn-reset-filtros">Reiniciar filtros</button>
     </div>
     <table class="ranking-table">
       <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
@@ -1222,9 +1298,9 @@ async function loadRanking() {
   `;
 
   const renderJugadores = () => {
-    const club    = document.getElementById('filtro-club').value;
-    const pos     = document.getElementById('filtro-pos').value;
-    const nombre  = document.getElementById('filtro-nombre').value.toLowerCase();
+    const club   = document.getElementById('filtro-club').value;
+    const pos    = document.getElementById('filtro-pos').value;
+    const nombre = document.getElementById('filtro-nombre').value.toLowerCase();
 
     const filtrados = (jugadores || []).filter(j =>
       (!club   || j.club === club) &&
@@ -1244,8 +1320,8 @@ async function loadRanking() {
         <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
         <td>
           <div class="rank-name" style="cursor:pointer;text-decoration:underline"
-                       onclick="mostrarHistorial('${j.nombre}', '${j.club}', '${j.posicion}')">${j.nombre}</div>
-                  <div class="rank-team">${j.posicion}</div>
+               onclick="mostrarHistorial('${j.nombre}', '${j.club}', '${j.posicion}')">${j.nombre}</div>
+          <div class="rank-team">${j.posicion}</div>
         </td>
         <td>
           ${j.escudo_url ? `<img src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
@@ -1268,18 +1344,19 @@ async function loadRanking() {
   });
 
   // ── Once de la semana ──
-    const selectOnce = document.getElementById('once-jornada-select');
-    if (selectOnce) {
-      selectOnce.innerHTML = '';
-      for (let i = JORNADA_ACTIVA; i >= 1; i--) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = `Jornada ${i}`;
-        selectOnce.appendChild(opt);
-      }
-      loadOnce(JORNADA_ACTIVA);
-      selectOnce.addEventListener('change', e => loadOnce(parseInt(e.target.value)));
+  const selectOnce = document.getElementById('once-jornada-select');
+  if (selectOnce) {
+    selectOnce.innerHTML = '';
+    for (let i = JORNADA_ACTIVA; i >= 1; i--) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `Jornada ${i}`;
+      selectOnce.appendChild(opt);
     }
+    selectOnce.value = JORNADA_VISIBLE;
+    loadOnce(JORNADA_VISIBLE);
+    selectOnce.addEventListener('change', e => loadOnce(parseInt(e.target.value)));
+  }
 }
 
 

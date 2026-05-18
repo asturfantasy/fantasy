@@ -586,7 +586,7 @@ html, body {
 .btn-toggle-theme:hover { background: var(--bg3); color: var(--text); }
 
 .deadline-info {
-  margin: 12px 24px 0;
+  margin: 4px 24px 0;
   border-radius: var(--radius-sm);
   padding: 12px 20px;
   text-align: center;

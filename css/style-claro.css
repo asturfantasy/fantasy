@@ -489,7 +489,7 @@ html, body {
 }
 
 .deadline-info {
-  margin: 12px 24px 0;
+  margin: 4px 24px 0;
   border-radius: var(--radius-sm);
   padding: 12px 20px;
   text-align: center;
@@ -499,6 +499,7 @@ html, body {
   letter-spacing: 2px;
   text-transform: uppercase;
 }
+
 .deadline-abierto {
   display: block;
   background: black;
