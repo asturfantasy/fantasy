@@ -15,6 +15,17 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+function actualizarPresupuesto() {
+  const gastado = Object.values(seleccionados)
+    .reduce((acc, j) => acc + (j.valor || 0), 0);
+  const disponible = PRESUPUESTO - gastado;
+  const el = document.getElementById('presupuesto-valor');
+  if (el) {
+    el.textContent = disponible.toFixed(1) + 'M';
+    el.style.color = disponible < 0 ? 'var(--red)' : disponible < 10 ? 'var(--amber)' : 'var(--neon)';
+  }
+}
+
 function jornadadCerrada() {
   return new Date() > new Date(DEADLINE_JORNADA);
 }
@@ -652,7 +663,10 @@ async function loadLineup() {
     }
   }
 
-  setTimeout(() => renderPitch(), 100);
+  setTimeout(() => {
+    renderPitch();
+    actualizarPresupuesto();
+  }, 100);
 }
 
 function renderPitch() {
@@ -797,7 +811,10 @@ function openModal(slotId, posicion, cls) {
             ${j.rival ? `· vs ${j.rival} (${j.es_local ? '🏠' : '✈️'})` : ''}
           </div>
         </div>
-        <div class="modal-player-pts">${posicion === 'ENT' ? (j.puntos_entrenador || 0) : j.puntos_total}</div>
+        <div style="text-align:right">
+          <div class="modal-player-pts">${posicion === 'ENT' ? (j.puntos_entrenador || 0) : j.puntos_total}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">${j.valor || 0}M</div>
+        </div>
       </div>`;
     }).join('');
 
@@ -809,6 +826,7 @@ function openModal(slotId, posicion, cls) {
         closeModal();
         renderPitch();
         actualizarSelectCapitan();
+        actualizarPresupuesto();
       });
     });
   };
@@ -879,6 +897,11 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
 
   if (Object.keys(seleccionados).length < totalSlots) {
     showToast('¡Faltan jugadores por seleccionar! Completa tu once', true);
+    return;
+  }
+  const gastado = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
+  if (gastado > PRESUPUESTO) {
+    showToast('Has superado el presupuesto disponible', true);
     return;
   }
 
@@ -998,14 +1021,16 @@ async function loadMyTeam() {
   const ids = data.map(j => j.jugador_id);
   const { data: jugData } = await db
     .from('jugadores')
-    .select('id, escudo_url, foto_url')
+    .select('id, escudo_url, foto_url, valor')
     .in('id', ids);
 
   const escudoMap = {};
   const fotoMap = {};
+  const valorMap = {};
   (jugData || []).forEach(j => {
     escudoMap[j.id] = j.escudo_url;
     fotoMap[j.id] = j.foto_url;
+    valorMap[j.id] = j.valor;
   });
 
   // Obtener capitán
@@ -1067,7 +1092,7 @@ async function loadMyTeam() {
       </div>
       <div class="pc-info">
         <div class="pc-name">${j.nombre} ${esCapitan ? '⭐' : ''}</div>
-        <div class="pc-meta">${j.posicion} · ${j.club}${esCapitan ? ' · Capitán - Puntúa doble' : ''}</div>
+        <div class="pc-meta">${j.posicion} · ${j.club} · ${valorMap[j.jugador_id] || 0}M${esCapitan ? ' · Capitán - Puntúa doble' : ''}</div>
       </div>
       <div class="pc-pts">
         ${puntosFinales}

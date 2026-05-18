@@ -3,6 +3,7 @@ const SUPABASE_KEY = 'sb_publishable_8aNRtGX0cHoNcaJHv9ASOw_Fz-3Of-2';
 
 const JORNADA_ACTIVA = 35;
 const DEADLINE_JORNADA = '2026-05-17T17:00:00';
+const PRESUPUESTO = 125;
 
 
 // Actualiza los partidos cada jornada.
