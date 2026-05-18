@@ -773,7 +773,7 @@ async function exportarAlineacion() {
     useCORS: true,
     allowTaint: true,
     scale: 2,
-    backgroundColor: '#1a1a1a'
+    backgroundColor: '#ffffff'
   });
 
   area.style.display = '';
