@@ -1450,10 +1450,10 @@ async function loadOnce(jornada) {
   const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
   data.forEach(j => porPos[j.posicion]?.push(j));
 
-  const portero = porPos.POR.slice(0, 1);
-  const defs = porPos.DEF.sort((a, b) => b.puntos - a.puntos);
-  const meds = porPos.MED.sort((a, b) => b.puntos - a.puntos);
-  const dels = porPos.DEL.sort((a, b) => b.puntos - a.puntos);
+  const portero = porPos.POR.sort((a, b) => b.puntos - a.puntos || a.valor - b.valor).slice(0, 1);
+  const defs = porPos.DEF.sort((a, b) => b.puntos - a.puntos || a.valor - b.valor);
+  const meds = porPos.MED.sort((a, b) => b.puntos - a.puntos || a.valor - b.valor);
+  const dels = porPos.DEL.sort((a, b) => b.puntos - a.puntos || a.valor - b.valor);
 
   let defOnce = defs.slice(0, 3);
   let medOnce = meds.slice(0, 3);
@@ -1463,7 +1463,7 @@ async function loadOnce(jornada) {
     ...defs.slice(3, 5).map(j => ({ ...j, _pos: 'DEF' })),
     ...meds.slice(3, 4).map(j => ({ ...j, _pos: 'MED' })),
     ...dels.slice(1, 3).map(j => ({ ...j, _pos: 'DEL' })),
-  ].sort((a, b) => b.puntos - a.puntos);
+  ].sort((a, b) => b.puntos - a.puntos || a.valor - b.valor);
 
   let huecos = 3;
   for (const c of candidatos) {
