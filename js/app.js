@@ -1031,7 +1031,7 @@ document.getElementById('btn-clear-lineup').addEventListener('click', async () =
 const POS_COLORS = { POR:'var(--yellow)', DEF:'var(--blue)', MED:'var(--green)', DEL:'var(--red)', ENT:'black' };
 const POS_TEXT   = { POR:'var(--black)',   DEF:'white',       MED:'var(--black)', DEL:'white',    ENT:'white' };
 
-async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion) {
+async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion, jornada = JORNADA_VISIBLE) {
   const modal = document.getElementById('modal-desglose');
   const content = document.getElementById('desglose-content');
   document.getElementById('desglose-titulo').textContent = nombre;
@@ -1039,9 +1039,9 @@ async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion) {
 
   const { data, error } = await db
     .from('jugadores')
-    .select('titular, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, total_jornada')
+    .select('titular, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, total_jornada, puntos_entrenador')
     .eq('id', jugadorId)
-    .eq('jornada', JORNADA_ACTIVA)
+    .eq('jornada', jornada)
     .single();
 
   if (error || !data) {
@@ -1075,13 +1075,32 @@ async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion) {
 async function loadMyTeam() {
   if (!currentUser) return;
 
-  document.getElementById('myteam-jornada-num').textContent = JORNADA_VISIBLE;
+  const selectMyTeam = document.getElementById('myteam-jornada-select');
+  if (selectMyTeam) {
+    selectMyTeam.innerHTML = '';
+    for (let i = JORNADA_VISIBLE; i >= 1; i--) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `J${i}`;
+      selectMyTeam.appendChild(opt);
+    }
+    selectMyTeam.value = JORNADA_VISIBLE;
+    selectMyTeam.onchange = e => cargarMyTeam(parseInt(e.target.value));
+  }
+
+  await cargarMyTeam(JORNADA_VISIBLE);
+}
+
+async function cargarMyTeam(jornada) {
+  if (!currentUser) return;
+
+  document.getElementById('myteam-jornada-num').textContent = jornada;
 
   const { data, error } = await db
     .from('mi_equipo_detalle')
     .select('*')
     .eq('user_id', currentUser.id)
-    .eq('jornada', JORNADA_VISIBLE)
+    .eq('jornada', jornada)
     .order('posicion');
 
   const grid   = document.getElementById('myteam-grid');
@@ -1097,7 +1116,6 @@ async function loadMyTeam() {
 
   empty.style.display = 'none';
 
-  // Obtener escudos y fotos
   const ids = data.map(j => j.jugador_id);
   const { data: jugData } = await db
     .from('jugadores')
@@ -1113,12 +1131,11 @@ async function loadMyTeam() {
     valorMap[j.id] = j.valor;
   });
 
-  // Obtener capitán
   const { data: capData } = await db
     .from('mi_equipo')
     .select('jugador_id, capitan')
     .eq('user_id', currentUser.id)
-    .eq('jornada', JORNADA_VISIBLE)
+    .eq('jornada', jornada)
     .eq('capitan', true)
     .single();
 
@@ -1127,22 +1144,18 @@ async function loadMyTeam() {
   const orden = ['POR','DEF','MED','DEL','ENT'];
   const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion));
 
-  // Total de puntos (capitán cuenta doble)
   const totalPuntos = sorted.reduce((acc, j) => {
     const pts = j.puntos || 0;
     return acc + (j.jugador_id === capitanId ? pts * 2 : pts);
   }, 0);
 
   const formacion = data[0]?.formacion || '—';
-  const nombres = sorted.map(j => j.nombre).join(', ');
 
   banner.style.display = 'block';
   banner.innerHTML = `
-    <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_VISIBLE}</div>
+    <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${jornada}</div>
     <div class="saved-pts-high"><strong>${totalPuntos} PUNTOS</strong></div>
   `;
-
-   //<button class="btn-modificar" data-target="lineup">¿Deseas modificarlo?</button>
 
   grid.innerHTML = sorted.map(j => {
     const escudo = escudoMap[j.jugador_id];
@@ -1159,7 +1172,7 @@ async function loadMyTeam() {
 
     return `<div class="player-card ${esCapitan ? 'card-capitan' : ''}"
                  style="cursor:pointer"
-                 onclick="mostrarDesgloseMyTeam('${j.jugador_id}', '${j.nombre}', '${j.posicion}')">
+                 onclick="mostrarDesgloseMyTeam('${j.jugador_id}', '${j.nombre}', '${j.posicion}', ${jornada})">
       <div class="pc-avatar"
            style="position:relative;background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:visible">
         ${avatarContenido}
@@ -1175,7 +1188,6 @@ async function loadMyTeam() {
       </div>
       <div class="pc-pts">
         ${puntosFinales}
-        ${esCapitan ? '<span style="font-size:11px;display:block;color:var(--pitch-dark)"></span>' : ''}
       </div>
     </div>`;
   }).join('');
