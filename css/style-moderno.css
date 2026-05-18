@@ -344,7 +344,7 @@ html, body {
   letter-spacing: 0.5px;
   cursor: pointer;
   width: calc(100% - 48px);
-  margin: 8px 24px 8px;
+   margin: 8px 24px;
   transition: all 0.2s;
   box-shadow: 0 0 20px var(--neon-glow);
 }
@@ -486,7 +486,7 @@ html, body {
   text-transform: uppercase;
   cursor: pointer;
   width: calc(100% - 48px);
-  margin: 0 24px 20px;
+  margin: 8px 24px;
   transition: all 0.2s;
 }
 

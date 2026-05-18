@@ -654,6 +654,7 @@ async function loadLineup() {
      `;
      document.getElementById('btn-save-lineup').style.display = 'none';
      document.getElementById('btn-clear-lineup').style.display = 'none';
+     document.getElementById('btn-export-png').style.display = 'none';
      const capitanWrapper = document.getElementById('capitan-wrapper');
      if (capitanWrapper) capitanWrapper.style.display = 'none';
      const btnConsultar = document.getElementById('btn-consultar-equipo');
@@ -663,6 +664,7 @@ async function loadLineup() {
    // Restaurar botones y selector por si venía de jornada cerrada
      document.getElementById('btn-save-lineup').style.display = '';
      document.getElementById('btn-clear-lineup').style.display = '';
+     document.getElementById('btn-export-png').style.display = '';
      const capitanWrapper = document.getElementById('capitan-wrapper');
      if (capitanWrapper) capitanWrapper.style.display = '';
      const btnConsultar = document.getElementById('btn-consultar-equipo');
@@ -747,6 +749,45 @@ async function loadLineup() {
     renderPitch();
     actualizarPresupuesto();
   }, 100);
+}
+
+async function exportarAlineacion() {
+  const { data: equipoData } = await db
+    .from('equipos')
+    .select('nombre_equipo')
+    .eq('user_id', currentUser.id)
+    .single();
+  const nombreEquipo = equipoData?.nombre_equipo || 'Mi Equipo';
+
+  const formacion = document.getElementById('formation-select')?.value || '—';
+  document.getElementById('export-nombre-equipo').textContent = nombreEquipo;
+  document.getElementById('export-formacion').textContent = formacion;
+  document.getElementById('export-jornada').textContent = JORNADA_ACTIVA;
+
+  const area = document.getElementById('export-area');
+  const header = document.getElementById('export-header');
+  area.style.display = 'block';
+  header.style.display = 'flex';
+
+  const canvas = await html2canvas(area, {
+    useCORS: true,
+    allowTaint: true,
+    scale: 2,
+    backgroundColor: '#1a1a1a'
+  });
+
+  area.style.display = '';
+  header.style.display = 'none';
+
+  if (canvas.width === 0 || canvas.height === 0) {
+    showToast('Error al generar la imagen', true);
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.download = `asturfantasy-j${JORNADA_ACTIVA}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 }
 
 function renderPitch() {
@@ -1388,6 +1429,7 @@ async function guardarNombreEquipo() {
 }
 
 document.getElementById('btn-guardar-equipo')?.addEventListener('click', guardarNombreEquipo);
+document.getElementById('btn-export-png')?.addEventListener('click', exportarAlineacion);
 
 async function loadOnce(jornada) {
   const container = document.getElementById('once-container');

@@ -125,13 +125,23 @@
             <option>5-3-2</option>
         </select>
     </div>
-  <div class="pitch-wrapper">
-    <div id="pitch" class="pitch">
-      <div class="pitch-stripes" id="pitch-stripes"></div>
-      <div class="pitch-halftime"></div>
-      <div class="pitch-center-circle"></div>
+    <div id="export-area">
+        <div id="export-header" style="display:none;padding:12px 16px;justify-content:space-between;align-items:center">
+            <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text)">
+                <span id="export-nombre-equipo">Mi Equipo</span>
+            </div>
+            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);text-align:right">
+                <span id="export-formacion">—</span> · J<span id="export-jornada">—</span>
+            </div>
+        </div>
+        <div class="pitch-wrapper">
+            <div id="pitch" class="pitch">
+                <div class="pitch-stripes" id="pitch-stripes"></div>
+                <div class="pitch-halftime"></div>
+                <div class="pitch-center-circle"></div>
+            </div>
+        </div>
     </div>
-  </div>
     <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
     <div id="capitan-wrapper" style="padding:0 24px;margin-bottom:8px">
         <div class="capitan-card">
@@ -144,6 +154,7 @@
     </div>
     <button id="btn-save-lineup" class="btn-primary">🔐 GUARDAR ALINEACIÓN</button>
     <button id="btn-clear-lineup" class="btn-clear">🗑️ VACIAR ALINEACIÓN</button>
+    <button id="btn-export-png" class="btn-primary" style="background:yellow;color:black">📤 COMPARTIR ALINEACIÓN</button>
 </div>
 
 <!-- MI EQUIPO -->
@@ -400,6 +411,7 @@
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
