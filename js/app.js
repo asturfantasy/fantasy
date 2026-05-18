@@ -1138,12 +1138,11 @@ async function loadMyTeam() {
 
   banner.style.display = 'block';
   banner.innerHTML = `
-    <div class="saved-title">Este fue tu once la pasada jornada</div>
     <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${JORNADA_VISIBLE}</div>
     <div class="saved-pts-high"><strong>${totalPuntos} PUNTOS</strong></div>
-    <br>
-    <button class="btn-modificar" data-target="lineup">¿Deseas modificarlo?</button>
   `;
+
+   //<button class="btn-modificar" data-target="lineup">¿Deseas modificarlo?</button>
 
   grid.innerHTML = sorted.map(j => {
     const escudo = escudoMap[j.jugador_id];
