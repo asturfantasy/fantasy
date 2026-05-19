@@ -6,6 +6,9 @@
 
 let currentUser = null;
 let cambiosSinGuardar = false;
+let paginaActual = 1;
+const POR_PAGINA = 25;
+let renderJugadoresFn = null;
 
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
@@ -58,7 +61,7 @@ async function abrirConsultaPuntos() {
            onclick="mostrarDesglose(${JSON.stringify(j).replace(/"/g, '&quot;')})">
         <div style="position:relative;width:36px;height:36px;flex-shrink:0">
           ${j.foto_url
-            ? `<img src="${j.foto_url}" width="36" height="36"
+            ? `<img loading="lazy" src="${j.foto_url}" width="36" height="36"
                    style="object-fit:cover;border-radius:50%;border:1px solid var(--border)"
                    onerror="this.style.display='none'">`
             : `<div style="width:36px;height:36px;border-radius:50%;background:var(--surface);
@@ -68,7 +71,7 @@ async function abrirConsultaPuntos() {
                </div>`
           }
           ${j.escudo_url
-            ? `<img src="${j.escudo_url}" width="14" height="14"
+            ? `<img loading="lazy" src="${j.escudo_url}" width="14" height="14"
                    style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                           border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
             : ''}
@@ -138,8 +141,8 @@ async function mostrarHistorial(nombre, club, posicion) {
                   border:2px solid var(--border);display:flex;align-items:center;
                   justify-content:center;font-family:var(--font-display);font-size:22px;
                   color:var(--text-muted);flex-shrink:0;position:relative">
-        ${foto ? `<img src="${foto}" width="64" height="64" style="object-fit:cover;border-radius:50%">` : nombre.substring(0,2).toUpperCase()}
-        ${escudo ? `<img src="${escudo}" width="20" height="20"
+        ${foto ? `<img loading="lazy" src="${foto}" width="64" height="64" style="object-fit:cover;border-radius:50%">` : nombre.substring(0,2).toUpperCase()}
+        ${escudo ? `<img loading="lazy" src="${escudo}" width="20" height="20"
                         style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                                border-radius:50%;background:var(--bg2);border:1px solid var(--border)">` : ''}
       </div>
@@ -238,7 +241,7 @@ const renderJugador = (j, alineacion = 'left') => `
        onclick="mostrarDesglose(${JSON.stringify(j).replace(/"/g, '&quot;')})">
     <div style="position:relative;width:32px;height:32px;flex-shrink:0">
         ${j.foto_url
-          ? `<img src="${j.foto_url}" width="32" height="32"
+          ? `<img loading="lazy" src="${j.foto_url}" width="32" height="32"
                style="object-fit:cover;border-radius:50%;border:1px solid var(--border)"
                onerror="this.style.display='none'">`
           : `<div style="width:32px;height:32px;border-radius:50%;background:var(--surface);
@@ -248,7 +251,7 @@ const renderJugador = (j, alineacion = 'left') => `
              </div>`
         }
         ${j.escudo_url
-          ? `<img src="${j.escudo_url}" width="12" height="12"
+          ? `<img loading="lazy" src="${j.escudo_url}" width="12" height="12"
                style="position:absolute;bottom:-1px;right:-1px;object-fit:contain;
                       border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
           : ''}
@@ -362,6 +365,11 @@ document.getElementById('desglose-close')?.addEventListener('click', () => {
 document.getElementById('modal-desglose')?.addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
+
+function cambiarPagina(dir) {
+  paginaActual += dir;
+  if (renderJugadoresFn) renderJugadoresFn();
+}
 
 function toggleUserMenu() {
   const menus = ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking', 'user-menu-criterios'];
@@ -499,7 +507,7 @@ function loadHome() {
       <div class="match-team">
         <div class="crest" style="background:${p.local.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.local.escudo_url
-            ? `<img src="${p.local.escudo_url}" alt="${p.local.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
+            ? `<img loading="lazy" src="${p.local.escudo_url}" alt="${p.local.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
             : p.local.abrev}
         </div>
         <div>
@@ -534,7 +542,7 @@ function loadHome() {
       <div class="match-team right">
         <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.visitante.escudo_url
-            ? `<img src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
+            ? `<img loading="lazy" src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
             : p.visitante.abrev}
         </div>
         <div style="text-align:right">
@@ -827,13 +835,13 @@ function renderPitch() {
       if (jugador) {
         const esCap = capitan !== null && String(capitan) === String(jugador.id);
         const circuloContenido = jugador.foto_url
-          ? `<img src="${jugador.foto_url}" alt="${jugador.nombre}"
+          ? `<img loading="lazy" src="${jugador.foto_url}" alt="${jugador.nombre}"
                width="46" height="46" style="object-fit:cover;border-radius:50%"
                onerror="this.style.display='none'">`
           : jugador.nombre.substring(0,3).toUpperCase();
 
         const escudoCirculo = jugador.escudo_url
-          ? `<img src="${jugador.escudo_url}" alt="${jugador.club}" width="16" height="16"
+          ? `<img loading="lazy" src="${jugador.escudo_url}" alt="${jugador.club}" width="16" height="16"
                style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                       border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
           : '';
@@ -905,7 +913,7 @@ function openModal(slotId, posicion, cls) {
       const escudo = `
         <div style="position:relative;width:36px;height:36px;flex-shrink:0">
           ${j.foto_url
-            ? `<img src="${j.foto_url}" width="36" height="36"
+            ? `<img loading="lazy" src="${j.foto_url}" width="36" height="36"
                      style="object-fit:cover;border-radius:50%;border:2px solid var(--border)"
                      onerror="this.style.display='none'">`
             : `<div style="width:36px;height:36px;border-radius:50%;
@@ -916,7 +924,7 @@ function openModal(slotId, posicion, cls) {
                </div>`
           }
           ${j.escudo_url
-            ? `<img src="${j.escudo_url}" width="14" height="14"
+            ? `<img loading="lazy" src="${j.escudo_url}" width="14" height="14"
                      style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                             border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
             : ''}
@@ -1203,7 +1211,7 @@ async function cargarMyTeam(jornada) {
     const foto = fotoMap[j.jugador_id];
 
     const avatarContenido = foto
-      ? `<img src="${foto}" width="40" height="40"
+      ? `<img loading="lazy" src="${foto}" width="40" height="40"
            style="object-fit:cover;border-radius:50%"
            onerror="this.style.display='none'">`
       : j.nombre.substring(0,2).toUpperCase();
@@ -1218,7 +1226,7 @@ async function cargarMyTeam(jornada) {
            style="position:relative;background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:visible">
         ${avatarContenido}
         ${escudo
-          ? `<img src="${escudo}" width="14" height="14"
+          ? `<img loading="lazy" src="${escudo}" width="14" height="14"
                  style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                         border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
           : ''}
@@ -1347,9 +1355,12 @@ async function loadRanking() {
       <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
       <tbody id="ranking-jugadores-body"></tbody>
     </table>
+    <div id="jugadores-paginador"></div>
   `;
 
-  const renderJugadores = () => {
+  paginaActual = 1;
+
+  renderJugadoresFn = () => {
     const club   = document.getElementById('filtro-club').value;
     const pos    = document.getElementById('filtro-pos').value;
     const nombre = document.getElementById('filtro-nombre').value.toLowerCase();
@@ -1360,6 +1371,11 @@ async function loadRanking() {
       (!nombre || j.nombre.toLowerCase().includes(nombre))
     );
 
+    const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA);
+    if (paginaActual > totalPaginas) paginaActual = 1;
+    const inicio = (paginaActual - 1) * POR_PAGINA;
+    const paginados = filtrados.slice(inicio, inicio + POR_PAGINA);
+
     const tbody = document.getElementById('ranking-jugadores-body');
 
     if (!filtrados.length) {
@@ -1367,32 +1383,52 @@ async function loadRanking() {
       return;
     }
 
-    tbody.innerHTML = filtrados.map((j, i) => `
-      <tr class="${medalClass(i+1)}">
-        <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+    tbody.innerHTML = paginados.map((j, i) => `
+      <tr class="${medalClass(inicio + i + 1)}">
+        <td><span class="rank-pos ${medalClass(inicio + i + 1)}">${inicio + i + 1}</span></td>
         <td>
           <div class="rank-name" style="cursor:pointer;text-decoration:underline"
                onclick="mostrarHistorial('${j.nombre}', '${j.club}', '${j.posicion}')">${j.nombre}</div>
           <div class="rank-team">${j.posicion}</div>
         </td>
         <td>
-          ${j.escudo_url ? `<img src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
+          ${j.escudo_url ? `<img loading="lazy" src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
           <span class="rank-team">${j.club}</span>
         </td>
         <td><div class="rank-pts">${j.puntos_total}</div></td>
       </tr>
     `).join('');
+
+    const paginador = document.getElementById('jugadores-paginador');
+    if (paginador) {
+      paginador.innerHTML = totalPaginas > 1 ? `
+        <div style="display:flex;justify-content:center;align-items:center;gap:12px;padding:16px 0">
+          <button onclick="cambiarPagina(-1)"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
+                   padding:6px 14px;cursor:pointer;font-family:var(--font-display);color:var(--text)"
+            ${paginaActual === 1 ? 'disabled' : ''}>← Anterior</button>
+          <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">
+            ${paginaActual} / ${totalPaginas}
+          </span>
+          <button onclick="cambiarPagina(1)"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
+                   padding:6px 14px;cursor:pointer;font-family:var(--font-display);color:var(--text)"
+            ${paginaActual === totalPaginas ? 'disabled' : ''}>Siguiente →</button>
+        </div>
+      ` : '';
+    }
   };
 
-  renderJugadores();
-  document.getElementById('filtro-club').addEventListener('change', renderJugadores);
-  document.getElementById('filtro-pos').addEventListener('change', renderJugadores);
-  document.getElementById('filtro-nombre').addEventListener('input', renderJugadores);
+  renderJugadoresFn();
+  document.getElementById('filtro-club').addEventListener('change', renderJugadoresFn);
+  document.getElementById('filtro-pos').addEventListener('change', renderJugadoresFn);
+  document.getElementById('filtro-nombre').addEventListener('input', renderJugadoresFn);
   document.getElementById('btn-reset-filtros').addEventListener('click', () => {
     document.getElementById('filtro-club').value = '';
     document.getElementById('filtro-pos').value = '';
     document.getElementById('filtro-nombre').value = '';
-    renderJugadores();
+    paginaActual = 1;
+    renderJugadoresFn();
   });
 
   // ── Once de la semana ──
@@ -1511,7 +1547,7 @@ async function loadOnce(jornada) {
           <div style="display:flex;align-items:center;gap:12px;padding:10px 0;
                       border-bottom:1px solid var(--border)">
             ${j.escudo_url
-              ? `<img src="${j.escudo_url}" width="28" height="28" style="object-fit:contain" onerror="this.style.display='none'">`
+              ? `<img loading="lazy" src="${j.escudo_url}" width="28" height="28" style="object-fit:contain" onerror="this.style.display='none'">`
               : `<div style="width:28px;height:28px;background:var(--surface);border-radius:50%;
                              display:flex;align-items:center;justify-content:center;
                              font-family:var(--font-display);font-size:10px">${j.club}</div>`
