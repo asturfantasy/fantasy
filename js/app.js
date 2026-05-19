@@ -878,8 +878,24 @@ function openModal(slotId, posicion, cls) {
   const colores    = { gk:'var(--amber)', def:'var(--blue)', mid:'var(--ink)', fwd:'var(--red)', ent:'black' };
   const textoCols  = { gk:'var(--ink)',   def:'white',       mid:'var(--cream)', fwd:'white',    ent:'white' };
 
+  const getPresupuestoDisponible = () => {
+    const gastado = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
+    return (PRESUPUESTO - gastado).toFixed(1);
+  };
+
+  let soloDisponibles = false;
+
   list.innerHTML = `
     <div style="padding:12px 20px;border-bottom:1px solid var(--cream-dark);position:sticky;top:0;background:var(--cream);z-index:1">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:1px">
+          PRESUPUESTO DISPONIBLE
+        </span>
+        <span id="modal-presupuesto" style="font-family:var(--font-display);font-weight:700;
+              font-size:16px;color:var(--neon)">
+          ${getPresupuestoDisponible()}M
+        </span>
+      </div>
       <input id="modal-search" type="text" placeholder="Buscar jugador..."
         style="width:100%;padding:8px 12px;font-family:var(--font-mono);font-size:13px;
                border:2px solid var(--ink);border-radius:4px;background:var(--white);color:var(--ink);margin-bottom:8px">
@@ -888,6 +904,12 @@ function openModal(slotId, posicion, cls) {
                font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:1px;
                text-transform:uppercase;cursor:pointer;">
         🗑 Vaciar posición
+      </button>
+      <button id="btn-filtro-presupuesto"
+        style="width:100%;padding:8px;background:var(--neon);color:var(--bg);border:none;border-radius:4px;
+               font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:1px;
+               text-transform:uppercase;cursor:pointer;margin-top:6px;">
+        Dentro del presupuesto
       </button>
     </div>
     <div id="modal-players"></div>
@@ -899,12 +921,29 @@ function openModal(slotId, posicion, cls) {
     closeModal();
     renderPitch();
     actualizarSelectCapitan();
+    actualizarPresupuesto();
+  });
+
+  document.getElementById('btn-filtro-presupuesto').addEventListener('click', () => {
+    soloDisponibles = !soloDisponibles;
+    const btn = document.getElementById('btn-filtro-presupuesto');
+    btn.textContent = soloDisponibles ? '👁 Mostrar todos' : 'Dentro del presupuesto';
+    btn.style.background = soloDisponibles ? 'var(--amber)' : 'var(--neon)';
+    renderLista(document.getElementById('modal-search').value);
   });
 
   const renderLista = (filtro = '') => {
+    const disponible = parseFloat(getPresupuestoDisponible());
+    const modalPresupuesto = document.getElementById('modal-presupuesto');
+    if (modalPresupuesto) {
+      modalPresupuesto.textContent = disponible.toFixed(1) + 'M';
+      modalPresupuesto.style.color = disponible < 0 ? 'var(--red)' : disponible < 10 ? 'var(--amber)' : 'var(--neon)';
+    }
+
     const filtrados = jugadoresPorPos[posicion].filter(j =>
-      j.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
-      j.club.toLowerCase().includes(filtro.toLowerCase())
+      (j.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+      j.club.toLowerCase().includes(filtro.toLowerCase())) &&
+      (!soloDisponibles || (j.valor || 0) <= disponible)
     );
 
     document.getElementById('modal-players').innerHTML = filtrados.map(j => {
