@@ -391,21 +391,35 @@ function toggleUserMenu() {
 
 function toggleTheme() {
   const link = document.querySelector('link[rel="stylesheet"][href*="style"]');
-  const esDark = link.href.includes('style-moderno');
-  link.href = esDark ? 'css/style-claro.css' : 'css/style-moderno.css';
-  const btn = document.getElementById('btn-toggle-theme');
-  if (btn) btn.textContent = esDark ? 'Modo oscuro' : 'Modo claro';
-  localStorage.setItem('theme', esDark ? 'claro' : 'oscuro');
+  const href = link.href;
+
+  if (href.includes('style-moderno')) {
+    link.href = 'css/style-claro.css';
+    localStorage.setItem('theme', 'claro');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🔵 Modo azul claro');
+  } else if (href.includes('style-claro')) {
+    link.href = 'css/style-azul-claro.css';
+    localStorage.setItem('theme', 'azul-claro');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌑 Modo azul oscuro');
+  } else if (href.includes('style-azul-claro')) {
+    link.href = 'css/style-azul.css';
+    localStorage.setItem('theme', 'azul');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌙 Modo oscuro');
+  } else {
+    link.href = 'css/style-moderno.css';
+    localStorage.setItem('theme', 'oscuro');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '☀️ Modo claro');
+  }
 }
 
 // Recordar tema al cargar
 const temaGuardado = localStorage.getItem('theme');
 if (temaGuardado === 'claro') {
   document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-claro.css';
-  document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('btn-toggle-theme');
-    if (btn) btn.textContent = 'Modo oscuro';
-  });
+} else if (temaGuardado === 'azul') {
+  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-azul.css';
+} else if (temaGuardado === 'azul-claro') {
+  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-azul-claro.css';
 }
 
 document.getElementById('btn-toggle-theme')?.addEventListener('click', toggleTheme);
@@ -575,7 +589,7 @@ function actualizarSelectCapitan() {
   const sel = document.getElementById('capitan-select');
   if (!sel) return;
   const valorActual = sel.value;
-  sel.innerHTML = '<option value="">Elige bien, será determinante</option>';
+  sel.innerHTML = '<option value="">Elige un capitán</option>';
   Object.values(seleccionados).forEach(j => {
     if (j.posicion === 'ENT') return; // el entrenador no puede ser capitán
     const opt = document.createElement('option');
@@ -606,7 +620,7 @@ async function loadLineup() {
       } else {
         deadlineEl.innerHTML = `
           <span class="deadline-abierto">🏁 Podrás hacer tu once hasta el ${fechaFormateada}h</span>
-          <span class="deadline-abierto-card" style="margin-top:8px" id="countdown-box">
+          <span class="deadline-abierto-card" style="margin-top:8px; margin-bottom:10px" id="countdown-box">
                       <span id="countdown-timer">Calculando...</span>
                     </span>
           </span>
