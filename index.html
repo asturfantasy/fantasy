@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AsturFantasy</title>
-    <link rel="icon" type="image/jpeg" href="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/sign/escudos/logo_asturfantasy.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMzdiOGIxYS1lMzkzLTRjNjMtOTNlNS0yNThmOGZlZWVjZDEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlc2N1ZG9zL2xvZ29fYXN0dXJmYW50YXN5LmpwZyIsImlhdCI6MTc3OTE5MzUwMywiZXhwIjoyMjUyMjMzNTAzfQ.8kRY8O7UiCsBuc5yVaF7CZmLh1ZUF-3KR2-aVWxPmrI">
+    <link rel="icon" type="image/jpeg" href="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -41,7 +41,6 @@
       <div class="avatar" id="nav-avatar" onclick="toggleUserMenu()">??</div>
       <div id="user-menu" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name">Bienvenido</div>
-        <button class="btn-toggle-theme" id="btn-toggle-theme">Cambiar modo</button>
         <button class="user-menu-logout" id="btn-logout">Cerrar sesión</button>
       </div>
     </div>
@@ -100,7 +99,6 @@
       <div class="avatar" id="nav-avatar-lineup" onclick="toggleUserMenu()">??</div>
       <div id="user-menu-lineup" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-lineup">Bienvenido</div>
-          <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
       </div>
     </div>
@@ -110,10 +108,10 @@
   </div>
     <div id="deadline-info" class="deadline-info"></div>
     <div id="presupuesto-info" style="display:flex;justify-content:space-between;
-     align-items:center;padding:10px 24px;background:var(--bg2);
+     align-items:center;padding:10px 24px;background:#DBDBDB;
      border-bottom:1px solid var(--border)">
-        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">
-            PRESUPUESTO DISPONIBLE
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--black)"><strong>
+            PRESUPUESTO DISPONIBLE</strong>
         </div>
         <div id="presupuesto-valor" style="font-family:var(--font-display);font-weight:700;
        font-size:20px;color:var(--neon)">
@@ -150,7 +148,7 @@
     <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
     <div id="capitan-wrapper" style="padding:0 24px;margin-bottom:8px">
         <div class="capitan-card">
-            <div class="capitan-card-titulo">Selecciona un capitán</div>
+            <div class="capitan-card-titulo">SELECCIONA UN CAPITÁN</div>
             <div class="capitan-card-sub">Puntuará doble</div>
             <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px;background:var(--bg2);color:var(--text)">
                 <option value="">Elige tu capitán</option>
@@ -178,7 +176,6 @@
       <div class="avatar" id="nav-avatar-myteam" onclick="toggleUserMenu()">??</div>
       <div id="user-menu-myteam" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-myteam">Bienvenido</div>
-          <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
       </div>
     </div>
@@ -229,7 +226,6 @@
       <div class="avatar" id="nav-avatar-ranking" onclick="toggleUserMenu()">??</div>
       <div id="user-menu-ranking" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-ranking">Bienvenido</div>
-          <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
       </div>
     </div>
@@ -294,7 +290,6 @@
             <div class="avatar" id="nav-avatar-criterios" onclick="toggleUserMenu()">??</div>
             <div id="user-menu-criterios" class="user-menu" style="display:none">
                 <div class="user-menu-name" id="user-menu-name-criterios">Bienvenido</div>
-                <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
                 <button class="user-menu-logout" data-logout>Cerrar sesión</button>
             </div>
         </div>

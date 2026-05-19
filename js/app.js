@@ -393,7 +393,25 @@ function toggleTheme() {
   const link = document.querySelector('link[rel="stylesheet"][href*="style"]');
   const href = link.href;
 
-  if (href.includes('style-moderno')) {
+  /*if (href.includes('style-moderno')) {
+      link.href = 'css/style-claro.css';
+      localStorage.setItem('theme', 'claro');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🔵 Modo azul claro');
+    } else if (href.includes('style-claro')) {
+      link.href = 'css/style-azul-claro.css';
+      localStorage.setItem('theme', 'azul-claro');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌑 Modo azul oscuro');
+    } else if (href.includes('style-azul-claro')) {
+      link.href = 'css/style-azul.css';
+      localStorage.setItem('theme', 'azul');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌙 Modo oscuro');
+    } else {
+      link.href = 'css/style-moderno.css';
+      localStorage.setItem('theme', 'oscuro');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '☀️ Modo claro');
+    }*/
+
+  /*if (href.includes('style-moderno')) {
     link.href = 'css/style-claro.css';
     localStorage.setItem('theme', 'claro');
     document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🔵 Modo azul claro');
@@ -409,7 +427,7 @@ function toggleTheme() {
     link.href = 'css/style-moderno.css';
     localStorage.setItem('theme', 'oscuro');
     document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '☀️ Modo claro');
-  }
+  }*/
 }
 
 // Recordar tema al cargar
@@ -619,7 +637,7 @@ async function loadLineup() {
         deadlineEl.innerHTML = `<span class="deadline-cerrado">La jornada comenzó el ${fechaFormateada}</span>`;
       } else {
         deadlineEl.innerHTML = `
-          <span class="deadline-abierto">🏁 Podrás hacer tu once hasta el ${fechaFormateada}h</span>
+          <span class="deadline-abierto">Podrás hacer tu once hasta el ${fechaFormateada}h</span>
           <span class="deadline-abierto-card" style="margin-top:8px; margin-bottom:10px" id="countdown-box">
                       <span id="countdown-timer">Calculando...</span>
                     </span>
@@ -649,7 +667,7 @@ async function loadLineup() {
           partes.push(`${segundos}s`);
 
           document.getElementById('countdown-timer').textContent =
-            `⏳ Quedan ${partes.join(' ')} para el cierre de la jornada`;
+            `Quedan ${partes.join(' ')}`;
         };
 
         actualizarCuenta();
@@ -902,7 +920,7 @@ function openModal(slotId, posicion, cls) {
   list.innerHTML = `
     <div style="padding:12px 20px;border-bottom:1px solid var(--cream-dark);position:sticky;top:0;background:var(--cream);z-index:1">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:1px">
+        <span style="font-family:var(--font-display);font-size:11px;color:var(--text-muted);letter-spacing:1px;">
           PRESUPUESTO DISPONIBLE
         </span>
         <span id="modal-presupuesto" style="font-family:var(--font-display);font-weight:700;

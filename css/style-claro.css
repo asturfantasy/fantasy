@@ -171,7 +171,6 @@ html, body {
   font-size: 15px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
@@ -240,7 +239,7 @@ html, body {
   gap: 12px;
 }
 .action-btn {
-  background: var(--bg2);
+  background: #DBDBDB;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 22px 14px;
@@ -257,7 +256,7 @@ html, body {
 .action-desc { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
 
 /* ── ALINEACIÓN ── */
-.round-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.round-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
 .round-badge { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.5px; color: var(--text); }
 .round-badge span { color: var(--neon); }
 .formation-select { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-display); font-weight: 600; font-size: 15px; padding: 8px 14px; cursor: pointer; transition: border-color 0.2s; }
@@ -322,12 +321,12 @@ html, body {
   letter-spacing: 0.5px;
   cursor: pointer;
   width: calc(100% - 48px);
-   margin: 8px 24px;
+   margin: 4px 24px;
   transition: all 0.2s;
   box-shadow: 0 4px 12px var(--neon-glow);
 }
 .btn-primary:hover { background: var(--neon-dark); transform: translateY(-1px); }
-#btn-save-lineup { background: #dc2626; color: white; box-shadow: none; }
+#btn-save-lineup { background: red; color: white; box-shadow: none; }
 #btn-save-lineup:hover { background: #ef4444;}
 .page-body .btn-primary { width: auto; margin: 0; }
 
@@ -345,14 +344,31 @@ html, body {
   text-transform: uppercase;
   cursor: pointer;
   width: calc(100% - 48px);
-  margin: 8px 24px;
+  margin: 4px 24px;
   transition: all 0.2s;
 }
 .btn-clear:hover { background: var(--neon-dark); }
 
+#btn-export-png {
+background: var(--black);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: calc(100% - 48px);
+  margin: 4px 24px;
+  transition: all 0.2s;
+}
+
 /* ── MI EQUIPO ── */
 .squad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.player-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.player-card { background: #DBDBDB; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
 .player-card:hover { border-color: var(--neon); }
 .pc-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 13px; flex-shrink: 0; }
 .pc-info { flex: 1; min-width: 0; }
@@ -398,7 +414,11 @@ html, body {
 .rank-pts { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--neon); text-align: right; }
 
 /* ── CAPITÁN ── */
-.es-capitan { border-color: gold !important; box-shadow: 0 0 12px rgba(255,215,0,0.5); }
+.es-capitan {
+    border-color: gold !important;
+    box-shadow: 0 0 12px rgba(255,215,0,0.5);
+}
+
 .cap-badge {
   position: absolute;
   top: -8px;
@@ -417,7 +437,7 @@ html, body {
   border: 1px solid yellow;
   z-index: 10;
 }
-.card-capitan { border-color: gold !important; box-shadow: 0 0 8px rgba(255,215,0,0.2); }
+.card-capitan { border-color: gold !important; border-width: 1px !important; background: rgba(255,215,0,0.25); }
 
 /* ── TOAST ── */
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: white; border-radius: 20px; padding: 12px 28px; font-family: var(--font-body); font-weight: 600; font-size: 14px; transition: transform 0.3s ease; z-index: 300; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
@@ -463,12 +483,11 @@ html, body {
 
 .user-menu-logout {
   width: 100%;
-  background: red;
+  background: #C80909;
   color: var(--white);
-  border: 1px solid var(--red);
+  border: 1px solid #C80909;
   border-radius: var(--radius-sm);
   padding: 7px 12px;
-  margin-top: 5px;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 12px;
@@ -494,7 +513,7 @@ html, body {
   padding: 12px 20px;
   text-align: center;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -502,17 +521,16 @@ html, body {
 
 .deadline-abierto {
   display: block;
-  background: black;
+  background: var(--black);
   border: 1px solid var(--black);
   color: var(--white);
   border-radius: var(--radius-sm);
   padding: 12px 20px;
-  margin-top: 8px;
 }
 .deadline-abierto-card {
   display: block;
   background: var(--neon);
-  border: 1px solid var #AB0E0E;
+  border: 1px solid var #D10000;
   color: var(--white);
   border-radius: var(--radius-sm);
   padding: 12px 20px;
@@ -592,8 +610,8 @@ html, body {
 .criterio-pts.neg { color: var(--red); }
 
 .capitan-card {
-  background: black;
-  border: 1px solid black;
+  background: gold;
+  border: 2px solid gold;
   border-radius: var(--radius);
   padding: 16px 20px;
   text-align: center;
@@ -603,12 +621,36 @@ html, body {
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 1px;
-  color: white;
+  color: black;
   margin-bottom: 4px;
 }
 .capitan-card-sub {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: white;
+  color: black;
   letter-spacing: 1px;
 }
+
+#btn-consulta-ptos-jornada{
+   background: #DBDBDB;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  padding: 22px 14px;
+  cursor: pointer;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--text);
+  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.ranking-table tbody tr:nth-child(odd) td { background: #DBDBDB; }
+.ranking-table tbody tr:nth-child(even) td { background: var(--bg2); }
+.ranking-table tbody tr.gold td   { background: rgba(255,193,7,0.20) !important; }
+.ranking-table tbody tr.silver td { background: rgba(192,192,192,0.4) !important; }
+.ranking-table tbody tr.bronze td { background: rgba(205,127,50,0.2) !important; }
+
+#once-container > div > div { background: var(--bg2); }
+#once-container > div > div:nth-child(even) { background: #DBDBDB; }
+
+#btn-consulta-ptos-jornada:hover { border-color: var(--neon); background: var(--neon-glow); box-shadow: 0 4px 16px var(--neon-glow); transform: translateY(-2px); }
