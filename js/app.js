@@ -543,7 +543,7 @@ db.auth.onAuthStateChange((event, session) => {
 /* ── 3. HOME ─────────────────────────────────────────────── */
 
 function loadHome() {
-  document.getElementById('home-jornada-num').textContent = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+  document.getElementById('home-jornada-num').textContent = JORNADA_ACTIVA;
 
   const userName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 'crack';
   const bienvenida = document.getElementById('home-bienvenida');
