@@ -10,10 +10,18 @@ let paginaActual = 1;
 const POR_PAGINA = 25;
 let renderJugadoresFn = null;
 
+window.addEventListener('beforeunload', e => {
+  if (cambiosSinGuardar) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.style.background = isError ? '#b03020' : '#1a1a16';
+  t.style.bottom = `calc(env(keyboard-inset-height, 0px) + 24px)`;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
@@ -388,6 +396,7 @@ document.getElementById('modal-desglose')?.addEventListener('click', e => {
 function cambiarPagina(dir) {
   paginaActual += dir;
   if (renderJugadoresFn) renderJugadoresFn();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function toggleUserMenu() {
@@ -408,59 +417,6 @@ function toggleUserMenu() {
   if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
 }
 
-function toggleTheme() {
-  const link = document.querySelector('link[rel="stylesheet"][href*="style"]');
-  const href = link.href;
-
-  /*if (href.includes('style-moderno')) {
-      link.href = 'css/style-claro.css';
-      localStorage.setItem('theme', 'claro');
-      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🔵 Modo azul claro');
-    } else if (href.includes('style-claro')) {
-      link.href = 'css/style-azul-claro.css';
-      localStorage.setItem('theme', 'azul-claro');
-      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌑 Modo azul oscuro');
-    } else if (href.includes('style-azul-claro')) {
-      link.href = 'css/style-azul.css';
-      localStorage.setItem('theme', 'azul');
-      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌙 Modo oscuro');
-    } else {
-      link.href = 'css/style-moderno.css';
-      localStorage.setItem('theme', 'oscuro');
-      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '☀️ Modo claro');
-    }*/
-
-  /*if (href.includes('style-moderno')) {
-    link.href = 'css/style-claro.css';
-    localStorage.setItem('theme', 'claro');
-    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🔵 Modo azul claro');
-  } else if (href.includes('style-claro')) {
-    link.href = 'css/style-azul-claro.css';
-    localStorage.setItem('theme', 'azul-claro');
-    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌑 Modo azul oscuro');
-  } else if (href.includes('style-azul-claro')) {
-    link.href = 'css/style-azul.css';
-    localStorage.setItem('theme', 'azul');
-    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌙 Modo oscuro');
-  } else {
-    link.href = 'css/style-moderno.css';
-    localStorage.setItem('theme', 'oscuro');
-    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '☀️ Modo claro');
-  }*/
-}
-
-// Recordar tema al cargar
-const temaGuardado = localStorage.getItem('theme');
-if (temaGuardado === 'claro') {
-  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-claro.css';
-} else if (temaGuardado === 'azul') {
-  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-azul.css';
-} else if (temaGuardado === 'azul-claro') {
-  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-azul-claro.css';
-}
-
-document.getElementById('btn-toggle-theme')?.addEventListener('click', toggleTheme);
-
 // Cerrar el menú al hacer clic fuera
 document.addEventListener('click', e => {
   if (!e.target.closest('.nav-user')) {
@@ -469,6 +425,15 @@ document.addEventListener('click', e => {
       if (m) m.style.display = 'none';
     });
   }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking', 'user-menu-criterios'].forEach(id => {
+    const m = document.getElementById(id);
+    if (m) m.style.display = 'none';
+  });
 });
 
 function goTo(screenId) {
@@ -482,6 +447,8 @@ function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screenId);
   if (el) el.classList.add('active');
+  const titulos = { home: 'Inicio', lineup: 'Alineación', myteam: 'Mi Equipo', ranking: 'Clasificación', criterios: 'Puntuación' };
+  document.title = 'AsturFantasy · ' + (titulos[screenId] || 'AsturFantasy');
   window.scrollTo(0, 0);
   const loaders = { home: loadHome, lineup: loadLineup, myteam: loadMyTeam, ranking: loadRanking, criterios: () => {} };
   if (loaders[screenId]) loaders[screenId]();
@@ -494,7 +461,10 @@ function updateNavUser(user) {
     const av = document.getElementById('nav-avatar' + s);
     const un = document.getElementById('nav-username' + s);
     const mn = document.getElementById('user-menu-name' + (s || ''));
-    if (av) av.textContent = initials;
+    if (av) {
+      av.textContent = initials;
+      av.title = name;
+    }
     if (un) un.textContent = name.split(' ')[0];
     if (mn) mn.textContent = '¡Bienvenido, ' + name.split(' ')[0] + '!';
   });
@@ -687,7 +657,8 @@ async function loadLineup() {
       };
 
       actualizarCuenta();
-      const intervalo = setInterval(actualizarCuenta, 1000);
+      if (window._countdownIntervalo) clearInterval(window._countdownIntervalo);
+      window._countdownIntervalo = setInterval(actualizarCuenta, 1000);
     }
   }
 
@@ -804,6 +775,10 @@ async function loadLineup() {
 }
 
 async function exportarAlineacion() {
+  const btn = document.getElementById('btn-export-png');
+  btn.disabled = true;
+  btn.textContent = 'GENERANDO...';
+
   const { data: equipoData } = await db
     .from('equipos')
     .select('nombre_equipo')
@@ -831,6 +806,9 @@ async function exportarAlineacion() {
   area.style.display = '';
   header.style.display = 'none';
 
+  btn.disabled = false;
+  btn.textContent = 'EXPORTAR ALINEACIÓN';
+
   if (canvas.width === 0 || canvas.height === 0) {
     showToast('Error al generar la imagen', true);
     return;
@@ -840,6 +818,7 @@ async function exportarAlineacion() {
   link.download = `asturfantasy-j${JORNADA_ACTIVA}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
+  showToast('Alineación exportada');
 }
 
 function renderPitch() {
@@ -1059,6 +1038,7 @@ function openModal(slotId, posicion, cls) {
     renderLista(e.target.value);
   });
 
+document.getElementById('modal-list').scrollTop = 0;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -1128,6 +1108,10 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
     return;
   }
 
+  const btn = document.getElementById('btn-save-lineup');
+  btn.disabled = true;
+  btn.textContent = 'GUARDANDO...';
+
   await db.from('mi_equipo').delete()
     .eq('user_id', currentUser.id)
     .eq('jornada', JORNADA_ACTIVA);
@@ -1141,12 +1125,16 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   }));
 
   const { error } = await db.from('mi_equipo').insert(filas);
+
+  btn.disabled = false;
+  btn.textContent = 'GUARDAR ALINEACIÓN';
+
   if (error) showToast('Error al guardar: ' + error.message, true);
   else {
     cambiosSinGuardar = false;
     showToast('Alineación guardada');
   }
-  });
+});
 
 // Vaciar alineación
 document.getElementById('btn-clear-lineup').addEventListener('click', async () => {
@@ -1154,6 +1142,10 @@ document.getElementById('btn-clear-lineup').addEventListener('click', async () =
 
   const confirmar = confirm('¿Seguro que quieres vaciar tu alineación?');
   if (!confirmar) return;
+
+  const btn = document.getElementById('btn-clear-lineup');
+  btn.disabled = true;
+  btn.textContent = 'VACIANDO...';
 
   await db.from('mi_equipo').delete()
     .eq('user_id', currentUser.id)
@@ -1164,8 +1156,11 @@ document.getElementById('btn-clear-lineup').addEventListener('click', async () =
   const sel = document.getElementById('capitan-select');
   if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
 
+  btn.disabled = false;
+  btn.textContent = 'VACIAR ALINEACIÓN';
+
   renderPitch();
-  showToast('Alineación vaciada ✓');
+  showToast('Alineación vaciada');
 });
 
 
@@ -1224,7 +1219,7 @@ async function loadMyTeam() {
     for (let i = JORNADA_VISIBLE; i >= 1; i--) {
       const opt = document.createElement('option');
       opt.value = i;
-      opt.textContent = `J${i}`;
+      opt.textContent = i === JORNADA_VISIBLE ? `J${i} · Actual` : `J${i}`;
       selectMyTeam.appendChild(opt);
     }
     selectMyTeam.value = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
@@ -1376,6 +1371,7 @@ async function loadRanking() {
       document.querySelectorAll('.rtab-content').forEach(c => c.style.display = 'none');
       tab.classList.add('active');
       document.getElementById('rtab-' + tab.dataset.rtab).style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     };
   });
 

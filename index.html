@@ -27,24 +27,7 @@
 
 <!-- HOME -->
 <div id="screen-home" class="screen">
-  <nav class="navbar">
-      <div class="nav-logo">
-          ASTUR<span>FANTASY</span>
-      </div>
-    <div class="nav-tabs">
-      <button class="nav-tab active" data-target="home">INICIO</button>
-      <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
-      <button class="nav-tab" data-target="myteam">MI EQUIPO</button>
-      <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
-    </div>
-    <div class="nav-user">
-      <div class="avatar" id="nav-avatar" onclick="toggleUserMenu()">??</div>
-      <div id="user-menu" class="user-menu" style="display:none">
-        <div class="user-menu-name" id="user-menu-name">Bienvenido</div>
-        <button class="user-menu-logout" id="btn-logout">Cerrar sesión</button>
-      </div>
-    </div>
-  </nav>
+    <div class="navbar-placeholder"></div>
   <div class="jornada-banner">
     <span class="jornada-text">JORNADA</span>
     <span class="jornada-num" id="home-jornada-num">—</span>
@@ -90,24 +73,7 @@
 
 <!-- ALINEACIÓN -->
 <div id="screen-lineup" class="screen">
-  <nav class="navbar">
-      <div class="nav-logo">
-          ASTUR<span>FANTASY</span>
-      </div>
-    <div class="nav-tabs">
-      <button class="nav-tab" data-target="home">INICIO</button>
-      <button class="nav-tab active" data-target="lineup">ALINEACIÓN</button>
-      <button class="nav-tab" data-target="myteam">MI EQUIPO</button>
-      <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
-    </div>
-    <div class="nav-user">
-      <div class="avatar" id="nav-avatar-lineup" onclick="toggleUserMenu()">??</div>
-      <div id="user-menu-lineup" class="user-menu" style="display:none">
-        <div class="user-menu-name" id="user-menu-name-lineup">Bienvenido</div>
-        <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-      </div>
-    </div>
-  </nav>
+    <div class="navbar-placeholder"></div>
   <div class="round-header">
     <div class="round-badge">Jornada <span id="lineup-jornada">—</span></div>
   </div>
@@ -167,24 +133,7 @@
 
 <!-- MI EQUIPO -->
 <div id="screen-myteam" class="screen">
-  <nav class="navbar">
-      <div class="nav-logo">
-          ASTUR<span>FANTASY</span>
-      </div>
-    <div class="nav-tabs">
-      <button class="nav-tab" data-target="home">INICIO</button>
-      <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
-      <button class="nav-tab active" data-target="myteam">MI EQUIPO</button>
-      <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
-    </div>
-    <div class="nav-user">
-      <div class="avatar" id="nav-avatar-myteam" onclick="toggleUserMenu()">??</div>
-      <div id="user-menu-myteam" class="user-menu" style="display:none">
-        <div class="user-menu-name" id="user-menu-name-myteam">Bienvenido</div>
-        <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-      </div>
-    </div>
-  </nav>
+    <div class="navbar-placeholder"></div>
     <div class="jornada-banner">
         <span class="jornada-text">JORNADA</span>
         <span class="jornada-num" id="myteam-jornada-num">—</span>
@@ -217,24 +166,7 @@
 
 <!-- CLASIFICACIÓN -->
 <div id="screen-ranking" class="screen">
-  <nav class="navbar">
-      <div class="nav-logo">
-          ASTUR<span>FANTASY</span>
-      </div>
-    <div class="nav-tabs">
-      <button class="nav-tab" data-target="home">INICIO</button>
-      <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
-      <button class="nav-tab" data-target="myteam">MI EQUIPO</button>
-      <button class="nav-tab active" data-target="ranking">CLASIFICACIÓN</button>
-    </div>
-    <div class="nav-user">
-      <div class="avatar" id="nav-avatar-ranking" onclick="toggleUserMenu()">??</div>
-      <div id="user-menu-ranking" class="user-menu" style="display:none">
-        <div class="user-menu-name" id="user-menu-name-ranking">Bienvenido</div>
-        <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-      </div>
-    </div>
-  </nav>
+    <div class="navbar-placeholder"></div>
   <div class="jornada-banner">
     <span class="jornada-text">JORNADA</span>
     <span class="jornada-num" id="ranking-jornada-num">—</span>
@@ -281,24 +213,7 @@
 
 <!-- CRITERIOS DE PUNTUACIÓN -->
 <div id="screen-criterios" class="screen">
-    <nav class="navbar">
-        <div class="nav-logo">
-            ASTUR<span>FANTASY</span>
-        </div>
-        <div class="nav-tabs">
-            <button class="nav-tab" data-target="home">INICIO</button>
-            <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
-            <button class="nav-tab" data-target="myteam">MI EQUIPO</button>
-            <button class="nav-tab" data-target="ranking">CLASIFICACIÓN</button>
-        </div>
-        <div class="nav-user">
-            <div class="avatar" id="nav-avatar-criterios" onclick="toggleUserMenu()">??</div>
-            <div id="user-menu-criterios" class="user-menu" style="display:none">
-                <div class="user-menu-name" id="user-menu-name-criterios">Bienvenido</div>
-                <button class="user-menu-logout" data-logout>Cerrar sesión</button>
-            </div>
-        </div>
-    </nav>
+    <div class="navbar-placeholder"></div>
     <div class="jornada-banner">
         <span class="jornada-num" style="font-size:20px;margin-left:8px">SISTEMA MIXTO (MEDIA ESTADÍSTICAS Y LNE)</span>
     </div>
@@ -424,6 +339,43 @@
 
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
+<script>
+    function renderNavbars() {
+      const tabs = [
+        { id: 'home',     label: 'INICIO' },
+        { id: 'lineup',   label: 'ALINEACIÓN' },
+        { id: 'myteam',   label: 'MI EQUIPO' },
+        { id: 'ranking',  label: 'CLASIFICACIÓN' },
+      ];
+
+      document.querySelectorAll('.navbar-placeholder').forEach(placeholder => {
+        const screen = placeholder.closest('.screen');
+        const screenId = screen?.id?.replace('screen-', '');
+
+        placeholder.outerHTML = `
+          <nav class="navbar">
+            <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+            <div class="nav-tabs">
+              ${tabs.map(t => `
+                <button class="nav-tab ${t.id === screenId ? 'active' : ''}" data-target="${t.id}">
+                  ${t.label}
+                </button>
+              `).join('')}
+            </div>
+            <div class="nav-user">
+              <div class="avatar" id="nav-avatar${screenId === 'home' ? '' : '-' + screenId}" onclick="toggleUserMenu()">·</div>
+              <div id="user-menu${screenId === 'home' ? '' : '-' + screenId}" class="user-menu" style="display:none">
+                <div class="user-menu-name" id="user-menu-name${screenId === 'home' ? '' : '-' + screenId}">Bienvenido</div>
+                <button class="user-menu-logout" ${screenId === 'home' ? 'id="btn-logout"' : 'data-logout'}>Cerrar sesión</button>
+              </div>
+            </div>
+          </nav>
+        `;
+      });
+    }
+
+    renderNavbars();
+</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
