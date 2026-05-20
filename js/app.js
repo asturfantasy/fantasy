@@ -466,7 +466,7 @@ function updateNavUser(user) {
       av.title = name;
     }
     if (un) un.textContent = name.split(' ')[0];
-    if (mn) mn.textContent = '¡Bienvenido, ' + name.split(' ')[0] + '!';
+    if (mn) mn.textContent = '¡Hola, ' + name.split(' ')[0] + '!';
   });
 }
 
@@ -517,7 +517,9 @@ function loadHome() {
 
   const userName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 'crack';
   const bienvenida = document.getElementById('home-bienvenida');
-  if (bienvenida) bienvenida.textContent = '¡Bienvenido, ' + userName + '!';
+  const hora = new Date().getHours();
+  const saludo = hora < 14 ? 'Buenos días' : hora < 21 ? 'Buenas tardes' : 'Buenas noches';
+  if (bienvenida) bienvenida.textContent = `¡${saludo}, ${userName}!`;
 
   const btnJ = document.getElementById('btn-jornada-visible');
   if (btnJ) btnJ.textContent = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
@@ -1557,13 +1559,27 @@ async function guardarNombreEquipo() {
   const nombre = document.getElementById('input-nombre-equipo').value.trim();
   if (!nombre) { showToast('Escribe un nombre para tu equipo', true); return; }
 
+  const btn = document.getElementById('btn-guardar-equipo');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
   const { error } = await db.from('equipos').upsert({
     user_id: currentUser.id,
     nombre_equipo: nombre,
   }, { onConflict: 'user_id' });
 
-  if (error) showToast('Error al guardar: ' + error.message, true);
-  else showToast('Nombre de equipo guardado');
+  btn.disabled = false;
+  btn.textContent = 'Guardar nombre de equipo';
+
+  if (error) {
+    if (error.message.includes('equipos_nombre_equipo_unique')) {
+      showToast('Ese nombre de equipo ya está en uso, elige otro', true);
+    } else {
+      showToast('Error al guardar: ' + error.message, true);
+    }
+  } else {
+    showToast('Nombre de equipo guardado ✓');
+  }
 }
 
 document.getElementById('btn-guardar-equipo')?.addEventListener('click', guardarNombreEquipo);
