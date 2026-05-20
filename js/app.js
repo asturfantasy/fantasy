@@ -369,7 +369,7 @@ function mostrarDesglose(j) {
     <div style="display:flex;justify-content:space-between;align-items:center;
                 padding:10px 0;margin-top:4px">
       <span style="font-family:var(--font-display);font-weight:700;font-size:14px;
-                   text-transform:uppercase;letter-spacing:1px;color:var(--text)">Total</span>
+                   text-transform:uppercase;letter-spacing:1px;color:var(--text)">Total (Media stats + LNE)</span>
       <span style="font-family:var(--font-display);font-weight:700;font-size:24px;
                    color:var(--neon)">${j.total_jornada}</span>
     </div>
@@ -1208,7 +1208,7 @@ async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion, jornada = JORN
     `).join('')}
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin-top:4px">
       <span style="font-family:var(--font-display);font-weight:700;font-size:14px;
-                   text-transform:uppercase;letter-spacing:1px;color:var(--text)">Total</span>
+                   text-transform:uppercase;letter-spacing:1px;color:var(--text)">Total (Media stats + LNE)</span>
       <span style="font-family:var(--font-display);font-weight:700;font-size:24px;
                    color:var(--neon)">${data.total_jornada}</span>
     </div>
