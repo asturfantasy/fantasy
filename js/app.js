@@ -6,6 +6,9 @@
 
 let currentUser = null;
 let cambiosSinGuardar = false;
+let paginaActual = 1;
+const POR_PAGINA = 25;
+let renderJugadoresFn = null;
 
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
@@ -21,12 +24,11 @@ async function abrirConsultaPuntos() {
   const content = document.getElementById('puntos-jornada-content');
   const titulo = document.getElementById('puntos-jornada-titulo');
 
-  titulo.textContent = `Puntos Jornada ${JORNADA_VISIBLE}`;
+  titulo.textContent = `Puntos Jornada ${jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE}`;
   content.innerHTML = '';
   select.value = '';
   modal.classList.add('open');
 
-  // Rellenar equipos
   const clubes = [...new Set(PARTIDOS.flatMap(p => [p.local.abrev, p.visitante.abrev]))];
   select.innerHTML = '<option value="">— Selecciona un equipo —</option>' +
     clubes.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -39,9 +41,9 @@ async function abrirConsultaPuntos() {
 
     const { data, error } = await db
       .from('jugadores')
-      .select('nombre, posicion, total_jornada, foto_url, escudo_url, titular, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador')
+      .select('nombre, posicion, total_jornada, foto_url, escudo_url, minutos, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador, goles_encajados')
       .eq('club', club)
-      .eq('jornada', JORNADA_VISIBLE)
+      .eq('jornada', jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE)
       .order('total_jornada', { ascending: false });
 
     if (error || !data?.length) {
@@ -52,13 +54,14 @@ async function abrirConsultaPuntos() {
     const ordenPos = ['POR','DEF','MED','DEL','ENT'];
     const sorted = [...data].sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
 
-    content.innerHTML = sorted.map(j => `
-      <div style="display:flex;align-items:center;gap:12px;padding:8px 0;
-                  border-bottom:1px solid var(--border);cursor:pointer"
+    const renderFila = (j) => `
+      <div class="fila-jugador-puntos" data-nombre="${j.nombre.toLowerCase()}"
+           style="display:flex;align-items:center;gap:12px;padding:8px 0;
+                  border-bottom:1px solid var(--border);cursor:pointer;width:100%"
            onclick="mostrarDesglose(${JSON.stringify(j).replace(/"/g, '&quot;')})">
         <div style="position:relative;width:36px;height:36px;flex-shrink:0">
           ${j.foto_url
-            ? `<img src="${j.foto_url}" width="36" height="36"
+            ? `<img loading="lazy" src="${j.foto_url}" width="36" height="36"
                    style="object-fit:cover;border-radius:50%;border:1px solid var(--border)"
                    onerror="this.style.display='none'">`
             : `<div style="width:36px;height:36px;border-radius:50%;background:var(--surface);
@@ -68,18 +71,35 @@ async function abrirConsultaPuntos() {
                </div>`
           }
           ${j.escudo_url
-            ? `<img src="${j.escudo_url}" width="14" height="14"
+            ? `<img loading="lazy" src="${j.escudo_url}" width="14" height="14"
                    style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                           border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
             : ''}
         </div>
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <div style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text)">${j.nombre}</div>
           <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${j.posicion}</div>
         </div>
-        <div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">${j.total_jornada}</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon);flex-shrink:0">${j.total_jornada}</div>
       </div>
-    `).join('');
+    `;
+
+    content.innerHTML = `
+      <input id="buscar-jugador-puntos" type="text" placeholder="Buscar jugador..."
+        style="width:100%;padding:8px 12px;font-family:var(--font-mono);font-size:13px;
+               background:var(--surface);color:var(--text);border:1px solid var(--border);
+               border-radius:8px;margin-bottom:12px;box-sizing:border-box">
+      <div id="lista-jugadores-puntos" style="width:100%">
+        ${sorted.map(renderFila).join('')}
+      </div>
+    `;
+
+    document.getElementById('buscar-jugador-puntos')?.addEventListener('input', e => {
+      const filtro = e.target.value.toLowerCase();
+      document.querySelectorAll('.fila-jugador-puntos').forEach(el => {
+        el.style.display = el.dataset.nombre.includes(filtro) ? 'flex' : 'none';
+      });
+    });
   };
 }
 
@@ -138,8 +158,8 @@ async function mostrarHistorial(nombre, club, posicion) {
                   border:2px solid var(--border);display:flex;align-items:center;
                   justify-content:center;font-family:var(--font-display);font-size:22px;
                   color:var(--text-muted);flex-shrink:0;position:relative">
-        ${foto ? `<img src="${foto}" width="64" height="64" style="object-fit:cover;border-radius:50%">` : nombre.substring(0,2).toUpperCase()}
-        ${escudo ? `<img src="${escudo}" width="20" height="20"
+        ${foto ? `<img loading="lazy" src="${foto}" width="64" height="64" style="object-fit:cover;border-radius:50%">` : nombre.substring(0,2).toUpperCase()}
+        ${escudo ? `<img loading="lazy" src="${escudo}" width="20" height="20"
                         style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                                border-radius:50%;background:var(--bg2);border:1px solid var(--border)">` : ''}
       </div>
@@ -238,7 +258,7 @@ const renderJugador = (j, alineacion = 'left') => `
        onclick="mostrarDesglose(${JSON.stringify(j).replace(/"/g, '&quot;')})">
     <div style="position:relative;width:32px;height:32px;flex-shrink:0">
         ${j.foto_url
-          ? `<img src="${j.foto_url}" width="32" height="32"
+          ? `<img loading="lazy" src="${j.foto_url}" width="32" height="32"
                style="object-fit:cover;border-radius:50%;border:1px solid var(--border)"
                onerror="this.style.display='none'">`
           : `<div style="width:32px;height:32px;border-radius:50%;background:var(--surface);
@@ -248,7 +268,7 @@ const renderJugador = (j, alineacion = 'left') => `
              </div>`
         }
         ${j.escudo_url
-          ? `<img src="${j.escudo_url}" width="12" height="12"
+          ? `<img loading="lazy" src="${j.escudo_url}" width="12" height="12"
                style="position:absolute;bottom:-1px;right:-1px;object-fit:contain;
                       border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
           : ''}
@@ -303,26 +323,28 @@ document.getElementById('modal-partido')?.addEventListener('click', e => {
 function desgloseFn(j) {
   const items = [];
 
-  // Entrenador solo tiene puntos_entrenador
-    if (j.posicion === 'ENT') {
-      items.push({ label: 'Puntos entrenador', pts: j.puntos_entrenador || 0 });
-      return items;
-    }
+  if (j.posicion === 'ENT') {
+    items.push({ label: 'Puntos entrenador', pts: j.puntos_entrenador || 0 });
+    return items;
+  }
 
-  const pcPts = j.posicion === 'POR' ? 3 : j.posicion === 'DEF' ? 2 : j.posicion === 'MED' ? 1 : 0;
+  const pcPts = j.posicion === 'POR' || j.posicion === 'DEF' ? 4 : j.posicion === 'MED' ? 2 : 0;
   const golPts = j.posicion === 'POR' ? 6 : j.posicion === 'DEF' ? 5 : j.posicion === 'MED' ? 4 : 3;
   const lnePts = j.lne === 1 ? 2 : j.lne === 2 ? 6 : j.lne === 3 ? 10 : 0;
 
-  items.push({ label: 'Titular', pts: j.titular ? 1 : 0 });
-  if (pcPts > 0) items.push({ label: 'Portería a cero', pts: (j.puerta_cero && j.titular) ? pcPts : 0 });
+  items.push({ label: `Minutos (${j.minutos || 0})`, pts: (j.minutos || 0) >= 60 ? 2 : (j.minutos || 0) > 0 ? 1 : 0 });
+  if (pcPts > 0) items.push({ label: 'Portería a cero', pts: (j.puerta_cero && (j.minutos || 0) >= 60) ? pcPts : 0 });
   items.push({ label: `Nota LNE (${j.lne || 0})`, pts: lnePts });
   items.push({ label: `Goles (${j.gol || 0})`, pts: (j.gol || 0) * golPts });
-  items.push({ label: `Asistencias (${j.asistencia || 0})`, pts: j.asistencia || 0 });
+  items.push({ label: `Asistencias (${j.asistencia || 0})`, pts: (j.asistencia || 0) * 3 });
   items.push({ label: `Penaltis (${j.penalti || 0})`, pts: (j.penalti || 0) * 3 });
   items.push({ label: `Gol PP (${j.gol_pp || 0})`, pts: (j.gol_pp || 0) * -2 });
   items.push({ label: `Amarillas (${j.amarilla || 0})`, pts: (j.amarilla || 0) * -1 });
   items.push({ label: `Doble amarilla (${j.doble_amarilla || 0})`, pts: (j.doble_amarilla || 0) * -3 });
   items.push({ label: `Roja directa (${j.roja || 0})`, pts: (j.roja || 0) * -5 });
+  if (j.posicion === 'POR' || j.posicion === 'DEF') {
+    items.push({ label: `Goles encajados (${j.goles_encajados || 0})`, pts: -Math.floor((j.goles_encajados || 0) / 2) });
+  }
   return items;
 }
 
@@ -363,6 +385,11 @@ document.getElementById('modal-desglose')?.addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
 
+function cambiarPagina(dir) {
+  paginaActual += dir;
+  if (renderJugadoresFn) renderJugadoresFn();
+}
+
 function toggleUserMenu() {
   const menus = ['user-menu', 'user-menu-lineup', 'user-menu-myteam', 'user-menu-ranking', 'user-menu-criterios'];
   const screenActiva = document.querySelector('.screen.active');
@@ -383,21 +410,53 @@ function toggleUserMenu() {
 
 function toggleTheme() {
   const link = document.querySelector('link[rel="stylesheet"][href*="style"]');
-  const esDark = link.href.includes('style-moderno');
-  link.href = esDark ? 'css/style-claro.css' : 'css/style-moderno.css';
-  const btn = document.getElementById('btn-toggle-theme');
-  if (btn) btn.textContent = esDark ? 'Modo oscuro' : 'Modo claro';
-  localStorage.setItem('theme', esDark ? 'claro' : 'oscuro');
+  const href = link.href;
+
+  /*if (href.includes('style-moderno')) {
+      link.href = 'css/style-claro.css';
+      localStorage.setItem('theme', 'claro');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🔵 Modo azul claro');
+    } else if (href.includes('style-claro')) {
+      link.href = 'css/style-azul-claro.css';
+      localStorage.setItem('theme', 'azul-claro');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌑 Modo azul oscuro');
+    } else if (href.includes('style-azul-claro')) {
+      link.href = 'css/style-azul.css';
+      localStorage.setItem('theme', 'azul');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌙 Modo oscuro');
+    } else {
+      link.href = 'css/style-moderno.css';
+      localStorage.setItem('theme', 'oscuro');
+      document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '☀️ Modo claro');
+    }*/
+
+  /*if (href.includes('style-moderno')) {
+    link.href = 'css/style-claro.css';
+    localStorage.setItem('theme', 'claro');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🔵 Modo azul claro');
+  } else if (href.includes('style-claro')) {
+    link.href = 'css/style-azul-claro.css';
+    localStorage.setItem('theme', 'azul-claro');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌑 Modo azul oscuro');
+  } else if (href.includes('style-azul-claro')) {
+    link.href = 'css/style-azul.css';
+    localStorage.setItem('theme', 'azul');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '🌙 Modo oscuro');
+  } else {
+    link.href = 'css/style-moderno.css';
+    localStorage.setItem('theme', 'oscuro');
+    document.querySelectorAll('.btn-toggle-theme').forEach(b => b.textContent = '☀️ Modo claro');
+  }*/
 }
 
 // Recordar tema al cargar
 const temaGuardado = localStorage.getItem('theme');
 if (temaGuardado === 'claro') {
   document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-claro.css';
-  document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('btn-toggle-theme');
-    if (btn) btn.textContent = 'Modo oscuro';
-  });
+} else if (temaGuardado === 'azul') {
+  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-azul.css';
+} else if (temaGuardado === 'azul-claro') {
+  document.querySelector('link[rel="stylesheet"][href*="style"]').href = 'css/style-azul-claro.css';
 }
 
 document.getElementById('btn-toggle-theme')?.addEventListener('click', toggleTheme);
@@ -484,14 +543,14 @@ db.auth.onAuthStateChange((event, session) => {
 /* ── 3. HOME ─────────────────────────────────────────────── */
 
 function loadHome() {
-  document.getElementById('home-jornada-num').textContent = JORNADA_ACTIVA;
+  document.getElementById('home-jornada-num').textContent = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
 
   const userName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 'crack';
   const bienvenida = document.getElementById('home-bienvenida');
   if (bienvenida) bienvenida.textContent = '¡Bienvenido, ' + userName + '!';
 
   const btnJ = document.getElementById('btn-jornada-visible');
-  if (btnJ) btnJ.textContent = JORNADA_VISIBLE;
+  if (btnJ) btnJ.textContent = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
 
   const container = document.getElementById('matches-container');
   container.innerHTML = PARTIDOS.map(p => `
@@ -499,7 +558,7 @@ function loadHome() {
       <div class="match-team">
         <div class="crest" style="background:${p.local.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.local.escudo_url
-            ? `<img src="${p.local.escudo_url}" alt="${p.local.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
+            ? `<img loading="lazy" src="${p.local.escudo_url}" alt="${p.local.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
             : p.local.abrev}
         </div>
         <div>
@@ -523,7 +582,7 @@ function loadHome() {
           <button onclick="mostrarPartido('${p.local.abrev}', '${p.visitante.abrev}', '${p.local.nombre}', '${p.visitante.nombre}')"
             style="background:var(--neon);color:var(--bg);border:none;border-radius:20px;
                    padding:6px 14px;cursor:pointer;font-family:var(--font-display);
-                   font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+                   font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;
                    margin-top:6px;transition:all 0.2s;box-shadow:0 2px 8px var(--neon-glow);width:100%"
             onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px var(--neon-glow)'"
             onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 8px var(--neon-glow)'">
@@ -534,7 +593,7 @@ function loadHome() {
       <div class="match-team right">
         <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
           ${p.visitante.escudo_url
-            ? `<img src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
+            ? `<img loading="lazy" src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
             : p.visitante.abrev}
         </div>
         <div style="text-align:right">
@@ -567,7 +626,7 @@ function actualizarSelectCapitan() {
   const sel = document.getElementById('capitan-select');
   if (!sel) return;
   const valorActual = sel.value;
-  sel.innerHTML = '<option value="">Elige bien, será determinante</option>';
+  sel.innerHTML = '<option value="">Elige un capitán</option>';
   Object.values(seleccionados).forEach(j => {
     if (j.posicion === 'ENT') return; // el entrenador no puede ser capitán
     const opt = document.createElement('option');
@@ -587,88 +646,85 @@ function actualizarSelectCapitan() {
 async function loadLineup() {
   document.getElementById('lineup-jornada').textContent = JORNADA_ACTIVA;
   cambiosSinGuardar = false;
-    const deadlineEl = document.getElementById('deadline-info');
-    if (deadlineEl) {
-      const fecha = new Date(DEADLINE_JORNADA);
-      const opciones = { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' };
-      const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
+  const deadlineEl = document.getElementById('deadline-info');
+  if (deadlineEl) {
+    const fecha = new Date(DEADLINE_JORNADA);
+    const opciones = { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' };
+    const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
 
-      if (jornadadCerrada()) {
-        deadlineEl.innerHTML = `<span class="deadline-cerrado">La jornada comenzó el ${fechaFormateada}</span>`;
-      } else {
-        deadlineEl.innerHTML = `
-          <span class="deadline-abierto">🏁 Podrás hacer tu once hasta el ${fechaFormateada}h</span>
-          <span class="deadline-abierto-card" style="margin-top:8px" id="countdown-box">
-                      <span id="countdown-timer">Calculando...</span>
-                    </span>
-          </span>
-        `;
+    if (jornadadCerrada()) {
+      deadlineEl.innerHTML = `<span class="deadline-cerrado">La jornada comenzó el ${fechaFormateada}</span>`;
+    } else {
+      deadlineEl.innerHTML = `
+        <span class="deadline-abierto">Podrás hacer tu once hasta el ${fechaFormateada}h</span>
+        <span class="deadline-abierto-card" style="margin-top:8px; margin-bottom:10px" id="countdown-box">
+          <span id="countdown-timer">Calculando...</span>
+        </span>
+      `;
 
-        // Cuenta atrás
-        const actualizarCuenta = () => {
-          const ahora = new Date();
-          const diff = new Date(DEADLINE_JORNADA) - ahora;
+      const actualizarCuenta = () => {
+        const ahora = new Date();
+        const diff = new Date(DEADLINE_JORNADA) - ahora;
 
-          if (diff <= 0) {
-            document.getElementById('countdown-timer').textContent = '¡Plazo cerrado!';
-            clearInterval(intervalo);
-            return;
-          }
+        if (diff <= 0) {
+          document.getElementById('countdown-timer').textContent = '¡Plazo cerrado!';
+          clearInterval(intervalo);
+          return;
+        }
 
-          const dias    = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const horas   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+        const dias    = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const horas   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const segundos = Math.floor((diff % (1000 * 60)) / 1000);
 
-          const partes = [];
-          if (dias > 0)    partes.push(`${dias}d`);
-          if (horas > 0)   partes.push(`${horas}h`);
-          if (minutos > 0) partes.push(`${minutos}m`);
-          partes.push(`${segundos}s`);
+        const partes = [];
+        if (dias > 0)    partes.push(`${dias}d`);
+        if (horas > 0)   partes.push(`${horas}h`);
+        if (minutos > 0) partes.push(`${minutos}m`);
+        partes.push(`${segundos}s`);
 
-          document.getElementById('countdown-timer').textContent =
-            `⏳ Quedan ${partes.join(' ')} para el cierre de la jornada`;
-        };
+        document.getElementById('countdown-timer').textContent = `Quedan ${partes.join(' ')}`;
+      };
 
-        actualizarCuenta();
-        const intervalo = setInterval(actualizarCuenta, 1000);
-      }
+      actualizarCuenta();
+      const intervalo = setInterval(actualizarCuenta, 1000);
     }
-    // Comprobar deadline
-   if (jornadadCerrada()) {
-     const pitch = document.getElementById('pitch');
-     pitch.querySelectorAll('.pitch-row').forEach(r => r.remove());
-     pitch.innerHTML = `
-       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                   height:300px;gap:16px;position:relative;z-index:1">
-         <div style="font-size:48px">🔒</div>
-         <div style="font-family:var(--font-display);font-size:28px;font-weight:700;
-                     color:white;letter-spacing:2px;text-align:center">
-           JORNADA CERRADA
-         </div>
-         <div style="font-family:var(--font-mono);font-size:12px;color:rgba(255,255,255,0.6);
-                     text-align:center;letter-spacing:1px">
-           La J${JORNADA_ACTIVA} ya ha empezado<br>Es tarde para modificar tu alineación
-         </div>
-       </div>
-     `;
-     document.getElementById('btn-save-lineup').style.display = 'none';
-     document.getElementById('btn-clear-lineup').style.display = 'none';
-     document.getElementById('btn-export-png').style.display = 'none';
-     const capitanWrapper = document.getElementById('capitan-wrapper');
-     if (capitanWrapper) capitanWrapper.style.display = 'none';
-     const btnConsultar = document.getElementById('btn-consultar-equipo');
-     if (btnConsultar) btnConsultar.style.display = 'block';
-     return;
-   }
-   // Restaurar botones y selector por si venía de jornada cerrada
-     document.getElementById('btn-save-lineup').style.display = '';
-     document.getElementById('btn-clear-lineup').style.display = '';
-     document.getElementById('btn-export-png').style.display = '';
-     const capitanWrapper = document.getElementById('capitan-wrapper');
-     if (capitanWrapper) capitanWrapper.style.display = '';
-     const btnConsultar = document.getElementById('btn-consultar-equipo');
-     if (btnConsultar) btnConsultar.style.display = 'none';
+  }
+
+  if (jornadadCerrada()) {
+    const pitch = document.getElementById('pitch');
+    pitch.querySelectorAll('.pitch-row').forEach(r => r.remove());
+    pitch.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                  height:300px;gap:16px;position:relative;z-index:1">
+        <div style="font-size:48px">🔒</div>
+        <div style="font-family:var(--font-display);font-size:28px;font-weight:700;
+                    color:white;letter-spacing:2px;text-align:center">
+          JORNADA CERRADA
+        </div>
+        <div style="font-family:var(--font-mono);font-size:12px;color:rgba(255,255,255,0.6);
+                    text-align:center;letter-spacing:1px">
+          La J${JORNADA_ACTIVA} ya ha empezado<br>Es tarde para modificar tu alineación
+        </div>
+      </div>
+    `;
+    document.getElementById('btn-save-lineup').style.display = 'none';
+    document.getElementById('btn-clear-lineup').style.display = 'none';
+    document.getElementById('btn-export-png').style.display = 'none';
+    const capitanWrapper = document.getElementById('capitan-wrapper');
+    if (capitanWrapper) capitanWrapper.style.display = 'none';
+    const btnConsultar = document.getElementById('btn-consultar-equipo');
+    if (btnConsultar) btnConsultar.style.display = 'block';
+    return;
+  }
+
+  document.getElementById('btn-save-lineup').style.display = '';
+  document.getElementById('btn-clear-lineup').style.display = '';
+  document.getElementById('btn-export-png').style.display = '';
+  const capitanWrapper = document.getElementById('capitan-wrapper');
+  if (capitanWrapper) capitanWrapper.style.display = '';
+  const btnConsultar = document.getElementById('btn-consultar-equipo');
+  if (btnConsultar) btnConsultar.style.display = 'none';
 
   seleccionados = {};
   capitan = null;
@@ -679,12 +735,10 @@ async function loadLineup() {
     .from('jugadores')
     .select('*')
     .eq('jornada', JORNADA_ACTIVA)
-    .eq('activo', 1)
     .order('puntos', { ascending: false });
 
   if (error) { showToast('Error cargando jugadores', true); return; }
 
-  // Cargar puntos totales de cada jugador
   const { data: rankingData } = await db
     .from('ranking_jugadores')
     .select('nombre, club, puntos_total');
@@ -694,7 +748,6 @@ async function loadLineup() {
     puntosMap[`${r.nombre}-${r.club}`] = r.puntos_total;
   });
 
-  // Añadir puntos_total a cada jugador
   (data || []).forEach(j => {
     j.puntos_total = puntosMap[`${j.nombre}-${j.club}`] ?? j.puntos;
   });
@@ -741,7 +794,6 @@ async function loadLineup() {
       }
 
       capitan = capitanIdGuardado;
-      //showToast();
     }
   }
 
@@ -826,21 +878,29 @@ function renderPitch() {
 
       if (jugador) {
         const esCap = capitan !== null && String(capitan) === String(jugador.id);
+        const noDisponible = jugador.activo === 0 || jugador.activo === '0';
+
+        const overlayRojo = noDisponible
+          ? `<div style="position:absolute;inset:0;border-radius:50%;background:rgba(220,38,38,0.5);z-index:1;pointer-events:none"></div>`
+          : '';
+
         const circuloContenido = jugador.foto_url
-          ? `<img src="${jugador.foto_url}" alt="${jugador.nombre}"
+          ? `<img loading="lazy" src="${jugador.foto_url}" alt="${jugador.nombre}"
                width="46" height="46" style="object-fit:cover;border-radius:50%"
                onerror="this.style.display='none'">`
           : jugador.nombre.substring(0,3).toUpperCase();
 
         const escudoCirculo = jugador.escudo_url
-          ? `<img src="${jugador.escudo_url}" alt="${jugador.club}" width="16" height="16"
+          ? `<img loading="lazy" src="${jugador.escudo_url}" alt="${jugador.club}" width="16" height="16"
                style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
-                      border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
+                      border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2);z-index:2">`
           : '';
 
         slot.innerHTML = `
-          <div class="player-circle ${fila.cls} ${esCap ? 'es-capitan' : ''}" style="overflow:visible;position:relative">
+          <div class="player-circle ${fila.cls} ${esCap ? 'es-capitan' : ''}"
+               style="overflow:visible;position:relative;${noDisponible ? 'border:3px solid rgba(220,38,38,0.9);' : ''}">
             ${circuloContenido}
+            ${overlayRojo}
             ${escudoCirculo}
             ${esCap ? '<span class="cap-badge">C</span>' : ''}
           </div>
@@ -870,8 +930,24 @@ function openModal(slotId, posicion, cls) {
   const colores    = { gk:'var(--amber)', def:'var(--blue)', mid:'var(--ink)', fwd:'var(--red)', ent:'black' };
   const textoCols  = { gk:'var(--ink)',   def:'white',       mid:'var(--cream)', fwd:'white',    ent:'white' };
 
+  const getPresupuestoDisponible = () => {
+    const gastado = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
+    return (PRESUPUESTO - gastado).toFixed(1);
+  };
+
+  let soloDisponibles = false;
+
   list.innerHTML = `
     <div style="padding:12px 20px;border-bottom:1px solid var(--cream-dark);position:sticky;top:0;background:var(--cream);z-index:1">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-family:var(--font-display);font-size:11px;color:var(--text-muted);letter-spacing:1px;">
+          PRESUPUESTO DISPONIBLE
+        </span>
+        <span id="modal-presupuesto" style="font-family:var(--font-display);font-weight:700;
+              font-size:16px;color:var(--neon)">
+          ${getPresupuestoDisponible()}M
+        </span>
+      </div>
       <input id="modal-search" type="text" placeholder="Buscar jugador..."
         style="width:100%;padding:8px 12px;font-family:var(--font-mono);font-size:13px;
                border:2px solid var(--ink);border-radius:4px;background:var(--white);color:var(--ink);margin-bottom:8px">
@@ -880,6 +956,12 @@ function openModal(slotId, posicion, cls) {
                font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:1px;
                text-transform:uppercase;cursor:pointer;">
         🗑 Vaciar posición
+      </button>
+      <button id="btn-filtro-presupuesto"
+        style="width:100%;padding:8px;background:var(--neon);color:var(--bg);border:none;border-radius:4px;
+               font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:1px;
+               text-transform:uppercase;cursor:pointer;margin-top:6px;">
+        Dentro del presupuesto
       </button>
     </div>
     <div id="modal-players"></div>
@@ -891,32 +973,52 @@ function openModal(slotId, posicion, cls) {
     closeModal();
     renderPitch();
     actualizarSelectCapitan();
+    actualizarPresupuesto();
+  });
+
+  document.getElementById('btn-filtro-presupuesto').addEventListener('click', () => {
+    soloDisponibles = !soloDisponibles;
+    const btn = document.getElementById('btn-filtro-presupuesto');
+    btn.textContent = soloDisponibles ? '👁 Mostrar todos' : 'Dentro del presupuesto';
+    btn.style.background = soloDisponibles ? 'var(--amber)' : 'var(--neon)';
+    renderLista(document.getElementById('modal-search').value);
   });
 
   const renderLista = (filtro = '') => {
+    const disponible = parseFloat(getPresupuestoDisponible());
+    const modalPresupuesto = document.getElementById('modal-presupuesto');
+    if (modalPresupuesto) {
+      modalPresupuesto.textContent = disponible.toFixed(1) + 'M';
+      modalPresupuesto.style.color = disponible < 0 ? 'var(--red)' : disponible < 10 ? 'var(--amber)' : 'var(--neon)';
+    }
+
     const filtrados = jugadoresPorPos[posicion].filter(j =>
-      j.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
-      j.club.toLowerCase().includes(filtro.toLowerCase())
+      (j.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+      j.club.toLowerCase().includes(filtro.toLowerCase())) &&
+      (!soloDisponibles || (j.valor || 0) <= disponible)
     );
 
     document.getElementById('modal-players').innerHTML = filtrados.map(j => {
       const usado = usados.has(j.id);
+      const noDisponible = j.activo === 0 || j.activo === '0';
+      const bordeRojo = noDisponible ? '3px solid rgba(220,38,38,0.9)' : '2px solid var(--border)';
 
       const escudo = `
         <div style="position:relative;width:36px;height:36px;flex-shrink:0">
           ${j.foto_url
-            ? `<img src="${j.foto_url}" width="36" height="36"
-                     style="object-fit:cover;border-radius:50%;border:2px solid var(--border)"
+            ? `<img loading="lazy" src="${j.foto_url}" width="36" height="36"
+                     style="object-fit:cover;border-radius:50%;border:${bordeRojo}"
                      onerror="this.style.display='none'">`
             : `<div style="width:36px;height:36px;border-radius:50%;
                            background:${colores[cls]};color:${textoCols[cls]};
                            display:flex;align-items:center;justify-content:center;
-                           font-family:var(--font-display);font-size:13px">
+                           font-family:var(--font-display);font-size:13px;
+                           border:${bordeRojo}">
                  ${j.nombre.substring(0,2).toUpperCase()}
                </div>`
           }
           ${j.escudo_url
-            ? `<img src="${j.escudo_url}" width="14" height="14"
+            ? `<img loading="lazy" src="${j.escudo_url}" width="14" height="14"
                      style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                             border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
             : ''}
@@ -1080,7 +1182,7 @@ async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion, jornada = JORN
 
   const { data, error } = await db
     .from('jugadores')
-    .select('titular, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, total_jornada, puntos_entrenador')
+    .select('minutos, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, total_jornada, puntos_entrenador, goles_encajados')
     .eq('id', jugadorId)
     .eq('jornada', jornada)
     .single();
@@ -1125,11 +1227,11 @@ async function loadMyTeam() {
       opt.textContent = `J${i}`;
       selectMyTeam.appendChild(opt);
     }
-    selectMyTeam.value = JORNADA_VISIBLE;
+    selectMyTeam.value = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
     selectMyTeam.onchange = e => cargarMyTeam(parseInt(e.target.value));
   }
 
-  await cargarMyTeam(JORNADA_VISIBLE);
+  await cargarMyTeam(jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE);
 }
 
 async function cargarMyTeam(jornada) {
@@ -1192,10 +1294,21 @@ async function cargarMyTeam(jornada) {
 
   const formacion = data[0]?.formacion || '—';
 
+  // Media de managers
+  const { data: mediaData } = await db
+    .from('clasificacion_automatica')
+    .select('puntos')
+    .eq('jornada', jornada);
+
+  const media = mediaData?.length
+    ? Math.round(mediaData.reduce((acc, r) => acc + r.puntos, 0) / mediaData.length)
+    : 0;
+
   banner.style.display = 'block';
   banner.innerHTML = `
-    <div class="saved-sub">Formación <strong>${formacion}</strong> · Jornada ${jornada}</div>
-    <div class="saved-pts-high"><strong>${totalPuntos} PUNTOS</strong></div>
+    <div class="saved-sub" style="text-align:center">Formación <strong>${formacion}</strong> · Jornada ${jornada}</div>
+    <div class="saved-pts-high" style="text-align:center"><strong>${totalPuntos} PUNTOS</strong></div>
+    <div class="saved-sub" style="text-align:center;margin-top:6px">Media de la jornada: <strong>${media} pts</strong></div>
   `;
 
   grid.innerHTML = sorted.map(j => {
@@ -1203,7 +1316,7 @@ async function cargarMyTeam(jornada) {
     const foto = fotoMap[j.jugador_id];
 
     const avatarContenido = foto
-      ? `<img src="${foto}" width="40" height="40"
+      ? `<img loading="lazy" src="${foto}" width="40" height="40"
            style="object-fit:cover;border-radius:50%"
            onerror="this.style.display='none'">`
       : j.nombre.substring(0,2).toUpperCase();
@@ -1218,7 +1331,7 @@ async function cargarMyTeam(jornada) {
            style="position:relative;background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:visible">
         ${avatarContenido}
         ${escudo
-          ? `<img src="${escudo}" width="14" height="14"
+          ? `<img loading="lazy" src="${escudo}" width="14" height="14"
                  style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;
                         border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">`
           : ''}
@@ -1253,7 +1366,8 @@ async function cargarMyTeam(jornada) {
 const medalClass = pos => pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
 
 async function loadRanking() {
-  document.getElementById('ranking-jornada-num').textContent = JORNADA_VISIBLE;
+  const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+  document.getElementById('ranking-jornada-num').textContent = jornadaRanking;
 
   // Eventos de las pestañas
   document.querySelectorAll('.ranking-tab').forEach(tab => {
@@ -1296,8 +1410,8 @@ async function loadRanking() {
       opt.textContent = `Jornada ${i}`;
       selectSemanal.appendChild(opt);
     }
-    selectSemanal.value = JORNADA_VISIBLE;
-    cargarSemanal(JORNADA_VISIBLE);
+    selectSemanal.value = jornadaRanking;
+    cargarSemanal(jornadaRanking);
     selectSemanal.addEventListener('change', e => cargarSemanal(parseInt(e.target.value)));
   }
 
@@ -1347,9 +1461,12 @@ async function loadRanking() {
       <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
       <tbody id="ranking-jugadores-body"></tbody>
     </table>
+    <div id="jugadores-paginador"></div>
   `;
 
-  const renderJugadores = () => {
+  paginaActual = 1;
+
+  renderJugadoresFn = () => {
     const club   = document.getElementById('filtro-club').value;
     const pos    = document.getElementById('filtro-pos').value;
     const nombre = document.getElementById('filtro-nombre').value.toLowerCase();
@@ -1360,6 +1477,11 @@ async function loadRanking() {
       (!nombre || j.nombre.toLowerCase().includes(nombre))
     );
 
+    const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA);
+    if (paginaActual > totalPaginas) paginaActual = 1;
+    const inicio = (paginaActual - 1) * POR_PAGINA;
+    const paginados = filtrados.slice(inicio, inicio + POR_PAGINA);
+
     const tbody = document.getElementById('ranking-jugadores-body');
 
     if (!filtrados.length) {
@@ -1367,32 +1489,52 @@ async function loadRanking() {
       return;
     }
 
-    tbody.innerHTML = filtrados.map((j, i) => `
-      <tr class="${medalClass(i+1)}">
-        <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+    tbody.innerHTML = paginados.map((j, i) => `
+      <tr class="${medalClass(inicio + i + 1)}">
+        <td><span class="rank-pos ${medalClass(inicio + i + 1)}">${inicio + i + 1}</span></td>
         <td>
           <div class="rank-name" style="cursor:pointer;text-decoration:underline"
                onclick="mostrarHistorial('${j.nombre}', '${j.club}', '${j.posicion}')">${j.nombre}</div>
           <div class="rank-team">${j.posicion}</div>
         </td>
         <td>
-          ${j.escudo_url ? `<img src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
+          ${j.escudo_url ? `<img loading="lazy" src="${j.escudo_url}" width="24" height="24" style="object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
           <span class="rank-team">${j.club}</span>
         </td>
         <td><div class="rank-pts">${j.puntos_total}</div></td>
       </tr>
     `).join('');
+
+    const paginador = document.getElementById('jugadores-paginador');
+    if (paginador) {
+      paginador.innerHTML = totalPaginas > 1 ? `
+        <div style="display:flex;justify-content:center;align-items:center;gap:12px;padding:16px 0">
+          <button onclick="cambiarPagina(-1)"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
+                   padding:6px 14px;cursor:pointer;font-family:var(--font-display);color:var(--text)"
+            ${paginaActual === 1 ? 'disabled' : ''}>← Anterior</button>
+          <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">
+            ${paginaActual} / ${totalPaginas}
+          </span>
+          <button onclick="cambiarPagina(1)"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
+                   padding:6px 14px;cursor:pointer;font-family:var(--font-display);color:var(--text)"
+            ${paginaActual === totalPaginas ? 'disabled' : ''}>Siguiente →</button>
+        </div>
+      ` : '';
+    }
   };
 
-  renderJugadores();
-  document.getElementById('filtro-club').addEventListener('change', renderJugadores);
-  document.getElementById('filtro-pos').addEventListener('change', renderJugadores);
-  document.getElementById('filtro-nombre').addEventListener('input', renderJugadores);
+  renderJugadoresFn();
+  document.getElementById('filtro-club').addEventListener('change', renderJugadoresFn);
+  document.getElementById('filtro-pos').addEventListener('change', renderJugadoresFn);
+  document.getElementById('filtro-nombre').addEventListener('input', renderJugadoresFn);
   document.getElementById('btn-reset-filtros').addEventListener('click', () => {
     document.getElementById('filtro-club').value = '';
     document.getElementById('filtro-pos').value = '';
     document.getElementById('filtro-nombre').value = '';
-    renderJugadores();
+    paginaActual = 1;
+    renderJugadoresFn();
   });
 
   // ── Once de la semana ──
@@ -1405,8 +1547,8 @@ async function loadRanking() {
       opt.textContent = `Jornada ${i}`;
       selectOnce.appendChild(opt);
     }
-    selectOnce.value = JORNADA_VISIBLE;
-    loadOnce(JORNADA_VISIBLE);
+    selectOnce.value = jornadaRanking;
+    loadOnce(jornadaRanking);
     selectOnce.addEventListener('change', e => loadOnce(parseInt(e.target.value)));
   }
 }
@@ -1440,7 +1582,8 @@ async function loadOnce(jornada) {
     .select('nombre, club, posicion, puntos, escudo_url, foto_url')
     .eq('jornada', jornada)
     .neq('posicion', 'ENT')
-    .order('puntos', { ascending: false });
+    .order('puntos', { ascending: false })
+    .order('valor', { ascending: true });;
 
   if (error || !data?.length) {
     container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>';
@@ -1511,7 +1654,7 @@ async function loadOnce(jornada) {
           <div style="display:flex;align-items:center;gap:12px;padding:10px 0;
                       border-bottom:1px solid var(--border)">
             ${j.escudo_url
-              ? `<img src="${j.escudo_url}" width="28" height="28" style="object-fit:contain" onerror="this.style.display='none'">`
+              ? `<img loading="lazy" src="${j.escudo_url}" width="28" height="28" style="object-fit:contain" onerror="this.style.display='none'">`
               : `<div style="width:28px;height:28px;background:var(--surface);border-radius:50%;
                              display:flex;align-items:center;justify-content:center;
                              font-family:var(--font-display);font-size:10px">${j.club}</div>`

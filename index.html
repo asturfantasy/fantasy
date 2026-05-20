@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AsturFantasy</title>
+    <link rel="icon" type="image/jpeg" href="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -27,7 +28,9 @@
 <!-- HOME -->
 <div id="screen-home" class="screen">
   <nav class="navbar">
-    <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+      <div class="nav-logo">
+          ASTUR<span>FANTASY</span>
+      </div>
     <div class="nav-tabs">
       <button class="nav-tab active" data-target="home">INICIO</button>
       <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
@@ -38,7 +41,6 @@
       <div class="avatar" id="nav-avatar" onclick="toggleUserMenu()">??</div>
       <div id="user-menu" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name">Bienvenido</div>
-        <button class="btn-toggle-theme" id="btn-toggle-theme">Cambiar modo</button>
         <button class="user-menu-logout" id="btn-logout">Cerrar sesión</button>
       </div>
     </div>
@@ -49,7 +51,12 @@
     <span class="jornada-side" id="home-bienvenida"></span>
   </div>
   <main class="page-body">
-      <button class="action-btn" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:16px">
+      <div id="card-mensaje-home" style="background:var(--yellow);border:1px solid var(--yellow);
+     border-radius:var(--radius);padding:14px 20px;margin-bottom:8px;
+     font-family:var(--font-display);font-size:10px;color:var(--black);text-align:center">
+          Estamos ajustando los criterios de puntuación. Veréis modificado vuestro rendimiento en jornadas pasadas.
+      </div>
+      <button class="action-btn" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:16px">
           <span class="action-label">PUNTOS J<span id="btn-jornada-visible"></span></span>
           <span class="action-desc">Consulta los puntos de la pasada jornada</span>
       </button>
@@ -84,7 +91,9 @@
 <!-- ALINEACIÓN -->
 <div id="screen-lineup" class="screen">
   <nav class="navbar">
-    <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+      <div class="nav-logo">
+          ASTUR<span>FANTASY</span>
+      </div>
     <div class="nav-tabs">
       <button class="nav-tab" data-target="home">INICIO</button>
       <button class="nav-tab active" data-target="lineup">ALINEACIÓN</button>
@@ -95,7 +104,6 @@
       <div class="avatar" id="nav-avatar-lineup" onclick="toggleUserMenu()">??</div>
       <div id="user-menu-lineup" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-lineup">Bienvenido</div>
-          <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
       </div>
     </div>
@@ -105,10 +113,10 @@
   </div>
     <div id="deadline-info" class="deadline-info"></div>
     <div id="presupuesto-info" style="display:flex;justify-content:space-between;
-     align-items:center;padding:10px 24px;background:var(--bg2);
+     align-items:center;padding:10px 24px;background:#DBDBDB;
      border-bottom:1px solid var(--border)">
-        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">
-            PRESUPUESTO DISPONIBLE
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--black)"><strong>
+            PRESUPUESTO DISPONIBLE</strong>
         </div>
         <div id="presupuesto-valor" style="font-family:var(--font-display);font-weight:700;
        font-size:20px;color:var(--neon)">
@@ -145,22 +153,24 @@
     <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
     <div id="capitan-wrapper" style="padding:0 24px;margin-bottom:8px">
         <div class="capitan-card">
-            <div class="capitan-card-titulo">⭐ Selecciona un capitán</div>
-            <div class="capitan-card-sub">Su puntuación valdrá el doble</div>
+            <div class="capitan-card-titulo">SELECCIONA UN CAPITÁN</div>
+            <div class="capitan-card-sub">Puntuará doble</div>
             <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px;background:var(--bg2);color:var(--text)">
-                <option value="">— Elige bien, será determinante —</option>
+                <option value="">Elige tu capitán</option>
             </select>
         </div>
     </div>
-    <button id="btn-save-lineup" class="btn-primary">🔐 GUARDAR ALINEACIÓN</button>
-    <button id="btn-clear-lineup" class="btn-clear">🗑️ VACIAR ALINEACIÓN</button>
-    <button id="btn-export-png" class="btn-primary" style="background:yellow;color:black">📤 COMPARTIR ALINEACIÓN</button>
+    <button id="btn-save-lineup" class="btn-primary">GUARDAR ALINEACIÓN</button>
+    <button id="btn-clear-lineup" class="btn-clear">VACIAR ALINEACIÓN</button>
+    <button id="btn-export-png" class="btn-primary">EXPORTAR ALINEACIÓN</button>
 </div>
 
 <!-- MI EQUIPO -->
 <div id="screen-myteam" class="screen">
   <nav class="navbar">
-    <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+      <div class="nav-logo">
+          ASTUR<span>FANTASY</span>
+      </div>
     <div class="nav-tabs">
       <button class="nav-tab" data-target="home">INICIO</button>
       <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
@@ -171,7 +181,6 @@
       <div class="avatar" id="nav-avatar-myteam" onclick="toggleUserMenu()">??</div>
       <div id="user-menu-myteam" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-myteam">Bienvenido</div>
-          <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
       </div>
     </div>
@@ -209,7 +218,9 @@
 <!-- CLASIFICACIÓN -->
 <div id="screen-ranking" class="screen">
   <nav class="navbar">
-    <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+      <div class="nav-logo">
+          ASTUR<span>FANTASY</span>
+      </div>
     <div class="nav-tabs">
       <button class="nav-tab" data-target="home">INICIO</button>
       <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
@@ -220,7 +231,6 @@
       <div class="avatar" id="nav-avatar-ranking" onclick="toggleUserMenu()">??</div>
       <div id="user-menu-ranking" class="user-menu" style="display:none">
         <div class="user-menu-name" id="user-menu-name-ranking">Bienvenido</div>
-          <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
         <button class="user-menu-logout" data-logout>Cerrar sesión</button>
       </div>
     </div>
@@ -253,12 +263,13 @@
         <tbody id="ranking-general-body"></tbody>
       </table>
     </div>
-    <div id="rtab-jugadores" class="rtab-content" style="display:none">
-      <table class="ranking-table">
-        <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
-        <tbody id="ranking-jugadores-body"></tbody>
-      </table>
-    </div>
+      <div id="rtab-jugadores" class="rtab-content" style="display:none">
+          <table class="ranking-table">
+              <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
+              <tbody id="ranking-jugadores-body"></tbody>
+          </table>
+          <div id="jugadores-paginador"></div>
+      </div>
     <div id="rtab-once" class="rtab-content" style="display:none">
       <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
         <select id="once-jornada-select" class="formation-select"></select>
@@ -271,7 +282,9 @@
 <!-- CRITERIOS DE PUNTUACIÓN -->
 <div id="screen-criterios" class="screen">
     <nav class="navbar">
-        <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+        <div class="nav-logo">
+            ASTUR<span>FANTASY</span>
+        </div>
         <div class="nav-tabs">
             <button class="nav-tab" data-target="home">INICIO</button>
             <button class="nav-tab" data-target="lineup">ALINEACIÓN</button>
@@ -282,27 +295,27 @@
             <div class="avatar" id="nav-avatar-criterios" onclick="toggleUserMenu()">??</div>
             <div id="user-menu-criterios" class="user-menu" style="display:none">
                 <div class="user-menu-name" id="user-menu-name-criterios">Bienvenido</div>
-                <button class="btn-toggle-theme" onclick="toggleTheme()">Cambiar modo</button>
                 <button class="user-menu-logout" data-logout>Cerrar sesión</button>
             </div>
         </div>
     </nav>
     <div class="jornada-banner">
-        <span class="jornada-num" style="font-size:20px;margin-left:8px">CRITERIOS DE PUNTUACIÓN</span>
+        <span class="jornada-num" style="font-size:20px;margin-left:8px">SISTEMA MIXTO (MEDIA ESTADÍSTICAS Y LNE)</span>
     </div>
     <main class="page-body">
         <div id="criterios-container">
 
             <div class="criterio-card">
                 <div class="criterio-titulo">⚽ Participación</div>
-                <div class="criterio-fila"><span>Titular</span><span class="criterio-pts">+1</span></div>
+                <div class="criterio-fila"><span>60 o más minutos</span><span class="criterio-pts">+2</span></div>
+                <div class="criterio-fila"><span>Menos de 60 minutos</span><span class="criterio-pts">+1</span></div>
             </div>
 
             <div class="criterio-card">
-                <div class="criterio-titulo">🧤 Portería a cero (debe ser titular, no importan los minutos jugados)</div>
-                <div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+3</span></div>
-                <div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+2</span></div>
-                <div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+1</span></div>
+                <div class="criterio-titulo">🧤 Portería a cero (60 o más minutos))</div>
+                <div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+4</span></div>
+                <div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+4</span></div>
+                <div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+2</span></div>
             </div>
 
             <div class="criterio-card">
@@ -325,13 +338,14 @@
             <div class="criterio-card">
                 <div class="criterio-titulo">🎯 Penaltis</div>
                 <div class="criterio-fila"><span>Penalti fallado</span><span class="criterio-pts neg">-3</span></div>
-                <div class="criterio-fila"><span>Penalti parado (sólo aplica al portero)</span><span class="criterio-pts">+3</span></div>
+                <div class="criterio-fila"><span>Penalti parado (POR)</span><span class="criterio-pts">+3</span></div>
             </div>
 
             <div class="criterio-card">
                 <div class="criterio-titulo">🎁 Otras acciones</div>
-                <div class="criterio-fila"><span>Asistencia</span><span class="criterio-pts">+1</span></div>
+                <div class="criterio-fila"><span>Asistencia</span><span class="criterio-pts">+3</span></div>
                 <div class="criterio-fila"><span>Gol en propia puerta</span><span class="criterio-pts neg">-2</span></div>
+                <div class="criterio-fila"><span>Goles encajados (POR y DEF, cada 2 goles)</span><span class="criterio-pts neg">-1</span></div>
             </div>
 
             <div class="criterio-card">
