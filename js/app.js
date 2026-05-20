@@ -328,6 +328,19 @@ document.getElementById('modal-partido')?.addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
 
+document.getElementById('btn-guardar-nombre-inicio')?.addEventListener('click', async () => {
+  const nombre = document.getElementById('input-nombre-equipo-inicio').value.trim();
+  if (!nombre) { showToast('Introduce un nombre', true); return; }
+
+  await db.from('equipos').upsert({
+    user_id: currentUser.id,
+    nombre_equipo: nombre
+  }, { onConflict: 'user_id' });
+
+  document.getElementById('modal-nombre-equipo').classList.remove('open');
+  goTo('home');
+});
+
 function desgloseFn(j) {
   const items = [];
 
@@ -1683,11 +1696,24 @@ async function loadOnce(jornada) {
   `;
 }
 
+
+
 (async function init() {
   const { data: { session } } = await db.auth.getSession();
   if (session?.user) {
     currentUser = session.user;
     updateNavUser(currentUser);
-    goTo('home');
+
+    const { data: equipoData } = await db
+      .from('equipos')
+      .select('nombre_equipo')
+      .eq('user_id', currentUser.id)
+      .single();
+
+    if (!equipoData?.nombre_equipo) {
+      document.getElementById('modal-nombre-equipo').classList.add('open');
+    } else {
+      goTo('home');
+    }
   }
 })();

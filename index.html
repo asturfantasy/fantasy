@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style-claro.css" />
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007a3d">
 </head>
 <body>
 
@@ -377,9 +379,38 @@
     renderNavbars();
 </script>
 
+<div id="modal-nombre-equipo" class="modal-overlay">
+    <div class="modal" style="max-width:380px">
+        <div class="modal-header">
+            <span class="modal-title">¡Bienvenido a AsturFantasy!</span>
+        </div>
+        <div style="padding:24px">
+            <p style="font-family:var(--font-body);font-size:14px;color:var(--text-muted);margin-bottom:16px">
+                Antes de empezar, ponle un nombre a tu equipo.
+            </p>
+            <input id="input-nombre-equipo-inicio" type="text" placeholder="Nombre de tu equipo" maxlength="25"
+                   style="width:100%;padding:10px 14px;font-family:var(--font-display);font-size:15px;
+               background:var(--surface);color:var(--text);border:1px solid var(--border);
+               border-radius:8px;margin-bottom:16px;box-sizing:border-box">
+            <button id="btn-guardar-nombre-inicio"
+                    style="width:100%;padding:12px;background:var(--neon);color:var(--bg);border:none;
+               border-radius:8px;font-family:var(--font-display);font-weight:700;
+               font-size:15px;cursor:pointer">
+                ¡Empezar!
+            </button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+</script>
 </body>
 </html>
