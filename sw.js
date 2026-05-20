@@ -1,4 +1,14 @@
-const CACHE = 'asturfantasy-v1';
+const CACHE = 'asturfantasy-v2';
+const ASSETS = [
+  '/icon-192.png',
+  '/icon-512.png'
+];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
+  );
+});
 
 self.addEventListener('activate', e => {
   e.waitUntil(
@@ -10,23 +20,13 @@ self.addEventListener('activate', e => {
   );
 });
 
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/style-claro.css',
-  '/js/config.js',
-  '/js/app.js',
-  '/icon-192.png',
-  '/icon-512.png'
-];
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
-  );
-});
-
 self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  const noCache = ['/js/app.js', '/js/config.js', '/index.html'];
+  if (noCache.some(p => url.pathname.endsWith(p))) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );

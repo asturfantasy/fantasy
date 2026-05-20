@@ -1379,7 +1379,6 @@ async function loadRanking() {
   const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
   document.getElementById('ranking-jornada-num').textContent = jornadaRanking;
 
-  // Eventos de las pestañas
   document.querySelectorAll('.ranking-tab').forEach(tab => {
     tab.onclick = () => {
       document.querySelectorAll('.ranking-tab').forEach(t => t.classList.remove('active'));
@@ -1390,7 +1389,6 @@ async function loadRanking() {
     };
   });
 
-  // ── Clasificación semanal con select ──
   const cargarSemanal = async (jornadaSel) => {
     const { data: semanal } = await db
       .from('clasificacion_automatica')
@@ -1426,7 +1424,6 @@ async function loadRanking() {
     selectSemanal.addEventListener('change', e => cargarSemanal(parseInt(e.target.value)));
   }
 
-  // ── Clasificación general ──
   const { data: general } = await db
     .from('clasificacion_general_auto')
     .select('*');
@@ -1435,16 +1432,32 @@ async function loadRanking() {
   if (!general?.length) {
     tbodyGeneral.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>`;
   } else {
-    tbodyGeneral.innerHTML = general.map((r, i) => `
-      <tr class="${medalClass(i+1)}">
-        <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
-        <td><div class="rank-team">${r.nombre_equipo}</div></td>
-        <td><div class="rank-pts">${r.puntos_total}</div></td>
-      </tr>
-    `).join('');
+    tbodyGeneral.innerHTML = general.map((r, i) => {
+      const esYo = r.user_id === currentUser?.id;
+      return `
+        <tr class="${medalClass(i+1)}" style="${esYo ? 'outline: 2px solid var(--neon);outline-offset:-2px;' : ''}">
+          <td><span class="rank-pos ${medalClass(i+1)}">${i+1}</span></td>
+          <td>
+            <div class="rank-team">
+              ${esYo ? '⭐ ' : ''}${r.nombre_equipo}
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+              <div class="rank-pts">${r.puntos_total}</div>
+              ${esYo ? `<button onclick="compartirClasificacion('${r.nombre_equipo}', ${i+1}, ${r.puntos_total})"
+                style="background:var(--neon);color:var(--bg);border:none;border-radius:20px;
+                       padding:4px 10px;cursor:pointer;font-family:var(--font-display);
+                       font-weight:700;font-size:10px;letter-spacing:1px;white-space:nowrap">
+                COMPARTIR
+              </button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
-  // ── Ranking jugadores ──
   const { data: jugadores } = await db
     .from('ranking_jugadores')
     .select('*');
@@ -1548,7 +1561,6 @@ async function loadRanking() {
     renderJugadoresFn();
   });
 
-  // ── Once de la semana ──
   const selectOnce = document.getElementById('once-jornada-select');
   if (selectOnce) {
     selectOnce.innerHTML = '';
@@ -1564,7 +1576,17 @@ async function loadRanking() {
   }
 }
 
+async function compartirClasificacion(nombreEquipo, posicion, puntos) {
+  const emoji = posicion === 1 ? '🥇' : posicion === 2 ? '🥈' : posicion === 3 ? '🥉' : '⚽';
+  const texto = `${emoji} Voy ${posicion}º en la clasificación general de AsturFantasy con ${puntos} puntos!\n🏆 Equipo: ${nombreEquipo}\nasturfantasy.com`;
 
+  if (navigator.share) {
+    await navigator.share({ text: texto });
+  } else {
+    await navigator.clipboard.writeText(texto);
+    showToast('Copiado al portapapeles ✓');
+  }
+}
 /* ── 7. ARRANQUE ─────────────────────────────────────────── */
 
 async function guardarNombreEquipo() {
