@@ -26,6 +26,24 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+async function registrarNotificaciones() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+  const permiso = await Notification.requestPermission();
+  if (permiso !== 'granted') return;
+
+  const registro = await navigator.serviceWorker.ready;
+  const subscription = await registro.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: 'BKuhEIkRfRwx5RT6uZeVF_ZRhHQ_mVOVqgGfrBMhZ1KLwCaOvqoaabX3OeRt_k7Edi1nFguD9x5pS0_nI99bPQ0'
+  });
+
+  await db.from('push_subscriptions').upsert({
+    user_id: currentUser.id,
+    subscription: JSON.stringify(subscription)
+  }, { onConflict: 'user_id' });
+}
+
 async function abrirConsultaPuntos() {
   const modal = document.getElementById('modal-puntos-jornada');
   const select = document.getElementById('puntos-equipo-select');
@@ -515,6 +533,7 @@ db.auth.onAuthStateChange((event, session) => {
   if (session?.user) {
     currentUser = session.user;
     updateNavUser(currentUser);
+    registrarNotificaciones();
     if (event === 'SIGNED_IN') goTo('home');
   } else {
     currentUser = null;
