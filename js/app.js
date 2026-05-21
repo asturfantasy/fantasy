@@ -39,6 +39,7 @@ async function toggleNotificaciones() {
     showToast('Notificaciones desactivadas');
   } else {
     await registrarNotificaciones();
+    actualizarToggleNotif(true);
     showToast('Notificaciones activadas');
   }
 }
@@ -481,6 +482,14 @@ function toggleUserMenu() {
 
   const menu = document.getElementById(menuId);
   if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+
+  if (currentUser) {
+    db.from('push_subscriptions')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .limit(1)
+      .then(({ data }) => actualizarToggleNotif(!!data?.length));
+  }
 }
 
 // Cerrar el menú al hacer clic fuera
