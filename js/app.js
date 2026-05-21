@@ -9,6 +9,7 @@ let cambiosSinGuardar = false;
 let paginaActual = 1;
 const POR_PAGINA = 25;
 let renderJugadoresFn = null;
+let notificacionesActivas = false;
 
 window.addEventListener('beforeunload', e => {
   if (cambiosSinGuardar) {
@@ -45,6 +46,7 @@ async function toggleNotificaciones() {
 }
 
 function actualizarToggleNotif(activo) {
+  notificacionesActivas = activo;
   document.querySelectorAll('[id^="toggle-notif"]').forEach(toggle => {
     toggle.style.background = activo ? '#007a3d' : '#888';
     const knob = toggle.querySelector('div');
@@ -484,11 +486,7 @@ function toggleUserMenu() {
   if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
 
   if (currentUser) {
-    db.from('push_subscriptions')
-      .select('id')
-      .eq('user_id', currentUser.id)
-      .limit(1)
-      .then(({ data }) => actualizarToggleNotif(!!data?.length));
+    actualizarToggleNotif(notificacionesActivas);
   }
 }
 
