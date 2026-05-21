@@ -38,10 +38,12 @@ async function registrarNotificaciones() {
     applicationServerKey: 'BKuhEIkRfRwx5RT6uZeVF_ZRhHQ_mVOVqgGfrBMhZ1KLwCaOvqoaabX3OeRt_k7Edi1nFguD9x5pS0_nI99bPQ0'
   });
 
-  await db.from('push_subscriptions').upsert({
+  const { error } = await db.from('push_subscriptions').insert({
     user_id: currentUser.id,
     subscription: JSON.stringify(subscription)
-  }, { onConflict: 'user_id' });
+  });
+
+  if (error) console.error('Error guardando subscription:', error);
 }
 
 async function abrirConsultaPuntos() {
