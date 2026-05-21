@@ -32,7 +32,7 @@ async function abrirConsultaPuntos() {
   const content = document.getElementById('puntos-jornada-content');
   const titulo = document.getElementById('puntos-jornada-titulo');
 
-  titulo.textContent = `Puntos Jornada ${jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE}`;
+  titulo.textContent = `Puntos Jornada ${JORNADA_VISIBLE}`;
   content.innerHTML = '';
   select.value = '';
   modal.classList.add('open');
@@ -51,7 +51,7 @@ async function abrirConsultaPuntos() {
       .from('jugadores')
       .select('nombre, posicion, total_jornada, foto_url, escudo_url, minutos, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador, goles_encajados')
       .eq('club', club)
-      .eq('jornada', jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE)
+      .eq('jornada', JORNADA_VISIBLE)
       .order('total_jornada', { ascending: false });
 
     if (error || !data?.length) {
@@ -96,7 +96,8 @@ async function abrirConsultaPuntos() {
       <input id="buscar-jugador-puntos" type="text" placeholder="Buscar jugador..."
         style="width:100%;padding:8px 12px;font-family:var(--font-mono);font-size:13px;
                background:var(--surface);color:var(--text);border:1px solid var(--border);
-               border-radius:8px;margin-bottom:12px;box-sizing:border-box">
+               border-radius:8px;margin-bottom:12px;box-sizing:border-box;
+               position:sticky;top:0;z-index:1;">
       <div id="lista-jugadores-puntos" style="width:100%">
         ${sorted.map(renderFila).join('')}
       </div>
@@ -534,14 +535,34 @@ function loadHome() {
   const saludo = hora < 14 ? 'Buenos días' : hora < 21 ? 'Buenas tardes' : 'Buenas noches';
   if (bienvenida) bienvenida.textContent = `¡${saludo}, ${userName}!`;
 
+  const ahora = new Date();
+  const enDirecto = ahora > new Date(DEADLINE_JORNADA) && ahora < new Date(window.FECHA_FIN);
+  const bannerAviso = document.getElementById('card-mensaje-home');
+  if (bannerAviso) {
+    if (window.MENSAJE_AVISO) {
+      bannerAviso.textContent = window.MENSAJE_AVISO;
+      bannerAviso.style.display = 'block';
+    } else {
+      bannerAviso.style.display = 'none';
+    }
+  }
+  const tituloJornada = document.getElementById('titulo-jornada-home');
+  if (tituloJornada) tituloJornada.textContent = window.TITULO_JORNADA || '';
+  const bannerDirecto = document.getElementById('banner-en-directo');
+  if (bannerDirecto) bannerDirecto.style.display = enDirecto ? 'block' : 'none';
+
   const btnJ = document.getElementById('btn-jornada-visible');
-  if (btnJ) btnJ.textContent = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+  if (btnJ) btnJ.textContent = JORNADA_VISIBLE;
 
   const container = document.getElementById('matches-container');
+  if (!PARTIDOS.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px 20px;font-family:var(--font-display);font-size:16px;color:var(--text-muted);letter-spacing:1px">Próxima jornada por confirmar</div>';
+    return;
+  }
   container.innerHTML = PARTIDOS.map(p => `
     <div class="match-card">
       <div class="match-team">
-        <div class="crest" style="background:${p.local.color};color:white;display:flex;align-items:center;justify-content:center">
+        <div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">
           ${p.local.escudo_url
             ? `<img loading="lazy" src="${p.local.escudo_url}" alt="${p.local.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.local.abrev}'">`
             : p.local.abrev}
@@ -576,7 +597,7 @@ function loadHome() {
         ` : ''}
       </div>
       <div class="match-team right">
-        <div class="crest" style="background:${p.visitante.color};color:white;display:flex;align-items:center;justify-content:center">
+        <div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">
           ${p.visitante.escudo_url
             ? `<img loading="lazy" src="${p.visitante.escudo_url}" alt="${p.visitante.abrev}" width="48" height="48" style="object-fit:contain" onerror="this.outerHTML='${p.visitante.abrev}'">`
             : p.visitante.abrev}
@@ -1721,6 +1742,7 @@ async function loadOnce(jornada) {
 
 
 (async function init() {
+  await loadConfig();
   const { data: { session } } = await db.auth.getSession();
   if (session?.user) {
     currentUser = session.user;

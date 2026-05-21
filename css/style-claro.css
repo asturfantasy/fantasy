@@ -653,4 +653,9 @@ background: var(--black);
 #once-container > div > div { background: var(--bg2); }
 #once-container > div > div:nth-child(even) { background: #DBDBDB; }
 
+@keyframes parpadeo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 #btn-consulta-ptos-jornada:hover { border-color: var(--neon); background: var(--neon-glow); box-shadow: 0 4px 16px var(--neon-glow); transform: translateY(-2px); }
