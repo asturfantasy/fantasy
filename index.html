@@ -400,8 +400,31 @@
             <div class="nav-user">
               <div class="avatar" id="nav-avatar${screenId === 'home' ? '' : '-' + screenId}" onclick="toggleUserMenu()">·</div>
               <div id="user-menu${screenId === 'home' ? '' : '-' + screenId}" class="user-menu" style="display:none">
-                <div class="user-menu-name" id="user-menu-name${screenId === 'home' ? '' : '-' + screenId}">Bienvenido</div>
-                <button class="user-menu-logout" ${screenId === 'home' ? 'id="btn-logout"' : 'data-logout'}>Cerrar sesión</button>
+                <div style="padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px">
+                  <div id="user-menu-name${screenId === 'home' ? '' : '-' + screenId}" style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text)">Bienvenido</div>
+                  <div id="user-menu-email${screenId === 'home' ? '' : '-' + screenId}" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px"></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer" onclick="toggleNotificaciones()">
+                  <span style="font-size:16px">🔔</span>
+                  <div style="flex:1">
+                    <div style="font-family:var(--font-display);font-size:13px;color:var(--text)">Notificaciones</div>
+                    <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">Avisos de jornada y puntos</div>
+                  </div>
+                  <div id="toggle-notif${screenId === 'home' ? '' : '-' + screenId}"
+                       style="width:36px;height:20px;border-radius:10px;background:var(--border);
+                              position:relative;transition:background 0.2s;flex-shrink:0">
+                    <div style="width:16px;height:16px;border-radius:50%;background:white;
+                                position:absolute;top:2px;left:2px;transition:left 0.2s"></div>
+                  </div>
+                </div>
+                <div style="border-top:1px solid var(--border);margin-top:4px">
+                  <button class="user-menu-logout" ${screenId === 'home' ? 'id="btn-logout"' : 'data-logout'}
+                    style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;
+                           background:none;border:none;cursor:pointer;color:var(--red);
+                           font-family:var(--font-display);font-size:13px;">
+                    <span style="font-size:16px">🚪</span> Cerrar sesión
+                  </button>
+                </div>
               </div>
             </div>
           </nav>

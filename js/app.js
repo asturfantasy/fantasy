@@ -26,6 +26,31 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+async function toggleNotificaciones() {
+  const { data: existente } = await db
+    .from('push_subscriptions')
+    .select('id')
+    .eq('user_id', currentUser.id)
+    .limit(1);
+
+  if (existente?.length) {
+    await db.from('push_subscriptions').delete().eq('user_id', currentUser.id);
+    actualizarToggleNotif(false);
+    showToast('Notificaciones desactivadas');
+  } else {
+    await registrarNotificaciones();
+    showToast('Notificaciones activadas');
+  }
+}
+
+function actualizarToggleNotif(activo) {
+  document.querySelectorAll('[id^="toggle-notif"]').forEach(toggle => {
+    toggle.style.background = activo ? '#007a3d' : '#888';
+    const knob = toggle.querySelector('div');
+    if (knob) knob.style.left = activo ? '18px' : '2px';
+  });
+}
+
 async function registrarNotificaciones() {
   if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
 
@@ -50,6 +75,7 @@ async function registrarNotificaciones() {
     user_id: currentUser.id,
     subscription: JSON.stringify(subscription)
   });
+  actualizarToggleNotif(true);
 }
 
 async function abrirConsultaPuntos() {
@@ -501,12 +527,14 @@ function updateNavUser(user) {
     const av = document.getElementById('nav-avatar' + s);
     const un = document.getElementById('nav-username' + s);
     const mn = document.getElementById('user-menu-name' + (s || ''));
+    const me = document.getElementById('user-menu-email' + (s || ''));
     if (av) {
       av.textContent = initials;
       av.title = name;
     }
     if (un) un.textContent = name.split(' ')[0];
     if (mn) mn.textContent = '¡Hola, ' + name.split(' ')[0] + '!';
+    if (me) me.textContent = user?.email || '';
   });
 }
 
@@ -553,8 +581,15 @@ db.auth.onAuthStateChange((event, session) => {
 
 /* ── 3. HOME ─────────────────────────────────────────────── */
 
-function loadHome() {
+async function loadHome() {
   document.getElementById('home-jornada-num').textContent = JORNADA_ACTIVA;
+
+   const { data: sub } = await db
+      .from('push_subscriptions')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .single();
+    actualizarToggleNotif(!!sub);
 
   const userName = currentUser?.user_metadata?.full_name?.split(' ')[0] || 'crack';
   const bienvenida = document.getElementById('home-bienvenida');
