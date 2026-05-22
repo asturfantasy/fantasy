@@ -258,6 +258,18 @@
             </div>
         </div>
 
+        <!-- TARJETA 4: ONCE RENTABLE -->
+        <div class="ranking-card" id="ranking-card-rentable">
+            <div class="ranking-card-header" onclick="goTo('ranking-rentable')">
+                <div class="ranking-card-icon">💰</div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Once rentable</div>
+                    <div class="ranking-card-sub">Mejor relación puntos / precio</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -332,6 +344,23 @@
             <select id="once-jornada-select" class="formation-select" style="width:100%"></select>
         </div>
         <div id="once-container"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: ONCE RENTABLE -->
+<div id="screen-ranking-rentable" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Once rentable</span>
+    </div>
+    <main class="page-body">
+        <div style="margin-bottom:14px">
+            <select id="rentable-jornada-select" class="formation-select" style="width:100%"></select>
+        </div>
+        <div id="rentable-container"></div>
     </main>
 </div>
 

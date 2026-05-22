@@ -307,7 +307,8 @@ function goTo(screenId) {
     ranking: 'Clasificación', criterios: 'Puntuación',
     'ranking-clasificacion': 'Clasificación',
     'ranking-jugadores': 'Jugadores',
-    'ranking-once': 'Once ideal'
+    'ranking-once': 'Once ideal',
+    'ranking-rentable': 'Once rentable'
   };
   document.title = 'AsturFantasy · ' + (titulos[screenId] || 'AsturFantasy');
   window.scrollTo(0, 0);
@@ -317,9 +318,92 @@ function goTo(screenId) {
     ranking: loadRanking, criterios: () => {},
     'ranking-clasificacion': () => {},
     'ranking-jugadores': loadRankingJugadores,
-    'ranking-once': loadRankingOnce
+    'ranking-once': loadRankingOnce,
+    'ranking-rentable': loadRankingRentable
   };
   if (loaders[screenId]) loaders[screenId]();
+}
+
+async function loadRankingRentable() {
+  const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+  const selectRentable = document.getElementById('rentable-jornada-select');
+  if (selectRentable && !selectRentable.options.length) {
+    for (let i = JORNADA_ACTIVA; i >= 1; i--) {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = 'Jornada ' + i;
+      selectRentable.appendChild(opt);
+    }
+    selectRentable.value = jornadaRanking;
+    selectRentable.addEventListener('change', e => cargarRentable(parseInt(e.target.value)));
+  }
+  cargarRentable(jornadaRanking);
+}
+
+async function cargarRentable(jornada) {
+  const container = document.getElementById('rentable-container');
+  container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
+  const { data, error } = await db.from('jugadores')
+    .select('nombre, club, posicion, puntos, valor, escudo_url, foto_url')
+    .eq('jornada', jornada).neq('posicion', 'ENT')
+    .gt('valor', 0).gt('puntos', 0)
+    .order('puntos', { ascending: false });
+  if (error || !data?.length) { container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>'; return; }
+
+  // Calcular rentabilidad y ordenar
+  const conRentabilidad = data.map(j => ({ ...j, rentabilidad: j.puntos / j.valor }));
+  const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
+  conRentabilidad.forEach(j => porPos[j.posicion]?.push(j));
+  Object.keys(porPos).forEach(pos => porPos[pos].sort((a, b) => b.rentabilidad - a.rentabilidad));
+
+  const portero = porPos.POR.slice(0, 1);
+  const defs = porPos.DEF;
+  const meds = porPos.MED;
+  const dels = porPos.DEL;
+  let defOnce = defs.slice(0, 3), medOnce = meds.slice(0, 3), delOnce = dels.slice(0, 1);
+  const candidatos = [...defs.slice(3,5).map(j=>({...j,_pos:'DEF'})),...meds.slice(3,4).map(j=>({...j,_pos:'MED'})),...dels.slice(1,3).map(j=>({...j,_pos:'DEL'}))].sort((a,b)=>b.rentabilidad-a.rentabilidad);
+  let huecos = 3;
+  for (const c of candidatos) {
+    if (!huecos) break;
+    if (c._pos==='DEF' && defOnce.length<5) { defOnce.push(c); huecos--; }
+    else if (c._pos==='MED' && medOnce.length<4) { medOnce.push(c); huecos--; }
+    else if (c._pos==='DEL' && delOnce.length<3) { delOnce.push(c); huecos--; }
+  }
+
+  const filas = [
+    { label: '🧤 PORTERO', jugadores: portero },
+    { label: '🛑 DEFENSAS', jugadores: defOnce },
+    { label: '🧠 MEDIOS', jugadores: medOnce },
+    { label: '⚽ DELANTEROS', jugadores: delOnce },
+  ];
+
+  const costeTotal = [...portero,...defOnce,...medOnce,...delOnce].reduce((acc,j)=>acc+j.valor,0);
+  const puntosTotal = [...portero,...defOnce,...medOnce,...delOnce].reduce((acc,j)=>acc+j.puntos,0);
+  const formacion = defOnce.length + '-' + medOnce.length + '-' + delOnce.length;
+
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--neon);letter-spacing:2px">Formación: ${formacion}</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">
+        <div>COSTE: <strong style="color:var(--amber)">${costeTotal.toFixed(1)}M</strong></div>
+        <div>PUNTOS: <strong style="color:var(--neon)">${puntosTotal} pts</strong></div>
+      </div>
+    </div>
+    ${filas.map(fila => `
+      <div style="margin-bottom:18px">
+        <div style="font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px">${fila.label}</div>
+        ${fila.jugadores.map(j => `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+            ${j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="26" height="26" style="object-fit:contain">' : '<div style="width:26px;height:26px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:9px">' + j.club + '</div>'}
+            <div style="flex:1">
+              <div style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text)">${j.nombre}</div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${j.club} · ${j.posicion} · ${j.valor}M</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--neon)">${j.puntos} pts</div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">${j.rentabilidad.toFixed(2)} pts/M</div>
+            </div>
+          </div>`).join('')}
+      </div>`).join('')}`;
 }
 
 function updateNavUser(user) {
