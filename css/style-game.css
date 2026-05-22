@@ -297,6 +297,24 @@ html, body {
   align-items: center;
   justify-content: space-between;
   transition: all 0.2s;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+#modal-puntos-jornada .modal {
+  overflow-x: hidden;
+}
+
+#puntos-jornada-content {
+  overflow-x: hidden;
+}
+#puntos-jornada-content .match-team {
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+#puntos-jornada-content .crest {
+  flex-shrink: 0;
 }
 .match-card:hover { border-color: rgba(0,217,126,0.25); background: var(--bg3); }
 .match-team { display: flex; align-items: center; gap: 10px; flex: 1; }
