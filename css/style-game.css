@@ -491,8 +491,28 @@ html, body {
 .rank-pts { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--neon); text-align: right; }
 
 /* ── TOAST ── */
-.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 20px; padding: 10px 24px; font-family: var(--font-body); font-weight: 600; font-size: 13px; transition: transform 0.3s ease; z-index: 300; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-.toast.show { transform: translateX(-50%) translateY(0); }
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 10px 24px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  transition: opacity 0.3s ease;
+  z-index: 300;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  max-width: 280px;
+  text-align: center;
+  opacity: 0;
+}
+.toast.show { opacity: 1; }
 
 /* ── DEADLINE ── */
 .deadline-info { margin: 0 16px 0; border-radius: var(--radius-sm); text-align: center; font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
@@ -650,3 +670,5 @@ html, body {
   font-size: 16px;
   color: var(--text);
 }
+
+#modal-desglose { z-index: 500; }

@@ -10,6 +10,7 @@ const POR_PAGINA = 25;
 let renderJugadoresFn = null;
 let notificacionesActivas = false;
 let equipoFavoritoSeleccionado = null;
+let toastTimeout = null;
 
 const CLUBES_INFO = {
   CAU: { nombre: 'Caudal Deportivo',  escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/caudal_deportivo.png' },
@@ -27,11 +28,14 @@ function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.style.background = isError ? '#b03020' : '#21262d';
-  t.style.bottom = 'calc(env(keyboard-inset-height, 0px) + 80px)';
+  t.classList.remove('show');
+  void t.offsetHeight;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    document.getElementById('toast').classList.remove('show');
+  }, 2000);
 }
-
 function jornadadCerrada() { return new Date() > new Date(DEADLINE_JORNADA); }
 
 function updateBottomNav(screenId) {
@@ -294,6 +298,11 @@ document.addEventListener('keydown', e => {
 });
 
 function goTo(screenId) {
+  // Ocultar toast al navegar
+  const t = document.getElementById('toast');
+  if (t) t.classList.remove('show');
+  if (toastTimeout) { clearTimeout(toastTimeout); toastTimeout = null; }
+
   const screenActiva = document.querySelector('.screen.active');
   if (cambiosSinGuardar && screenActiva?.id === 'screen-lineup' && screenId !== 'lineup') {
     if (!confirm('⚠️ No has guardado los cambios. ¿Seguro que quieres salir?')) return;
@@ -1156,7 +1165,11 @@ async function guardarNombreEquipo() {
   else showToast('Nombre de equipo guardado');
 }
 
-document.getElementById('btn-guardar-equipo')?.addEventListener('click', guardarNombreEquipo);
+const btnGuardar = document.getElementById('btn-guardar-equipo');
+if (btnGuardar) {
+  btnGuardar.removeEventListener('click', guardarNombreEquipo);
+  btnGuardar.addEventListener('click', guardarNombreEquipo);
+}
 document.getElementById('btn-export-png')?.addEventListener('click', exportarAlineacion);
 
 /* ── 17. ONCE IDEAL ──────────────────────────────────────── */
