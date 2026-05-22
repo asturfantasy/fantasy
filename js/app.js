@@ -316,12 +316,81 @@ function goTo(screenId) {
   const loaders = {
     home: loadHome, lineup: loadLineup, myteam: loadMyTeam,
     ranking: loadRanking, criterios: () => {},
-    'ranking-clasificacion': () => {},
+    'ranking-clasificacion': loadRankingClasificacion,
     'ranking-jugadores': loadRankingJugadores,
     'ranking-once': loadRankingOnce,
     'ranking-rentable': loadRankingRentable
   };
   if (loaders[screenId]) loaders[screenId]();
+}
+
+async function loadRankingClasificacion() {
+  const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+
+  // General
+  const { data: general } = await db.from('clasificacion_general_auto').select('*');
+  const tbodyG = document.getElementById('ranking-general-body');
+  if (!general?.length) {
+    tbodyG.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>';
+  } else {
+    tbodyG.innerHTML = general.map((r, i) => {
+      const esYo = r.user_id === currentUser?.id;
+      return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+    }).join('');
+  }
+
+  // Semanal
+  const cargarSemanal = async (jornadaSel) => {
+    const { data: semanal } = await db.from('clasificacion_automatica').select('*').eq('jornada', jornadaSel).order('puntos', { ascending: false });
+    const tbody = document.getElementById('ranking-body');
+    if (!semanal?.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ' + jornadaSel + '</td></tr>';
+    } else {
+      tbody.innerHTML = semanal.map((r, i) => {
+        const esYo = r.user_id === currentUser?.id;
+        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+      }).join('');
+    }
+  };
+
+  const selectSemanal = document.getElementById('semanal-jornada-select');
+  if (selectSemanal) {
+    selectSemanal.innerHTML = '';
+    for (let i = JORNADA_ACTIVA; i >= 1; i--) {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = 'Jornada ' + i;
+      selectSemanal.appendChild(opt);
+    }
+    selectSemanal.value = jornadaRanking;
+    cargarSemanal(jornadaRanking);
+    selectSemanal.onchange = e => cargarSemanal(parseInt(e.target.value));
+  }
+
+  // Peña
+  const { data: equipoData } = await db.from('equipos').select('equipo_favorito').eq('user_id', currentUser.id).single();
+  const equipoFav = equipoData?.equipo_favorito;
+  const clubInfo = CLUBES_INFO[equipoFav] || null;
+  if (clubInfo) {
+    const esc = document.getElementById('pena-escudo');
+    const nom = document.getElementById('pena-nombre');
+    if (esc) { esc.src = clubInfo.escudo; esc.style.display = 'block'; }
+    if (nom) nom.textContent = 'Liga ' + clubInfo.nombre;
+  }
+  if (equipoFav) {
+    const { data: penaAll } = await db.from('clasificacion_general_auto').select('*');
+    const { data: equiposFav } = await db.from('equipos').select('user_id').eq('equipo_favorito', equipoFav);
+    const userIdsFav = new Set((equiposFav || []).map(e => e.user_id));
+    const penaFiltrada = (penaAll || []).filter(r => userIdsFav.has(r.user_id));
+    const tbodyP = document.getElementById('ranking-pena-body');
+    if (tbodyP) {
+      tbodyP.innerHTML = !penaFiltrada.length
+        ? '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Solo tú en esta peña de momento</td></tr>'
+        : penaFiltrada.map((r, i) => {
+            const esYo = r.user_id === currentUser?.id;
+            return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+          }).join('');
+    }
+  }
 }
 
 async function loadRankingRentable() {
@@ -433,6 +502,12 @@ async function loadRankingJugadores() {
         <option value="">Todas las posiciones</option>
         ${posiciones.map(p => `<option value="${p}">${p}</option>`).join('')}
       </select>
+      <select id="filtro-orden" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:var(--font-display);font-size:13px;cursor:pointer">
+        <option value="puntos">Ordenar por puntos</option>
+        <option value="valor-asc">Valor ↑</option>
+        <option value="valor-desc">Valor ↓</option>
+        <option value="rentabilidad">Rentabilidad</option>
+      </select>
       <input id="filtro-nombre" type="text" placeholder="Buscar jugador..." style="padding:7px 10px;font-family:var(--font-mono);font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;min-width:140px;">
       <button id="btn-reset-filtros">Reiniciar</button>
     </div>
@@ -446,7 +521,17 @@ async function loadRankingJugadores() {
     const club = document.getElementById('filtro-club').value;
     const pos = document.getElementById('filtro-pos').value;
     const nombre = document.getElementById('filtro-nombre').value.toLowerCase();
-    const filtrados = (jugadores || []).filter(j => (!club || j.club === club) && (!pos || j.posicion === pos) && (!nombre || j.nombre.toLowerCase().includes(nombre)));
+    const orden = document.getElementById('filtro-orden').value;
+    const filtrados = (jugadores || []).filter(j =>
+      (!club || j.club === club) &&
+      (!pos || j.posicion === pos) &&
+      (!nombre || j.nombre.toLowerCase().includes(nombre))
+    ).sort((a, b) => {
+      if (orden === 'valor-asc') return (parseFloat(a.valor) || 0) - (parseFloat(b.valor) || 0);
+      if (orden === 'valor-desc') return (parseFloat(b.valor) || 0) - (parseFloat(a.valor) || 0);
+      if (orden === 'rentabilidad') return (b.puntos_total / (parseFloat(b.valor) || 1)) - (a.puntos_total / (parseFloat(a.valor) || 1));
+      return b.puntos_total - a.puntos_total;
+    });
     const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA);
     if (paginaActual > totalPaginas) paginaActual = 1;
     const inicio = (paginaActual - 1) * POR_PAGINA;
@@ -466,8 +551,15 @@ async function loadRankingJugadores() {
   renderJugadoresFn();
   document.getElementById('filtro-club').addEventListener('change', renderJugadoresFn);
   document.getElementById('filtro-pos').addEventListener('change', renderJugadoresFn);
+  document.getElementById('filtro-orden').addEventListener('change', renderJugadoresFn);
   document.getElementById('filtro-nombre').addEventListener('input', renderJugadoresFn);
-  document.getElementById('btn-reset-filtros').addEventListener('click', () => { document.getElementById('filtro-club').value=''; document.getElementById('filtro-pos').value=''; document.getElementById('filtro-nombre').value=''; paginaActual=1; renderJugadoresFn(); });
+  document.getElementById('btn-reset-filtros').addEventListener('click', () => {
+    document.getElementById('filtro-club').value = '';
+    document.getElementById('filtro-pos').value = '';
+    document.getElementById('filtro-orden').value = 'puntos';
+    document.getElementById('filtro-nombre').value = '';
+    paginaActual = 1; renderJugadoresFn();
+  });
 }
 
 async function loadRankingOnce() {
@@ -960,17 +1052,12 @@ async function loadRanking() {
       const miPosS = semanal.findIndex(r => r.user_id === currentUser?.id);
       const mpS = document.getElementById('metric-pos-jornada');
       if (mpS) mpS.textContent = miPosS >= 0 ? (miPosS + 1) + 'º' : '—';
-      tbody.innerHTML = semanal.map((r, i) => '<tr class="' + medalClass(i+1) + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + r.nombre_equipo + '</div></td><td><div class="rank-pts">' + r.puntos + '</div></td></tr>').join('');
+      tbody.innerHTML = semanal.map((r, i) => {
+        const esYo = r.user_id === currentUser?.id;
+        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+      }).join('');
     }
   };
-  const selectSemanal = document.getElementById('semanal-jornada-select');
-  if (selectSemanal) {
-    selectSemanal.innerHTML = '';
-    for (let i = JORNADA_ACTIVA; i >= 1; i--) { const opt = document.createElement('option'); opt.value = i; opt.textContent = 'Jornada ' + i; selectSemanal.appendChild(opt); }
-    selectSemanal.value = jornadaRanking;
-    cargarSemanal(jornadaRanking);
-    selectSemanal.addEventListener('change', e => cargarSemanal(parseInt(e.target.value)));
-  }
 
   // Peña
   if (equipoFav) {
@@ -985,7 +1072,10 @@ async function loadRanking() {
     if (tbodyP) {
       tbodyP.innerHTML = !penaFiltrada.length
         ? '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Solo tú en esta peña de momento</td></tr>'
-        : penaFiltrada.map((r, i) => { const esYo = r.user_id === currentUser?.id; return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div class="rank-pts">' + r.puntos_total + '</div></td></tr>'; }).join('');
+        : penaFiltrada.map((r, i) => {
+            const esYo = r.user_id === currentUser?.id;
+            return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+          }).join('');
     }
   }
 
@@ -1025,11 +1115,30 @@ async function loadRanking() {
     loadOnce(jornadaRanking);
     selectOnce.addEventListener('change', e => loadOnce(parseInt(e.target.value)));
   }
+
+  const { data: semanalMetrica } = await db.from('clasificacion_automatica')
+    .select('puntos, user_id')
+    .eq('jornada', jornadaRanking)
+    .order('puntos', { ascending: false });
+  if (semanalMetrica?.length) {
+    const miPosS = semanalMetrica.findIndex(r => r.user_id === currentUser?.id);
+    const mpS = document.getElementById('metric-pos-jornada');
+    if (mpS) mpS.textContent = miPosS >= 0 ? (miPosS + 1) + 'º' : '—';
+  }
 }
 
-async function compartirClasificacion(nombreEquipo, posicion, puntos) {
+async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club) {
   const emoji = posicion === 1 ? '🥇' : posicion === 2 ? '🥈' : posicion === 3 ? '🥉' : '⚽';
-  const texto = emoji + ' Voy ' + posicion + 'º en AsturFantasy con ' + puntos + ' puntos!\n🏆 Equipo: ' + nombreEquipo + '\nasturfantasy.com';
+  let texto;
+  if (tipo === 'jornada') {
+    texto = `${emoji} ¡He quedado ${posicion}º esta jornada en AsturFantasy con ${puntos} puntos!\n🏆 Equipo: ${nombreEquipo}\nasturfantasy.com`;
+  } else if (tipo === 'pena') {
+    const nombreClub = CLUBES_INFO[club]?.nombre || club || 'tu club';
+      texto = `${emoji} ¡Voy ${posicion}º en la liga de fans del ${nombreClub} en AsturFantasy!\n🏆 Equipo: ${nombreEquipo} · ${puntos} pts\nasturfantasy.com`;
+  } else {
+    texto = `${emoji} ¡Voy ${posicion}º en la clasificación general de AsturFantasy con ${puntos} puntos!\n🏆 Equipo: ${nombreEquipo}\nasturfantasy.com`;
+  }
+  console.log('Texto a compartir:', texto);
   if (navigator.share) await navigator.share({ text: texto });
   else { await navigator.clipboard.writeText(texto); showToast('Copiado al portapapeles'); }
 }
