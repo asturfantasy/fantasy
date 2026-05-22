@@ -67,8 +67,6 @@
     <div id="banner-en-directo" style="display:none;background:#cc0000;color:white;text-align:center;padding:8px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px">
         <span style="animation:parpadeo 1.2s infinite">🔴</span> JORNADA EN DIRECTO
     </div>
-
-    <!-- STATS CARDS -->
     <div class="home-stats" id="home-stats-container">
         <div class="home-stat-card">
             <div class="home-stat-label">Tu posición</div>
@@ -86,22 +84,15 @@
             <div class="home-stat-delta muted" id="stat-media-label"></div>
         </div>
     </div>
-
     <main class="page-body">
         <div id="card-mensaje-home" style="display:none;background:rgba(227,179,65,0.12);border:1px solid rgba(227,179,65,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;font-family:var(--font-mono);font-size:11px;color:var(--yellow);text-align:center"></div>
-
         <button class="action-btn" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:14px">
-            <span class="action-label">PUNTOS J<span id="btn-jornada-visible"></span></span>
-            <span class="action-desc">Consulta los puntos de la pasada jornada</span>
+            <span class="action-label">CONSULTA LOS PUNTOS DE JORNADAS PASADAS</span>
         </button>
-
         <div class="section-label"><strong id="titulo-jornada-home"></strong></div>
         <div id="matches-container" class="matches-grid">
-            <div style="text-align:center;padding:32px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:12px">
-                Cargando jornada...
-            </div>
+            <div style="text-align:center;padding:32px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:12px">Cargando jornada...</div>
         </div>
-
         <div class="section-label" style="margin-top:20px;margin-bottom:12px"><strong>HORA DE LA ACCIÓN</strong></div>
         <div class="action-grid">
             <button class="action-btn" data-target="lineup">
@@ -131,22 +122,19 @@
 <!-- ALINEACIÓN -->
 <div id="screen-lineup" class="screen">
     <div class="navbar-placeholder"></div>
-    <div class="round-header">
-        <div class="round-badge">Jornada <span id="lineup-jornada">—</span></div>
+    <div class="jornada-banner">
+        <span class="jornada-text">JORNADA</span>
+        <span class="jornada-num" id="lineup-jornada">—</span>
     </div>
     <div id="deadline-info" class="deadline-info" style="padding:8px 0 4px"></div>
     <div id="presupuesto-info" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border)">
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">PRESUPUESTO DISPONIBLE</div>
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--white)">PRESUPUESTO DISPONIBLE</div>
         <div id="presupuesto-valor" style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">125M</div>
     </div>
     <div style="padding:8px 16px;display:flex;justify-content:center;align-items:center;gap:12px">
         <select id="formation-select" class="formation-select">
-            <option>4-3-3</option>
-            <option>4-4-2</option>
-            <option>4-5-1</option>
-            <option>3-4-3</option>
-            <option>3-5-2</option>
-            <option>5-3-2</option>
+            <option>4-3-3</option><option>4-4-2</option><option>4-5-1</option>
+            <option>3-4-3</option><option>3-5-2</option><option>5-3-2</option>
         </select>
     </div>
     <div id="export-area">
@@ -206,50 +194,144 @@
     </main>
 </div>
 
-<!-- CLASIFICACIÓN -->
+<!-- CLASIFICACIÓN — 3 tarjetas que abren pantallas completas -->
 <div id="screen-ranking" class="screen">
     <div class="navbar-placeholder"></div>
     <div class="jornada-banner">
-        <span class="jornada-text">JORNADA</span>
-        <span class="jornada-num" id="ranking-jornada-num">—</span>
+        <span class="jornada-text">CONSULTA LOS RANKINGS</span>
+        <span class="jornada-num" id="ranking-jornada-num" style="display:none">—</span>
         <span class="jornada-side"></span>
+
     </div>
     <main class="page-body">
-        <div class="section-label" style="margin-bottom:14px">Estadísticas</div>
-        <div class="ranking-tabs">
-            <button class="ranking-tab active" data-rtab="semanal">Jornada</button>
-            <button class="ranking-tab" data-rtab="general">General</button>
-            <button class="ranking-tab" data-rtab="jugadores">Jugadores</button>
-            <button class="ranking-tab" data-rtab="once">Once ideal</button>
+
+        <!-- TARJETA 1: CLASIFICACIÓN -->
+        <div class="ranking-card" id="ranking-card-clasificacion">
+            <div class="ranking-card-header" onclick="goTo('ranking-clasificacion')">
+                <div class="ranking-card-icon">🏆</div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Clasificación</div>
+                    <div class="ranking-card-sub">General · Jornada · Tu peña</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+            <div class="ranking-metrics">
+                <div class="ranking-metric" onclick="goTo('ranking-clasificacion')">
+                    <div class="ranking-metric-label">General</div>
+                    <div class="ranking-metric-value" id="metric-pos-general">—</div>
+                    <div class="ranking-metric-sub">posición</div>
+                </div>
+                <div class="ranking-metric" onclick="goTo('ranking-clasificacion')">
+                    <div class="ranking-metric-label">Jornada</div>
+                    <div class="ranking-metric-value" id="metric-pos-jornada">—</div>
+                    <div class="ranking-metric-sub">posición</div>
+                </div>
+                <div class="ranking-metric" onclick="goTo('ranking-clasificacion')">
+                    <div class="ranking-metric-label" id="metric-pena-label">Tu peña</div>
+                    <div class="ranking-metric-value" id="metric-pos-pena">—</div>
+                    <div class="ranking-metric-sub">posición</div>
+                </div>
+            </div>
         </div>
-        <div id="rtab-semanal" class="rtab-content">
-            <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
-                <select id="semanal-jornada-select" class="formation-select"></select>
+
+        <!-- TARJETA 2: RANKING DE JUGADORES -->
+        <div class="ranking-card" id="ranking-card-jugadores">
+            <div class="ranking-card-header" onclick="goTo('ranking-jugadores')">
+                <div class="ranking-card-icon">👤</div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Ranking de jugadores</div>
+                    <div class="ranking-card-sub">Su rendimiento durante la temporada</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
+        <!-- TARJETA 3: ONCE IDEAL -->
+        <div class="ranking-card" id="ranking-card-once">
+            <div class="ranking-card-header" onclick="goTo('ranking-once')">
+                <div class="ranking-card-icon">🌟</div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Once ideal</div>
+                    <div class="ranking-card-sub">Los mejores de cada jornada</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: CLASIFICACIÓN -->
+<div id="screen-ranking-clasificacion" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Clasificación</span>
+    </div>
+    <main class="page-body">
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+            <button class="ranking-subtab active" data-subtab="general" onclick="cambiarSubtab('general')">General</button>
+            <button class="ranking-subtab" data-subtab="semanal" onclick="cambiarSubtab('semanal')">Jornada</button>
+            <button class="ranking-subtab" data-subtab="pena" onclick="cambiarSubtab('pena')">Tu peña</button>
+        </div>
+        <div id="subtab-general">
+            <table class="ranking-table">
+                <thead><tr><th>#</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
+                <tbody id="ranking-general-body"></tbody>
+            </table>
+        </div>
+        <div id="subtab-semanal" style="display:none">
+            <div style="margin-bottom:12px">
+                <select id="semanal-jornada-select" class="formation-select" style="width:100%"></select>
             </div>
             <table class="ranking-table">
                 <thead><tr><th>#</th><th>Equipo</th><th style="text-align:right">Pts</th></tr></thead>
                 <tbody id="ranking-body"></tbody>
             </table>
         </div>
-        <div id="rtab-general" class="rtab-content" style="display:none">
+        <div id="subtab-pena" style="display:none">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <img id="pena-escudo" width="24" height="24" style="object-fit:contain" src="" onerror="this.style.display='none'">
+                <span id="pena-nombre" style="font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text)"></span>
+            </div>
             <table class="ranking-table">
                 <thead><tr><th>#</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
-                <tbody id="ranking-general-body"></tbody>
+                <tbody id="ranking-pena-body"></tbody>
             </table>
         </div>
-        <div id="rtab-jugadores" class="rtab-content" style="display:none">
-            <table class="ranking-table">
-                <thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">Pts</th></tr></thead>
-                <tbody id="ranking-jugadores-body"></tbody>
-            </table>
-            <div id="jugadores-paginador"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: JUGADORES -->
+<div id="screen-ranking-jugadores" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Ranking de jugadores</span>
+    </div>
+    <main class="page-body">
+        <div id="rtab-jugadores"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: ONCE IDEAL -->
+<div id="screen-ranking-once" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Once ideal</span>
+    </div>
+    <main class="page-body">
+        <div style="margin-bottom:14px">
+            <select id="once-jornada-select" class="formation-select" style="width:100%"></select>
         </div>
-        <div id="rtab-once" class="rtab-content" style="display:none">
-            <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
-                <select id="once-jornada-select" class="formation-select"></select>
-            </div>
-            <div id="once-container"></div>
-        </div>
+        <div id="once-container"></div>
     </main>
 </div>
 
@@ -261,55 +343,14 @@
     </div>
     <main class="page-body">
         <div id="criterios-container">
-            <div class="criterio-card">
-                <div class="criterio-titulo">⚽ Participación</div>
-                <div class="criterio-fila"><span>60 o más minutos</span><span class="criterio-pts">+2</span></div>
-                <div class="criterio-fila"><span>Menos de 60 minutos</span><span class="criterio-pts">+1</span></div>
-            </div>
-            <div class="criterio-card">
-                <div class="criterio-titulo">🧤 Portería a cero (60+ min)</div>
-                <div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+4</span></div>
-                <div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+4</span></div>
-                <div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+2</span></div>
-            </div>
-            <div class="criterio-card">
-                <div class="criterio-titulo">📰 Valoración LNE</div>
-                <div class="criterio-fila"><span>SC</span><span class="criterio-pts">0</span></div>
-                <div class="criterio-fila"><span>1</span><span class="criterio-pts">+2</span></div>
-                <div class="criterio-fila"><span>2</span><span class="criterio-pts">+6</span></div>
-                <div class="criterio-fila"><span>3</span><span class="criterio-pts">+10</span></div>
-            </div>
-            <div class="criterio-card">
-                <div class="criterio-titulo">🥅 Goles anotados</div>
-                <div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+6</span></div>
-                <div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+5</span></div>
-                <div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+4</span></div>
-                <div class="criterio-fila"><span>Delantero</span><span class="criterio-pts">+3</span></div>
-                <div class="criterio-fila"><span>Penalti</span><span class="criterio-pts">+3</span></div>
-            </div>
-            <div class="criterio-card">
-                <div class="criterio-titulo">🎯 Penaltis</div>
-                <div class="criterio-fila"><span>Penalti fallado</span><span class="criterio-pts neg">-3</span></div>
-                <div class="criterio-fila"><span>Penalti parado (POR)</span><span class="criterio-pts">+3</span></div>
-            </div>
-            <div class="criterio-card">
-                <div class="criterio-titulo">🎁 Otras acciones</div>
-                <div class="criterio-fila"><span>Asistencia</span><span class="criterio-pts">+3</span></div>
-                <div class="criterio-fila"><span>Gol en propia puerta</span><span class="criterio-pts neg">-2</span></div>
-                <div class="criterio-fila"><span>Goles encajados (cada 2)</span><span class="criterio-pts neg">-1</span></div>
-            </div>
-            <div class="criterio-card">
-                <div class="criterio-titulo">🟨🟥 Tarjetas</div>
-                <div class="criterio-fila"><span>Amarilla</span><span class="criterio-pts neg">-1</span></div>
-                <div class="criterio-fila"><span>Doble amarilla</span><span class="criterio-pts neg">-3</span></div>
-                <div class="criterio-fila"><span>Roja directa</span><span class="criterio-pts neg">-5</span></div>
-            </div>
-            <div class="criterio-card">
-                <div class="criterio-titulo">👔 Entrenadores</div>
-                <div class="criterio-fila"><span>Partido ganado</span><span class="criterio-pts">3</span></div>
-                <div class="criterio-fila"><span>Partido empatado</span><span class="criterio-pts">1</span></div>
-                <div class="criterio-fila"><span>Partido perdido</span><span class="criterio-pts">0</span></div>
-            </div>
+            <div class="criterio-card"><div class="criterio-titulo">⚽ Participación</div><div class="criterio-fila"><span>60 o más minutos</span><span class="criterio-pts">+2</span></div><div class="criterio-fila"><span>Menos de 60 minutos</span><span class="criterio-pts">+1</span></div></div>
+            <div class="criterio-card"><div class="criterio-titulo">🧤 Portería a cero (60+ min)</div><div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+4</span></div><div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+4</span></div><div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+2</span></div></div>
+            <div class="criterio-card"><div class="criterio-titulo">📰 Valoración LNE</div><div class="criterio-fila"><span>SC</span><span class="criterio-pts">0</span></div><div class="criterio-fila"><span>1</span><span class="criterio-pts">+2</span></div><div class="criterio-fila"><span>2</span><span class="criterio-pts">+6</span></div><div class="criterio-fila"><span>3</span><span class="criterio-pts">+10</span></div></div>
+            <div class="criterio-card"><div class="criterio-titulo">🥅 Goles anotados</div><div class="criterio-fila"><span>Portero</span><span class="criterio-pts">+6</span></div><div class="criterio-fila"><span>Defensa</span><span class="criterio-pts">+5</span></div><div class="criterio-fila"><span>Mediocentro</span><span class="criterio-pts">+4</span></div><div class="criterio-fila"><span>Delantero</span><span class="criterio-pts">+3</span></div><div class="criterio-fila"><span>Penalti</span><span class="criterio-pts">+3</span></div></div>
+            <div class="criterio-card"><div class="criterio-titulo">🎯 Penaltis</div><div class="criterio-fila"><span>Penalti fallado</span><span class="criterio-pts neg">-3</span></div><div class="criterio-fila"><span>Penalti parado (POR)</span><span class="criterio-pts">+3</span></div></div>
+            <div class="criterio-card"><div class="criterio-titulo">🎁 Otras acciones</div><div class="criterio-fila"><span>Asistencia</span><span class="criterio-pts">+3</span></div><div class="criterio-fila"><span>Gol en propia puerta</span><span class="criterio-pts neg">-2</span></div><div class="criterio-fila"><span>Goles encajados (cada 2)</span><span class="criterio-pts neg">-1</span></div></div>
+            <div class="criterio-card"><div class="criterio-titulo">🟨🟥 Tarjetas</div><div class="criterio-fila"><span>Amarilla</span><span class="criterio-pts neg">-1</span></div><div class="criterio-fila"><span>Doble amarilla</span><span class="criterio-pts neg">-3</span></div><div class="criterio-fila"><span>Roja directa</span><span class="criterio-pts neg">-5</span></div></div>
+            <div class="criterio-card"><div class="criterio-titulo">👔 Entrenadores</div><div class="criterio-fila"><span>Partido ganado</span><span class="criterio-pts">3</span></div><div class="criterio-fila"><span>Partido empatado</span><span class="criterio-pts">1</span></div><div class="criterio-fila"><span>Partido perdido</span><span class="criterio-pts">0</span></div></div>
         </div>
     </main>
 </div>
@@ -317,34 +358,23 @@
 <!-- MODALES -->
 <div id="modal-desglose" class="modal-overlay">
     <div class="modal" style="max-width:320px">
-        <div class="modal-header">
-            <span class="modal-title" id="desglose-titulo">Desglose</span>
-            <button class="modal-close" id="desglose-close">✕</button>
-        </div>
+        <div class="modal-header"><span class="modal-title" id="desglose-titulo">Desglose</span><button class="modal-close" id="desglose-close">✕</button></div>
         <div style="padding:16px;overflow-y:auto;max-height:60vh" id="desglose-content"></div>
     </div>
 </div>
 
 <div id="modal-partido" class="modal-overlay">
     <div class="modal" style="max-width:600px;width:95vw">
-        <div class="modal-header">
-            <span class="modal-title" id="partido-titulo" style="width:100%;text-align:center">Partido</span>
-            <button class="modal-close" id="partido-close">✕</button>
-        </div>
+        <div class="modal-header"><span class="modal-title" id="partido-titulo" style="width:100%;text-align:center">Partido</span><button class="modal-close" id="partido-close">✕</button></div>
         <div style="padding:16px;overflow-y:auto;max-height:80vh" id="partido-content"></div>
     </div>
 </div>
 
 <div id="modal-puntos-jornada" class="modal-overlay">
     <div class="modal" style="max-width:480px">
-        <div class="modal-header">
-            <span class="modal-title" id="puntos-jornada-titulo">Puntos Jornada</span>
-            <button class="modal-close" id="puntos-jornada-close">✕</button>
-        </div>
+        <div class="modal-header"><span class="modal-title" id="puntos-jornada-titulo">Puntos Jornada</span><button class="modal-close" id="puntos-jornada-close">✕</button></div>
         <div style="padding:16px">
-            <select id="puntos-equipo-select" class="formation-select" style="width:100%;margin-bottom:14px">
-                <option value="">— Selecciona un equipo —</option>
-            </select>
+            <select id="puntos-equipo-select" class="formation-select" style="width:100%;margin-bottom:14px"><option value="">— Selecciona un equipo —</option></select>
             <div id="puntos-jornada-content" style="overflow-y:auto;max-height:60vh"></div>
         </div>
     </div>
@@ -352,38 +382,63 @@
 
 <div id="modal-historial" class="modal-overlay">
     <div class="modal" style="max-width:480px">
-        <div class="modal-header">
-            <span class="modal-title" id="historial-titulo">Historial</span>
-            <button class="modal-close" id="historial-close">✕</button>
-        </div>
+        <div class="modal-header"><span class="modal-title" id="historial-titulo">Historial</span><button class="modal-close" id="historial-close">✕</button></div>
         <div style="padding:20px" id="historial-content"></div>
     </div>
 </div>
 
 <div id="modal-overlay" class="modal-overlay">
     <div class="modal">
-        <div class="modal-header">
-            <span class="modal-title" id="modal-title">Seleccionar jugador</span>
-            <button class="modal-close" id="modal-close">✕</button>
-        </div>
+        <div class="modal-header"><span class="modal-title" id="modal-title">Seleccionar jugador</span><button class="modal-close" id="modal-close">✕</button></div>
         <div class="modal-list" id="modal-list"></div>
     </div>
 </div>
 
+<!-- MODAL NOMBRE EQUIPO -->
 <div id="modal-nombre-equipo" class="modal-overlay">
     <div class="modal" style="max-width:380px">
-        <div class="modal-header">
-            <span class="modal-title">¡Bienvenido a AsturFantasy!</span>
-        </div>
+        <div class="modal-header"><span class="modal-title">¡Bienvenido a AsturFantasy!</span></div>
         <div style="padding:24px">
-            <p style="font-family:var(--font-body);font-size:13px;color:var(--text-muted);margin-bottom:14px">
-                Antes de empezar, ponle un nombre a tu equipo.
-            </p>
+            <p style="font-family:var(--font-body);font-size:13px;color:var(--text-muted);margin-bottom:14px">Antes de empezar, ponle un nombre a tu equipo.</p>
             <input id="input-nombre-equipo-inicio" type="text" placeholder="Nombre de tu equipo" maxlength="25"
                    style="width:100%;padding:10px 14px;font-family:var(--font-display);font-size:14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;box-sizing:border-box">
             <button id="btn-guardar-nombre-inicio"
                     style="width:100%;padding:12px;background:var(--neon);color:#0d1117;border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer">
-                ¡Empezar!
+                Siguiente
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EQUIPO FAVORITO -->
+<div id="modal-equipo-favorito" class="modal-overlay">
+    <div class="modal" style="max-width:420px">
+        <div class="modal-header"><span class="modal-title">¿Cuál es tu equipo favorito?</span></div>
+        <div style="padding:24px">
+            <p style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:20px;text-align:center;letter-spacing:1px">
+                Competirás también en una liga exclusiva de sus aficionados
+            </p>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:24px">
+                <div class="equipo-favorito-item" data-club="CAU" onclick="seleccionarEquipoFavorito('CAU')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/caudal_deportivo.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CAUDAL DEPORTIVO</div>
+                </div>
+                <div class="equipo-favorito-item" data-club="COV" onclick="seleccionarEquipoFavorito('COV')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/covadonga.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD COVADONGA</div>
+                </div>
+                <div class="equipo-favorito-item" data-club="MOS" onclick="seleccionarEquipoFavorito('MOS')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/mosconia.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD MOSCONIA</div>
+                </div>
+                <div class="equipo-favorito-item" data-club="SPO" onclick="seleccionarEquipoFavorito('SPO')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/sporting_atletico.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">SPORTING ATLÉTICO</div>
+                </div>
+            </div>
+            <button id="btn-guardar-equipo-favorito" disabled
+                    style="width:100%;padding:12px;background:var(--surface2);color:var(--text-muted);border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:14px;cursor:not-allowed;transition:all 0.2s">
+                Empezar →
             </button>
         </div>
     </div>
@@ -414,41 +469,40 @@
 
 <script>
     function renderNavbars() {
-      document.querySelectorAll('.navbar-placeholder').forEach(placeholder => {
-        const screen = placeholder.closest('.screen');
-        const screenId = screen?.id?.replace('screen-', '');
-        placeholder.outerHTML = `
-          <nav class="navbar">
-            <div class="nav-logo">ASTUR<span>FANTASY</span></div>
-            <div class="nav-user">
-              <div class="avatar" id="nav-avatar${screenId === 'home' ? '' : '-' + screenId}" onclick="toggleUserMenu()">·</div>
-              <div id="user-menu${screenId === 'home' ? '' : '-' + screenId}" class="user-menu" style="display:none">
-                <div style="padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px">
-                  <div id="user-menu-name${screenId === 'home' ? '' : '-' + screenId}" style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text)">Bienvenido</div>
-                  <div id="user-menu-email${screenId === 'home' ? '' : '-' + screenId}" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px"></div>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer" onclick="toggleNotificaciones()">
-                  <span style="font-size:16px">🔔</span>
-                  <div style="flex:1">
-                    <div style="font-family:var(--font-display);font-size:13px;color:var(--text)">Notificaciones</div>
-                    <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">Avisos de jornada y puntos</div>
+        document.querySelectorAll('.navbar-placeholder').forEach(placeholder => {
+            const screen = placeholder.closest('.screen');
+            const screenId = screen?.id?.replace('screen-', '');
+            placeholder.outerHTML = `
+              <nav class="navbar">
+                <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+                <div class="nav-user">
+                  <div class="avatar" id="nav-avatar${screenId === 'home' ? '' : '-' + screenId}" onclick="toggleUserMenu()">·</div>
+                  <div id="user-menu${screenId === 'home' ? '' : '-' + screenId}" class="user-menu" style="display:none">
+                    <div style="padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px">
+                      <div id="user-menu-name${screenId === 'home' ? '' : '-' + screenId}" style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text)">Bienvenido</div>
+                      <div id="user-menu-email${screenId === 'home' ? '' : '-' + screenId}" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px"></div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer" onclick="toggleNotificaciones()">
+                      <span style="font-size:16px">🔔</span>
+                      <div style="flex:1">
+                        <div style="font-family:var(--font-display);font-size:13px;color:var(--text)">Notificaciones</div>
+                        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">Avisos de jornada y puntos</div>
+                      </div>
+                      <div id="toggle-notif${screenId === 'home' ? '' : '-' + screenId}"
+                           style="width:36px;height:20px;border-radius:10px;background:#888;position:relative;transition:background 0.2s;flex-shrink:0">
+                        <div style="width:16px;height:16px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left 0.2s"></div>
+                      </div>
+                    </div>
+                    <div style="border-top:1px solid var(--border);margin-top:4px">
+                      <button class="user-menu-logout" ${screenId === 'home' ? 'id="btn-logout"' : 'data-logout'}
+                        style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;cursor:pointer;color:var(--red);font-family:var(--font-display);font-size:13px;">
+                        <span style="font-size:16px">🚪</span> Cerrar sesión
+                      </button>
+                    </div>
                   </div>
-                  <div id="toggle-notif${screenId === 'home' ? '' : '-' + screenId}"
-                       style="width:36px;height:20px;border-radius:10px;background:#888;position:relative;transition:background 0.2s;flex-shrink:0">
-                    <div style="width:16px;height:16px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left 0.2s"></div>
-                  </div>
                 </div>
-                <div style="border-top:1px solid var(--border);margin-top:4px">
-                  <button class="user-menu-logout" ${screenId === 'home' ? 'id="btn-logout"' : 'data-logout'}
-                    style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;cursor:pointer;color:var(--red);font-family:var(--font-display);font-size:13px;">
-                    <span style="font-size:16px">🚪</span> Cerrar sesión
-                  </button>
-                </div>
-              </div>
-            </div>
-          </nav>
-        `;
-      });
+              </nav>`;
+        });
     }
     renderNavbars();
 </script>
@@ -459,7 +513,7 @@
 <script src="js/app.js"></script>
 <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
+        navigator.serviceWorker.register('/sw.js');
     }
 </script>
 </body>
