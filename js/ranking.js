@@ -196,7 +196,7 @@ async function loadRankingJugadores() {
     tbody.innerHTML = paginados.map((j, i) => `
       <tr class="${medalClass(inicio+i+1)}">
         <td><span class="rank-pos ${medalClass(inicio+i+1)}">${inicio+i+1}</span></td>
-        <td><div class="rank-name" style="cursor:pointer;text-decoration:underline" onclick="mostrarHistorial('${j.nombre}','${j.club}','${j.posicion}')">${j.nombre}</div><div class="rank-team">${j.posicion}</div></td>
+        <td><div class="rank-name" style="cursor:pointer;text-decoration:underline" onclick="mostrarHistorial('${j.nombre}','${j.club}','${j.posicion}')">${j.nombre}</div><div class="rank-team">${j.posicion} · ${j.valor || 0}M</div></td>
         <td>${j.escudo_url ? `<img loading="lazy" src="${j.escudo_url}" width="22" height="22" style="object-fit:contain;vertical-align:middle;margin-right:4px">` : ''}<span class="rank-team">${j.club}</span></td>
         <td><div class="rank-pts">${j.puntos_total}</div></td>
       </tr>`).join('');
@@ -235,7 +235,7 @@ async function loadRankingOnce() {
 async function loadOnce(jornada) {
   const container = document.getElementById('once-container');
   container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
-  const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, escudo_url, foto_url').eq('jornada', jornada).neq('posicion', 'ENT').order('puntos', { ascending: false }).order('valor', { ascending: true });
+  const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).neq('posicion', 'ENT').order('puntos', { ascending: false }).order('valor', { ascending: true });
   if (error || !data?.length) { container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>'; return; }
   const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
   data.forEach(j => porPos[j.posicion]?.push(j));
@@ -257,7 +257,7 @@ async function loadOnce(jornada) {
   const filas = [{ label:'🧤 PORTERO',jugadores:portero },{ label:'🛑 DEFENSAS',jugadores:defOnce },{ label:'🧠 MEDIOS',jugadores:medOnce },{ label:'⚽ DELANTEROS',jugadores:delOnce }];
   container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--neon);letter-spacing:2px">Formación: ' + defOnce.length + '-' + medOnce.length + '-' + delOnce.length + '</div><div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">TOTAL: <strong style="color:var(--neon)">' + totalPuntos + ' pts</strong></div></div>' +
     filas.map(fila => '<div style="margin-bottom:18px"><div style="font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px">' + fila.label + '</div>' +
-      fila.jugadores.map(j => '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">' + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="26" height="26" style="object-fit:contain">' : '<div style="width:26px;height:26px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:9px">' + j.club + '</div>') + '<div style="flex:1"><div style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text)">' + j.nombre + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + ' · ' + j.posicion + '</div></div><div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">' + j.puntos + '</div></div>').join('') + '</div>').join('');
+      fila.jugadores.map(j => '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">' + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="26" height="26" style="object-fit:contain">' : '<div style="width:26px;height:26px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:9px">' + j.club + '</div>') + '<div style="flex:1"><div style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text)">' + j.nombre + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + ' · ' + (j.valor || 0) + 'M' + '</div></div><div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">' + j.puntos + '</div></div>').join('') + '</div>').join('');
 }
 
 async function loadRankingRentable() {
@@ -315,7 +315,7 @@ async function cargarRentable(jornada) {
             ${j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="26" height="26" style="object-fit:contain">' : '<div style="width:26px;height:26px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:9px">' + j.club + '</div>'}
             <div style="flex:1">
               <div style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text)">${j.nombre}</div>
-              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${j.club} · ${j.posicion} · ${j.valor}M</div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${j.club} · ${j.valor}M</div>
             </div>
             <div style="text-align:right">
               <div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--neon)">${j.puntos} pts</div>

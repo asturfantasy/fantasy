@@ -10,7 +10,7 @@ async function loadHome() {
   const bienvenida = document.getElementById('home-bienvenida');
   const hora = new Date().getHours();
   const saludo = hora < 14 ? 'Buenos días' : hora < 21 ? 'Buenas tardes' : 'Buenas noches';
-  if (bienvenida) bienvenida.textContent = '¡' + saludo + ', ' + userName + '!';
+  //if (bienvenida) bienvenida.textContent = '¡' + saludo + ', ' + userName + '!';
   const ahora = new Date();
   const enDirecto = ahora > new Date(DEADLINE_JORNADA) && ahora < new Date(window.FECHA_FIN);
   const bannerAviso = document.getElementById('card-mensaje-home');

@@ -473,6 +473,29 @@
     </div>
 </div>
 
+<div id="modal-contacto" class="modal-overlay">
+    <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+            <span class="modal-title">Contacto y sugerencias</span>
+            <button class="modal-close" id="contacto-close">✕</button>
+        </div>
+        <div style="padding:20px">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:16px">¿Tienes un problema o idea? Cuéntanos.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="contacto-motivos">
+                <button class="contacto-motivo active" data-motivo="Error o bug">🐛 Error</button>
+                <button class="contacto-motivo" data-motivo="Sugerencia">💡 Sugerencia</button>
+                <button class="contacto-motivo" data-motivo="Puntuación incorrecta">⚽ Puntuación</button>
+                <button class="contacto-motivo" data-motivo="Otro">💬 Otro</button>
+            </div>
+            <textarea id="contacto-mensaje" placeholder="Describe tu consulta..." maxlength="500"
+                      style="width:100%;min-height:100px;padding:10px 12px;font-family:var(--font-display);font-size:13px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;resize:vertical;margin-bottom:14px;box-sizing:border-box"></textarea>
+            <button id="btn-contacto-enviar" style="width:100%;padding:12px;background:var(--neon);color:#0d1117;border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+                <i class="ti ti-send" style="font-size:16px"></i> Enviar mensaje
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
@@ -522,6 +545,15 @@
                         <div style="width:16px;height:16px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left 0.2s"></div>
                       </div>
                     </div>
+                    <div style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px">
+  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer" onclick="abrirContacto()">
+    <span style="font-size:16px">✉️</span>
+    <div style="flex:1">
+      <div style="font-family:var(--font-display);font-size:13px;color:var(--text)">Contacto y sugerencias</div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">Errores, ideas o consultas</div>
+    </div>
+  </div>
+</div>
                     <div style="border-top:1px solid var(--border);margin-top:4px">
                       <button class="user-menu-logout" ${screenId === 'home' ? 'id="btn-logout"' : 'data-logout'}
                         style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;cursor:pointer;color:var(--red);font-family:var(--font-display);font-size:13px;">

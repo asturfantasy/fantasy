@@ -139,6 +139,35 @@ document.getElementById('puntos-jornada-close')?.addEventListener('click', () =>
 });
 document.getElementById('modal-puntos-jornada')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
 
+// Contacto
+document.querySelectorAll('.contacto-motivo').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.contacto-motivo').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+function abrirContacto() {
+  ['user-menu','user-menu-lineup','user-menu-myteam','user-menu-ranking','user-menu-criterios'].forEach(id => {
+    const m = document.getElementById(id); if (m) m.style.display = 'none';
+  });
+  document.getElementById('modal-contacto').classList.add('open');
+}
+
+document.getElementById('contacto-close')?.addEventListener('click', () => document.getElementById('modal-contacto').classList.remove('open'));
+document.getElementById('modal-contacto')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+document.getElementById('btn-contacto-enviar')?.addEventListener('click', () => {
+  const motivo = document.querySelector('.contacto-motivo.active')?.dataset.motivo || 'Consulta';
+  const mensaje = document.getElementById('contacto-mensaje').value.trim();
+  if (!mensaje) { showToast('Escribe tu mensaje', true); return; }
+  const asunto = encodeURIComponent('AsturFantasy · ' + motivo);
+  const cuerpo = encodeURIComponent(mensaje + '\n\n— ' + (currentUser?.email || 'Usuario'));
+  window.open('mailto:asturfantasycontacto@gmail.com?subject=' + asunto + '&body=' + cuerpo);
+  document.getElementById('modal-contacto').classList.remove('open');
+  document.getElementById('contacto-mensaje').value = '';
+});
+
 /* ── DESGLOSE ───────────────────────────────────────────── */
 function desgloseFn(j) {
   const items = [];
