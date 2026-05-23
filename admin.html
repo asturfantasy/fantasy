@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AsturFantasy · Admin</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --bg2:#161b22; --surface:#1c2128; --surface2:#21262d;
+      --border:#30363d; --text:#e6edf3; --text-muted:#8b949e;
+      --neon:#00d97e; --red:#f85149; --amber:#e3b341;
+      --font-display:'Space Grotesk',sans-serif; --font-mono:'JetBrains Mono',monospace;
+      --radius:10px;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-display); min-height:100vh; }
+    #screen-login { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+    .login-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:32px; width:100%; max-width:360px; text-align:center; }
+    .login-title { font-size:22px; font-weight:700; margin-bottom:6px; }
+    .login-title span { color:var(--neon); }
+    .login-sub { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-bottom:24px; }
+    .btn-google { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:12px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-family:var(--font-display); font-size:14px; font-weight:600; cursor:pointer; }
+    .btn-google:hover { background:var(--surface); }
+    .admin-layout { display:grid; grid-template-columns:220px 1fr; min-height:100vh; }
+    .sidebar { background:var(--bg2); border-right:1px solid var(--border); position:sticky; top:0; height:100vh; overflow-y:auto; display:flex; flex-direction:column; }
+    .sidebar-logo { padding:18px 20px; border-bottom:1px solid var(--border); font-size:15px; font-weight:700; }
+    .sidebar-logo span { color:var(--neon); }
+    .sidebar-logo small { display:block; font-family:var(--font-mono); font-size:10px; color:var(--text-muted); margin-top:2px; font-weight:400; }
+    .nav-section { padding:16px 12px 4px; }
+    .nav-section-label { font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); padding:0 8px; margin-bottom:6px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13px; color:var(--text-muted); cursor:pointer; transition:all 0.15s; border:1px solid transparent; margin-bottom:2px; }
+    .nav-item i { font-size:17px; }
+    .nav-item:hover { background:var(--surface); color:var(--text); }
+    .nav-item.active { background:var(--surface); color:var(--neon); border-color:var(--border); }
+    .sidebar-user { padding:14px 20px; border-top:1px solid var(--border); margin-top:auto; font-size:12px; }
+    .sidebar-user-name { font-weight:600; color:var(--text); }
+    .sidebar-user-email { color:var(--text-muted); font-family:var(--font-mono); font-size:10px; margin-top:2px; }
+    .btn-logout { margin-top:10px; width:100%; padding:7px; background:none; border:1px solid var(--border); border-radius:8px; color:var(--red); font-family:var(--font-display); font-size:12px; cursor:pointer; }
+    .main { padding:28px; background:var(--bg); }
+    .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+    .page-title { font-size:20px; font-weight:700; }
+    .badge-estado { font-family:var(--font-mono); font-size:10px; padding:4px 12px; border-radius:20px; letter-spacing:1px; }
+    .badge-abierta { background:rgba(0,217,126,0.12); color:var(--neon); border:1px solid rgba(0,217,126,0.3); }
+    .badge-cerrada { background:rgba(248,81,73,0.12); color:var(--red); border:1px solid rgba(248,81,73,0.3); }
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+    .stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+    .stat-label { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; }
+    .stat-value { font-size:28px; font-weight:700; color:var(--text); line-height:1; }
+    .stat-sub { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); margin-top:6px; }
+    .stat-value.green { color:var(--neon); }
+    .section { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px; overflow:hidden; }
+    .section-head { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--border); }
+    .section-title { font-size:14px; font-weight:600; }
+    .section-body { padding:18px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-label { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); }
+    .form-input { padding:8px 12px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:8px; font-family:var(--font-display); font-size:13px; width:100%; transition:border-color 0.15s; }
+    .form-input:focus { outline:none; border-color:var(--neon); }
+    .btn { padding:8px 16px; border-radius:8px; font-family:var(--font-display); font-size:13px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--surface2); color:var(--text); transition:all 0.15s; display:inline-flex; align-items:center; gap:6px; }
+    .btn:hover { background:var(--surface); }
+    .btn-primary { background:var(--neon); color:#0d1117; border-color:var(--neon); }
+    .btn-primary:hover { opacity:0.9; }
+    .btn-danger { background:rgba(248,81,73,0.1); color:var(--red); border-color:rgba(248,81,73,0.3); }
+    .btn-sm { padding:5px 10px; font-size:12px; }
+    .admin-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .admin-table th { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); padding:8px 12px; border-bottom:1px solid var(--border); text-align:left; font-weight:400; }
+    .admin-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+    .admin-table tr:last-child td { border-bottom:none; }
+    .admin-table tr:hover td { background:var(--surface); }
+    .pill { font-family:var(--font-mono); font-size:10px; padding:3px 10px; border-radius:20px; font-weight:700; letter-spacing:0.5px; }
+    .pill-green { background:rgba(0,217,126,0.12); color:var(--neon); }
+    .pill-amber { background:rgba(227,179,65,0.12); color:var(--amber); }
+    .pill-red { background:rgba(248,81,73,0.12); color:var(--red); }
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:20px; padding:10px 24px; font-size:13px; font-weight:600; z-index:1000; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+    .toast.show { opacity:1; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:500; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:360px; }
+    .modal-box-wide { max-width:500px; }
+    .modal-title { font-size:16px; font-weight:700; margin-bottom:16px; }
+    .score-inputs { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .score-input { width:70px; text-align:center; font-size:24px; font-weight:700; }
+    .score-sep { font-size:24px; font-weight:700; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="login-card">
+    <div class="login-title">ASTUR<span>FANTASY</span></div>
+    <div class="login-sub">Panel de administración</div>
+    <button class="btn-google" id="btn-login">
+      <i class="ti ti-key" style="font-size:18px"></i>
+      Acceder con Google
+    </button>
+  </div>
+</div>
+
+<!-- SIN ACCESO -->
+<div id="screen-noaccess" style="display:none;align-items:center;justify-content:center;min-height:100vh;text-align:center;flex-direction:column;gap:12px">
+  <i class="ti ti-lock" style="font-size:48px;color:var(--red)"></i>
+  <div style="font-size:18px;font-weight:700">Sin acceso</div>
+  <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Tu cuenta no tiene permisos de administrador</div>
+  <button class="btn btn-danger" id="btn-logout-noaccess">Cerrar sesión</button>
+</div>
+
+<!-- PANEL ADMIN -->
+<div id="screen-admin" style="display:none">
+  <div class="admin-layout">
+    <div class="sidebar">
+      <div class="sidebar-logo">ASTUR<span>FANTASY</span><small>Admin panel</small></div>
+      <div class="nav-section">
+        <div class="nav-section-label">Jornada</div>
+        <div class="nav-item active" data-panel="jornada"><i class="ti ti-layout-dashboard"></i> Jornada activa</div>
+        <div class="nav-item" data-panel="partidos"><i class="ti ti-ball-football"></i> Partidos</div>
+        <div class="nav-item" data-panel="notificaciones"><i class="ti ti-bell"></i> Notificaciones</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Datos</div>
+        <div class="nav-item" data-panel="clasificacion"><i class="ti ti-trophy"></i> Clasificación</div>
+        <div class="nav-item" data-panel="stats"><i class="ti ti-chart-bar"></i> Estadísticas</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Sistema</div>
+        <div class="nav-item" data-panel="config"><i class="ti ti-settings"></i> Configuración</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="sidebar-user-name" id="admin-name">Admin</div>
+        <div class="sidebar-user-email" id="admin-email"></div>
+        <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <!-- JORNADA -->
+      <div class="panel active" id="panel-jornada">
+        <div class="page-header">
+          <div class="page-title">Jornada <span id="titulo-jornada">—</span></div>
+          <span class="badge-estado badge-abierta" id="badge-estado">Cargando...</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Participantes</div><div class="stat-value green" id="stat-participantes">—</div><div class="stat-sub">equipos registrados</div></div>
+          <div class="stat-card"><div class="stat-label">Alineaciones J<span id="stat-j-label">—</span></div><div class="stat-value" id="stat-alineaciones">—</div><div class="stat-sub">enviadas esta jornada</div></div>
+          <div class="stat-card"><div class="stat-label">Media puntos</div><div class="stat-value" id="stat-media">—</div><div class="stat-sub">última jornada</div></div>
+          <div class="stat-card"><div class="stat-label">Deadline</div><div class="stat-value" id="stat-deadline" style="font-size:16px;padding-top:6px">—</div><div class="stat-sub" id="stat-deadline-sub"></div></div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Configuración de jornada</div>
+            <button class="btn btn-primary" id="btn-guardar-config"><i class="ti ti-device-floppy"></i> Guardar cambios</button>
+          </div>
+          <div class="section-body">
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="form-group"><div class="form-label">Jornada activa</div><input class="form-input" id="cfg-jornada-activa" type="number" /></div>
+              <div class="form-group"><div class="form-label">Jornada visible</div><input class="form-input" id="cfg-jornada-visible" type="number" /></div>
+            </div>
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="form-group"><div class="form-label">Deadline</div><input class="form-input" id="cfg-deadline" type="datetime-local" /></div>
+              <div class="form-group"><div class="form-label">Presupuesto (M)</div><input class="form-input" id="cfg-presupuesto" type="number" step="0.5" /></div>
+            </div>
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="form-group"><div class="form-label">Título jornada</div><input class="form-input" id="cfg-titulo" type="text" placeholder="Ej: Jornada 36 · Playoffs" /></div>
+              <div class="form-group"><div class="form-label">Mensaje aviso (opcional)</div><input class="form-input" id="cfg-mensaje" type="text" placeholder="Aviso visible en el home..." /></div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group"><div class="form-label">Fecha fin jornada</div><input class="form-input" id="cfg-fecha-fin" type="datetime-local" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARTIDOS -->
+      <div class="panel" id="panel-partidos">
+        <div class="page-header">
+          <div class="page-title">Partidos</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="btn-nueva-jornada"><i class="ti ti-calendar-plus"></i> Nueva jornada</button>
+            <button class="btn btn-primary" id="btn-nuevo-partido"><i class="ti ti-plus"></i> Añadir partido</button>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Jornada <span id="partidos-jornada-label">—</span></div>
+            <select id="select-jornada-partidos" class="form-input" style="width:140px"></select>
+          </div>
+          <table class="admin-table">
+            <thead><tr><th>Local</th><th>Visitante</th><th>Estadio</th><th>Fecha</th><th>Resultado</th><th></th></tr></thead>
+            <tbody id="tabla-partidos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- NOTIFICACIONES -->
+      <div class="panel" id="panel-notificaciones">
+        <div class="page-header"><div class="page-title">Notificaciones push</div></div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Enviar notificación</div>
+            <button class="btn btn-primary" id="btn-enviar-notif"><i class="ti ti-send"></i> Enviar ahora</button>
+          </div>
+          <div class="section-body">
+            <div class="form-grid">
+              <div class="form-group"><div class="form-label">Título</div><input class="form-input" id="notif-titulo" type="text" placeholder="¡Ya están los puntos!" /></div>
+              <div class="form-group"><div class="form-label">Mensaje</div><input class="form-input" id="notif-mensaje" type="text" placeholder="Consulta tu puntuación..." /></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="btn btn-sm" onclick="document.getElementById('notif-titulo').value='¡Ya puedes hacer tu alineación!';document.getElementById('notif-mensaje').value='El plazo para la jornada está abierto. ¡Elige tu once!'">Apertura plazo</button>
+              <button class="btn btn-sm" onclick="document.getElementById('notif-titulo').value='¡2 horas para el cierre!';document.getElementById('notif-mensaje').value='El plazo cierra pronto. Revisa tu alineación antes de que sea tarde.'">Recordatorio</button>
+              <button class="btn btn-sm" onclick="document.getElementById('notif-titulo').value='¡Ya están los puntos!';document.getElementById('notif-mensaje').value='Los puntos de la última jornada ya están disponibles. ¿Cómo te ha ido?'">Puntos publicados</button>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Suscriptores</div></div>
+          <div class="section-body">
+            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Suscriptores activos: <strong id="num-suscriptores" style="color:var(--neon)">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLASIFICACIÓN -->
+      <div class="panel" id="panel-clasificacion">
+        <div class="page-header"><div class="page-title">Clasificación general</div></div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Ranking</div></div>
+          <table class="admin-table">
+            <thead><tr><th>#</th><th>Equipo</th><th>Puntos totales</th><th>Peña</th></tr></thead>
+            <tbody id="tabla-clasificacion"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ESTADÍSTICAS -->
+      <div class="panel" id="panel-stats">
+        <div class="page-header"><div class="page-title">Estadísticas</div></div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section" style="margin-top:0">
+          <div class="section-head"><div class="section-title">Alineaciones por jornada</div></div>
+          <table class="admin-table">
+            <thead><tr><th>Jornada</th><th>Participantes</th><th>Media puntos</th></tr></thead>
+            <tbody id="tabla-stats-jornadas"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONFIG -->
+      <div class="panel" id="panel-config">
+        <div class="page-header"><div class="page-title">Configuración del sistema</div></div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Administradores</div></div>
+          <div class="section-body">
+            <table class="admin-table">
+              <thead><tr><th>Equipo</th><th>User ID</th><th>Rol</th><th></th></tr></thead>
+              <tbody id="tabla-admins"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESULTADO -->
+<div class="modal-overlay" id="modal-resultado">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-resultado-titulo">Resultado</div>
+    <div class="score-inputs">
+      <input class="form-input score-input" id="res-local" type="number" min="0" value="0" />
+      <div class="score-sep">—</div>
+      <input class="form-input score-input" id="res-visitante" type="number" min="0" value="0" />
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" id="btn-guardar-resultado">Guardar resultado</button>
+      <button class="btn" onclick="document.getElementById('modal-resultado').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO PARTIDO -->
+<div class="modal-overlay" id="modal-nuevo-partido">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-title">Añadir partido</div>
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="form-group"><div class="form-label">Jornada</div><input class="form-input" id="np-jornada" type="number" /></div>
+      <div class="form-group"><div class="form-label">Estadio</div><input class="form-input" id="np-estadio" type="text" /></div>
+    </div>
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="form-group"><div class="form-label">Local (abrev)</div><input class="form-input" id="np-local-abrev" type="text" placeholder="CAU" /></div>
+      <div class="form-group"><div class="form-label">Local (nombre)</div><input class="form-input" id="np-local-nombre" type="text" placeholder="Caudal Deportivo" /></div>
+    </div>
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="form-group"><div class="form-label">Visitante (abrev)</div><input class="form-input" id="np-visitante-abrev" type="text" placeholder="COV" /></div>
+      <div class="form-group"><div class="form-label">Visitante (nombre)</div><input class="form-input" id="np-visitante-nombre" type="text" placeholder="Covadonga" /></div>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <div class="form-label">Fecha</div>
+      <input class="form-input" id="np-fecha" type="text" placeholder="Domingo 24, 12:00h" />
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="guardarPartido()">Guardar partido</button>
+      <button class="btn" onclick="document.getElementById('modal-nuevo-partido').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://rtmclmqzasktshlzwcyn.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0bWNsbXF6YXNrdHNobHp3Y3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDUwMjAsImV4cCI6MjA5NDEyMTAyMH0.Z1X05a8EFzCA58iGjXymIBBTs01V5uY7XgIfb8yqiqk';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
+<script>
+  let adminUser = null;
+  let partidoEditando = null;
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isError ? '#b03020' : '#21262d';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function mostrarPantalla(pantalla) {
+    document.getElementById('screen-login').style.display = 'none';
+    document.getElementById('screen-noaccess').style.display = 'none';
+    document.getElementById('screen-admin').style.display = 'none';
+    if (pantalla === 'login') document.getElementById('screen-login').style.display = 'flex';
+    if (pantalla === 'noaccess') { document.getElementById('screen-noaccess').style.display = 'flex'; document.getElementById('screen-noaccess').style.flexDirection = 'column'; }
+    if (pantalla === 'admin') document.getElementById('screen-admin').style.display = 'block';
+  }
+
+  document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('panel-' + item.dataset.panel).classList.add('active');
+      if (item.dataset.panel === 'partidos') cargarPartidos();
+      if (item.dataset.panel === 'notificaciones') cargarSuscriptores();
+      if (item.dataset.panel === 'config') cargarAdmins();
+      if (item.dataset.panel === 'clasificacion') cargarClasificacion();
+      if (item.dataset.panel === 'stats') cargarStats();
+    });
+  });
+
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href.split('#')[0] } });
+  });
+
+  async function logout() { await db.auth.signOut(); mostrarPantalla('login'); }
+  document.getElementById('btn-logout').addEventListener('click', logout);
+  document.getElementById('btn-logout-noaccess').addEventListener('click', logout);
+
+  async function verificarAcceso(session) {
+    if (!session?.user) { mostrarPantalla('login'); return; }
+    adminUser = session.user;
+    const { data } = await db.from('equipos').select('is_admin, nombre_equipo').eq('user_id', adminUser.id).single();
+    if (!data?.is_admin) { mostrarPantalla('noaccess'); return; }
+    document.getElementById('admin-name').textContent = data.nombre_equipo || adminUser.email;
+    document.getElementById('admin-email').textContent = adminUser.email;
+    mostrarPantalla('admin');
+    cargarDashboard();
+  }
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') verificarAcceso(session);
+    else if (event === 'SIGNED_OUT') mostrarPantalla('login');
+  });
+
+  /* ── DASHBOARD ── */
+  async function cargarDashboard() {
+    const { data: config } = await db.from('config_jornada').select('*').eq('id', 1).single();
+    if (!config) return;
+    const jornadaActiva = config.jornada_activa;
+    const jornadaVisible = config.jornada_visible;
+    const [{ data: equipos }, { data: alineaciones }, { data: clasificacion }] = await Promise.all([
+      db.from('equipos').select('user_id'),
+      db.from('mi_equipo').select('user_id').eq('jornada', jornadaActiva),
+      db.from('clasificacion_automatica').select('puntos').eq('jornada', jornadaVisible)
+    ]);
+    document.getElementById('titulo-jornada').textContent = jornadaActiva;
+    document.getElementById('stat-j-label').textContent = jornadaActiva;
+    document.getElementById('stat-participantes').textContent = equipos?.length || 0;
+    const alineacionesUnicas = [...new Set((alineaciones || []).map(a => a.user_id))].length;
+    document.getElementById('stat-alineaciones').textContent = alineacionesUnicas + ' / ' + (equipos?.length || 0);
+    const media = clasificacion?.length ? Math.round(clasificacion.reduce((acc, r) => acc + r.puntos, 0) / clasificacion.length) : 0;
+    document.getElementById('stat-media').textContent = media || '—';
+    const deadline = new Date(config.deadline);
+    const ahora = new Date();
+    const abierta = ahora < deadline;
+    document.getElementById('badge-estado').textContent = abierta ? 'Abierta · cierra ' + deadline.toLocaleDateString('es-ES', { weekday:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Cerrada';
+    document.getElementById('badge-estado').className = 'badge-estado ' + (abierta ? 'badge-abierta' : 'badge-cerrada');
+    document.getElementById('cfg-jornada-activa').value = jornadaActiva;
+    document.getElementById('cfg-jornada-visible').value = jornadaVisible;
+    const offset = deadline.getTimezoneOffset() * 60000;
+document.getElementById('cfg-deadline').value = new Date(deadline - offset).toISOString().slice(0, 16);
+    document.getElementById('cfg-presupuesto').value = config.presupuesto;
+    document.getElementById('cfg-titulo').value = config.titulo_jornada || '';
+    document.getElementById('cfg-mensaje').value = config.mensaje_aviso || '';
+    document.getElementById('cfg-fecha-fin').value = config.fecha_fin ? new Date(config.fecha_fin).toISOString().slice(0, 16) : '';
+    const diff = deadline - ahora;
+    if (diff > 0) {
+      const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000);
+      document.getElementById('stat-deadline').textContent = deadline.toLocaleDateString('es-ES', { weekday:'short', day:'numeric', month:'short' });
+      document.getElementById('stat-deadline-sub').textContent = deadline.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' }) + 'h · ' + (h > 0 ? h + 'h ' : '') + m + 'm restantes';
+    } else {
+      document.getElementById('stat-deadline').textContent = 'Cerrada';
+      document.getElementById('stat-deadline-sub').textContent = 'La jornada ya comenzó';
+    }
+  }
+
+  document.getElementById('btn-guardar-config').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-guardar-config');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const { error } = await db.from('config_jornada').update({
+      jornada_activa: parseInt(document.getElementById('cfg-jornada-activa').value),
+      jornada_visible: parseInt(document.getElementById('cfg-jornada-visible').value),
+      deadline: new Date(document.getElementById('cfg-deadline').value).toISOString(),
+      presupuesto: parseFloat(document.getElementById('cfg-presupuesto').value),
+      titulo_jornada: document.getElementById('cfg-titulo').value,
+      mensaje_aviso: document.getElementById('cfg-mensaje').value || null,
+      fecha_fin: document.getElementById('cfg-fecha-fin').value ? new Date(document.getElementById('cfg-fecha-fin').value).toISOString() : null
+    }).eq('id', 1);
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar cambios';
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast('Configuración guardada'); cargarDashboard(); }
+  });
+
+  /* ── PARTIDOS ── */
+  async function cargarPartidos() {
+    const { data: jornadas } = await db.from('partidos').select('jornada').order('jornada', { ascending: false });
+    const jornadasUnicas = [...new Set((jornadas || []).map(p => p.jornada))];
+    const select = document.getElementById('select-jornada-partidos');
+    select.innerHTML = jornadasUnicas.map(j => '<option value="' + j + '">Jornada ' + j + '</option>').join('');
+    if (jornadasUnicas.length) cargarTablaPartidos(jornadasUnicas[0]);
+    select.onchange = e => cargarTablaPartidos(parseInt(e.target.value));
+  }
+
+  async function cargarTablaPartidos(jornada) {
+    document.getElementById('partidos-jornada-label').textContent = jornada;
+    const { data } = await db.from('partidos').select('*').eq('jornada', jornada).order('fecha');
+    const tbody = document.getElementById('tabla-partidos');
+    if (!data?.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">Sin partidos para esta jornada</td></tr>'; return; }
+    tbody.innerHTML = data.map(p => '<tr><td><strong>' + p.local_nombre + '</strong></td><td>' + p.visitante_nombre + '</td><td style="color:var(--text-muted);font-size:12px">' + (p.estadio || '—') + '</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (p.fecha || '—') + '</td><td>' + (p.finalizado ? '<span class="pill pill-green">' + p.resultado_local + ' - ' + p.resultado_visitante + '</span>' : '<span class="pill pill-amber">Pendiente</span>') + '</td><td style="display:flex;gap:6px"><button class="btn btn-sm btn-primary" onclick="abrirModalResultado(\'' + p.id + '\')">' + (p.finalizado ? 'Editar' : 'Meter resultado') + '<button class="btn btn-sm" onclick="restablecerPartido(\'' + p.id + '\',' + jornada + ')"  ' + (!p.finalizado ? 'style="display:none"' : '') + '>Restablecer</button>' + '</button><button class="btn btn-sm btn-danger" onclick="eliminarPartido(\'' + p.id + '\',' + jornada + ')">Eliminar</button></td></tr>').join('');
+  }
+
+  async function abrirModalResultado(id) {
+    const { data: p } = await db.from('partidos').select('*').eq('id', id).single();
+    if (!p) { showToast('Error cargando partido', true); return; }
+    partidoEditando = id;
+    document.getElementById('modal-resultado-titulo').textContent = p.local_nombre + ' vs ' + p.visitante_nombre;
+    document.getElementById('res-local').value = p.resultado_local || 0;
+    document.getElementById('res-visitante').value = p.resultado_visitante || 0;
+    document.getElementById('modal-resultado').classList.add('open');
+  }
+
+  async function restablecerPartido(id, jornada) {
+  if (!confirm('¿Quitar el resultado de este partido?')) return;
+  const { error } = await db.from('partidos').update({
+    resultado_local: null,
+    resultado_visitante: null,
+    finalizado: false
+  }).eq('id', id);
+  if (error) showToast('Error: ' + error.message, true);
+  else { showToast('Resultado eliminado'); cargarTablaPartidos(jornada); }
+}
+
+  document.getElementById('btn-guardar-resultado').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-guardar-resultado');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const { error } = await db.from('partidos').update({
+      resultado_local: parseInt(document.getElementById('res-local').value),
+      resultado_visitante: parseInt(document.getElementById('res-visitante').value),
+      finalizado: true
+    }).eq('id', partidoEditando);
+    btn.disabled = false; btn.textContent = 'Guardar resultado';
+    document.getElementById('modal-resultado').classList.remove('open');
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast('Resultado guardado'); cargarTablaPartidos(parseInt(document.getElementById('select-jornada-partidos').value)); }
+  });
+
+  async function eliminarPartido(id, jornada) {
+    if (!confirm('¿Seguro que quieres eliminar este partido?')) return;
+    const { error } = await db.from('partidos').delete().eq('id', id);
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast('Partido eliminado'); cargarTablaPartidos(jornada); }
+  }
+
+  document.getElementById('btn-nuevo-partido').addEventListener('click', () => {
+    const select = document.getElementById('select-jornada-partidos');
+    document.getElementById('np-jornada').value = select.value || '';
+    document.getElementById('np-estadio').value = '';
+    document.getElementById('np-local-abrev').value = '';
+    document.getElementById('np-local-nombre').value = '';
+    document.getElementById('np-visitante-abrev').value = '';
+    document.getElementById('np-visitante-nombre').value = '';
+    document.getElementById('np-fecha').value = '';
+    document.getElementById('modal-nuevo-partido').classList.add('open');
+  });
+
+  document.getElementById('btn-nueva-jornada').addEventListener('click', () => {
+    const nueva = prompt('Número de la nueva jornada:');
+    if (!nueva || isNaN(parseInt(nueva))) return;
+    const j = parseInt(nueva);
+    const select = document.getElementById('select-jornada-partidos');
+    if (![...select.options].some(o => parseInt(o.value) === j)) {
+      const opt = document.createElement('option');
+      opt.value = j; opt.textContent = 'Jornada ' + j;
+      select.insertBefore(opt, select.firstChild);
+    }
+    select.value = j;
+    cargarTablaPartidos(j);
+    showToast('Jornada ' + j + ' lista — añade los partidos');
+  });
+
+  async function guardarPartido() {
+    const jornada = parseInt(document.getElementById('np-jornada').value);
+    const localAbrev = document.getElementById('np-local-abrev').value.trim().toUpperCase();
+    const localNombre = document.getElementById('np-local-nombre').value.trim();
+    const visitanteAbrev = document.getElementById('np-visitante-abrev').value.trim().toUpperCase();
+    const visitanteNombre = document.getElementById('np-visitante-nombre').value.trim();
+    if (!jornada || !localAbrev || !localNombre || !visitanteAbrev || !visitanteNombre) { showToast('Rellena todos los campos obligatorios', true); return; }
+    const btn = document.querySelector('#modal-nuevo-partido .btn-primary');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const [{ data: jugLocal }, { data: jugVisitante }] = await Promise.all([
+      db.from('jugadores').select('escudo_url').eq('club', localAbrev).limit(1).single(),
+      db.from('jugadores').select('escudo_url').eq('club', visitanteAbrev).limit(1).single()
+    ]);
+    const { error } = await db.from('partidos').insert({
+      jornada, local_abrev: localAbrev, local_nombre: localNombre,
+      local_escudo_url: jugLocal?.escudo_url || null,
+      visitante_abrev: visitanteAbrev, visitante_nombre: visitanteNombre,
+      visitante_escudo_url: jugVisitante?.escudo_url || null,
+      estadio: document.getElementById('np-estadio').value.trim() || null,
+      fecha: document.getElementById('np-fecha').value.trim() || null,
+      finalizado: false
+    });
+    btn.disabled = false; btn.textContent = 'Guardar partido';
+    document.getElementById('modal-nuevo-partido').classList.remove('open');
+    if (error) showToast('Error: ' + error.message, true);
+    else {
+      showToast('Partido añadido');
+      const select = document.getElementById('select-jornada-partidos');
+      if (![...select.options].some(o => parseInt(o.value) === jornada)) {
+        const opt = document.createElement('option'); opt.value = jornada; opt.textContent = 'Jornada ' + jornada;
+        select.insertBefore(opt, select.firstChild);
+      }
+      select.value = jornada;
+      cargarTablaPartidos(jornada);
+    }
+  }
+
+  /* ── NOTIFICACIONES ── */
+  async function cargarSuscriptores() {
+    const { count } = await db.from('push_subscriptions').select('*', { count: 'exact', head: true });
+    document.getElementById('num-suscriptores').textContent = count || 0;
+  }
+
+  document.getElementById('btn-enviar-notif').addEventListener('click', async () => {
+    const titulo = document.getElementById('notif-titulo').value.trim();
+    const mensaje = document.getElementById('notif-mensaje').value.trim();
+    if (!titulo || !mensaje) { showToast('Rellena título y mensaje', true); return; }
+    const btn = document.getElementById('btn-enviar-notif');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    const { error } = await db.functions.invoke('send-push', { body: { titulo, mensaje } });
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> Enviar ahora';
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast('Notificación enviada'); document.getElementById('notif-titulo').value = ''; document.getElementById('notif-mensaje').value = ''; }
+  });
+
+  /* ── CLASIFICACIÓN ── */
+  async function cargarClasificacion() {
+    const { data } = await db.from('clasificacion_general_auto').select('*');
+    const { data: equipos } = await db.from('equipos').select('user_id, equipo_favorito');
+    const favMap = {};
+    (equipos || []).forEach(e => { favMap[e.user_id] = e.equipo_favorito; });
+    const tbody = document.getElementById('tabla-clasificacion');
+    if (!data?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</td></tr>'; return; }
+    tbody.innerHTML = data.map((r, i) => '<tr><td><strong>' + (i+1) + '</strong></td><td>' + r.nombre_equipo + '</td><td style="color:var(--neon);font-weight:700">' + r.puntos_total + '</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (favMap[r.user_id] || '—') + '</td></tr>').join('');
+  }
+
+  /* ── ESTADÍSTICAS ── */
+  async function cargarStats() {
+    const { data: equipos } = await db.from('equipos').select('user_id');
+    const { data: jornadas } = await db.from('clasificacion_automatica').select('jornada, puntos').order('jornada', { ascending: true });
+    const porJornada = {};
+    (jornadas || []).forEach(r => { if (!porJornada[r.jornada]) porJornada[r.jornada] = []; porJornada[r.jornada].push(r.puntos); });
+    const jornadasKeys = Object.keys(porJornada).sort((a,b) => b - a);
+    const totalJornadas = jornadasKeys.length;
+    const mediaGlobal = jornadas?.length ? Math.round(jornadas.reduce((acc, r) => acc + r.puntos, 0) / jornadas.length) : 0;
+    const maxPuntos = jornadas?.length ? Math.max(...jornadas.map(r => r.puntos)) : 0;
+    document.getElementById('stats-grid').innerHTML = [
+      { label: 'Equipos', value: equipos?.length || 0, sub: 'registrados' },
+      { label: 'Jornadas jugadas', value: totalJornadas, sub: 'con datos' },
+      { label: 'Media global', value: mediaGlobal, sub: 'pts por jornada' },
+      { label: 'Máximo histórico', value: maxPuntos, sub: 'pts en una jornada' }
+    ].map(s => '<div class="stat-card"><div class="stat-label">' + s.label + '</div><div class="stat-value green">' + s.value + '</div><div class="stat-sub">' + s.sub + '</div></div>').join('');
+    document.getElementById('tabla-stats-jornadas').innerHTML = jornadasKeys.map(j => {
+      const pts = porJornada[j];
+      const media = Math.round(pts.reduce((a,b) => a+b, 0) / pts.length);
+      return '<tr><td>J' + j + '</td><td>' + pts.length + '</td><td style="color:var(--neon)">' + media + ' pts</td></tr>';
+    }).join('');
+  }
+
+  /* ── ADMINS ── */
+  async function cargarAdmins() {
+    const { data } = await db.from('equipos').select('user_id, nombre_equipo, is_admin').order('nombre_equipo');
+    const tbody = document.getElementById('tabla-admins');
+    if (!data?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</td></tr>'; return; }
+    tbody.innerHTML = data.map(e => '<tr><td><strong>' + e.nombre_equipo + '</strong></td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + e.user_id.substring(0,8) + '...</td><td>' + (e.is_admin ? '<span class="pill pill-green">Admin</span>' : '<span class="pill" style="background:var(--surface2);color:var(--text-muted)">Usuario</span>') + '</td><td>' + (e.user_id !== adminUser?.id ? '<button class="btn btn-sm ' + (e.is_admin ? 'btn-danger' : '') + '" onclick="toggleAdmin(\'' + e.user_id + '\',' + !e.is_admin + ')">' + (e.is_admin ? 'Quitar admin' : 'Hacer admin') + '</button>' : '<span style="font-size:12px;color:var(--text-muted)">Tú</span>') + '</td></tr>').join('');
+  }
+
+  async function toggleAdmin(userId, valor) {
+    const { error } = await db.from('equipos').update({ is_admin: valor }).eq('user_id', userId);
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast(valor ? 'Admin concedido' : 'Admin retirado'); cargarAdmins(); }
+  }
+</script>
+</body>
+</html>
