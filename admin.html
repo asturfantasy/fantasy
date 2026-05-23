@@ -404,7 +404,8 @@
     document.getElementById('badge-estado').className = 'badge-estado ' + (abierta ? 'badge-abierta' : 'badge-cerrada');
     document.getElementById('cfg-jornada-activa').value = jornadaActiva;
     document.getElementById('cfg-jornada-visible').value = jornadaVisible;
-    document.getElementById('cfg-deadline').value = deadline.toISOString().slice(0, 16);
+    const offset = deadline.getTimezoneOffset() * 60000;
+document.getElementById('cfg-deadline').value = new Date(deadline - offset).toISOString().slice(0, 16);
     document.getElementById('cfg-presupuesto').value = config.presupuesto;
     document.getElementById('cfg-titulo').value = config.titulo_jornada || '';
     document.getElementById('cfg-mensaje').value = config.mensaje_aviso || '';
@@ -452,7 +453,7 @@
     const { data } = await db.from('partidos').select('*').eq('jornada', jornada).order('fecha');
     const tbody = document.getElementById('tabla-partidos');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">Sin partidos para esta jornada</td></tr>'; return; }
-    tbody.innerHTML = data.map(p => '<tr><td><strong>' + p.local_nombre + '</strong></td><td>' + p.visitante_nombre + '</td><td style="color:var(--text-muted);font-size:12px">' + (p.estadio || '—') + '</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (p.fecha || '—') + '</td><td>' + (p.finalizado ? '<span class="pill pill-green">' + p.resultado_local + ' - ' + p.resultado_visitante + '</span>' : '<span class="pill pill-amber">Pendiente</span>') + '</td><td style="display:flex;gap:6px"><button class="btn btn-sm btn-primary" onclick="abrirModalResultado(\'' + p.id + '\')">' + (p.finalizado ? 'Editar' : 'Meter resultado') + '</button><button class="btn btn-sm btn-danger" onclick="eliminarPartido(\'' + p.id + '\',' + jornada + ')">Eliminar</button></td></tr>').join('');
+    tbody.innerHTML = data.map(p => '<tr><td><strong>' + p.local_nombre + '</strong></td><td>' + p.visitante_nombre + '</td><td style="color:var(--text-muted);font-size:12px">' + (p.estadio || '—') + '</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (p.fecha || '—') + '</td><td>' + (p.finalizado ? '<span class="pill pill-green">' + p.resultado_local + ' - ' + p.resultado_visitante + '</span>' : '<span class="pill pill-amber">Pendiente</span>') + '</td><td style="display:flex;gap:6px"><button class="btn btn-sm btn-primary" onclick="abrirModalResultado(\'' + p.id + '\')">' + (p.finalizado ? 'Editar' : 'Meter resultado') + '<button class="btn btn-sm" onclick="restablecerPartido(\'' + p.id + '\',' + jornada + ')"  ' + (!p.finalizado ? 'style="display:none"' : '') + '>Restablecer</button>' + '</button><button class="btn btn-sm btn-danger" onclick="eliminarPartido(\'' + p.id + '\',' + jornada + ')">Eliminar</button></td></tr>').join('');
   }
 
   async function abrirModalResultado(id) {
@@ -464,6 +465,17 @@
     document.getElementById('res-visitante').value = p.resultado_visitante || 0;
     document.getElementById('modal-resultado').classList.add('open');
   }
+
+  async function restablecerPartido(id, jornada) {
+  if (!confirm('¿Quitar el resultado de este partido?')) return;
+  const { error } = await db.from('partidos').update({
+    resultado_local: null,
+    resultado_visitante: null,
+    finalizado: false
+  }).eq('id', id);
+  if (error) showToast('Error: ' + error.message, true);
+  else { showToast('Resultado eliminado'); cargarTablaPartidos(jornada); }
+}
 
   document.getElementById('btn-guardar-resultado').addEventListener('click', async () => {
     const btn = document.getElementById('btn-guardar-resultado');
