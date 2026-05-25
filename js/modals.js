@@ -234,18 +234,53 @@ async function mostrarPartido(localAbrev, visitanteAbrev, localNombre, visitante
   titulo.textContent = localNombre + marcador + ' ' + visitanteNombre;
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
+
   const { data, error } = await db.from('jugadores')
-    .select('nombre, club, posicion, total_jornada, escudo_url, foto_url, minutos, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador')
+    .select('nombre, club, posicion, rol, total_jornada, escudo_url, foto_url, minutos, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador, goles_encajados')
     .in('club', [localAbrev, visitanteAbrev]).eq('jornada', jornada).order('total_jornada', { ascending: false });
+
   if (error || !data?.length) { content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>'; return; }
-  const ordenPos = ['POR','DEF','MED','DEL','ENT'];
-  const local = data.filter(j => j.club === localAbrev).sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
-  const visitante = data.filter(j => j.club === visitanteAbrev).sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
-  const rj = (j, al) => '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;flex-direction:' + (al === 'right' ? 'row-reverse' : 'row') + '" onclick="mostrarDesglose(' + JSON.stringify(j).replace(/"/g, '&quot;') + ')"><div style="position:relative;width:30px;height:30px;flex-shrink:0">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="30" height="30" style="object-fit:cover;border-radius:50%;border:1px solid var(--border)" onerror="this.style.display=\'none\'">' : '<div style="width:30px;height:30px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:10px;color:var(--text-muted)">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="11" height="11" style="position:absolute;bottom:-1px;right:-1px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + '</div><div style="flex:1;min-width:0;text-align:' + (al === 'right' ? 'right' : 'left') + '"><div style="font-family:var(--font-display);font-weight:600;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + '</div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted)">' + j.posicion + '</div></div><div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--neon);flex-shrink:0">' + j.total_jornada + '</div></div>';
-  const tl = local.reduce((acc, j) => acc + (j.total_jornada || 0), 0);
-  const tv = visitante.reduce((acc, j) => acc + (j.total_jornada || 0), 0);
+
+  const ordenPos = ['POR','DEF','MED','DEL'];
+
+  const colorPos = p => p === 'POR' ? 'var(--pos-gk)' : p === 'DEF' ? 'var(--pos-def)' : p === 'MED' ? 'var(--pos-mid)' : p === 'DEL' ? 'var(--pos-fwd)' : p === 'ENT' ? 'var(--pos-ent)' : 'var(--surface)';
+
+  const rj = (j, al) => '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;flex-direction:' + (al === 'right' ? 'row-reverse' : 'row') + '" onclick="mostrarDesglose(' + JSON.stringify(j).replace(/"/g, '&quot;') + ')"><div style="position:relative;width:30px;height:30px;flex-shrink:0;border-radius:50%;background:' + colorPos(j.posicion) + ';padding:2px;box-sizing:border-box">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="26" height="26" style="object-fit:cover;border-radius:50%;width:100%;height:100%;border:1px solid var(--border)" onerror="this.style.display=\'none\'">' : '<div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:10px;color:#0d1117">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="11" height="11" style="position:absolute;bottom:-1px;right:-1px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + '</div><div style="flex:1;min-width:0;text-align:' + (al === 'right' ? 'right' : 'left') + '"><div style="font-family:var(--font-display);font-weight:600;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + '</div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted)">' + j.posicion + '</div></div><div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--neon);flex-shrink:0">' + j.total_jornada + '</div></div>';
+
+  const seccion = (titulo, lista, al) => lista.length === 0 ? '' :
+    '<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;padding:8px 0 2px;text-align:' + (al === 'right' ? 'right' : 'left') + '">' + titulo + '</div>' +
+    lista.map(j => rj(j, al)).join('');
+
+  const renderEquipo = (jugadores, al) => {
+    const titulares = jugadores.filter(j => j.rol === 'titular' && j.posicion !== 'ENT')
+      .sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
+    const entrenadores = jugadores.filter(j => j.posicion === 'ENT');
+    const suplentes = jugadores.filter(j => j.rol === 'suplente' && j.posicion !== 'ENT')
+      .sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
+    return seccion('Titulares', titulares, al) +
+           seccion('Entrenador', entrenadores, al) +
+           seccion('Suplentes', suplentes, al);
+  };
+
+  const localJugadores     = data.filter(j => j.club === localAbrev);
+  const visitanteJugadores = data.filter(j => j.club === visitanteAbrev);
+
+  const tl = localJugadores.reduce((acc, j) => acc + (j.total_jornada || 0), 0);
+  const tv = visitanteJugadores.reduce((acc, j) => acc + (j.total_jornada || 0), 0);
+
   const btnVolver = desdeConsulta ? '<button onclick="document.getElementById(\'modal-partido\').classList.remove(\'open\');abrirConsultaPuntos();" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--text-muted);font-family:var(--font-display);font-size:13px;cursor:pointer;padding:0;margin-bottom:12px">← Volver a partidos</button>' : '';
-  content.innerHTML = btnVolver + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:60vh;overflow-y:auto;padding-right:4px"><div><div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text);text-align:center;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--neon);position:sticky;top:0;background:var(--bg2);z-index:1">' + localNombre + ' <span style="color:var(--neon)">(' + tl + ')</span></div>' + local.map(j => rj(j,'left')).join('') + '</div><div><div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text);text-align:center;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--neon);position:sticky;top:0;background:var(--bg2);z-index:1">' + visitanteNombre + ' <span style="color:var(--neon)">(' + tv + ')</span></div>' + visitante.map(j => rj(j,'right')).join('') + '</div></div>';
+
+  content.innerHTML = btnVolver +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:60vh;overflow-y:auto;padding-right:4px">' +
+      '<div>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text);text-align:center;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--neon);position:sticky;top:0;background:var(--bg2);z-index:1">' + localNombre + ' <span style="color:var(--neon)">(' + tl + ')</span></div>' +
+        renderEquipo(localJugadores, 'left') +
+      '</div>' +
+      '<div>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text);text-align:center;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--neon);position:sticky;top:0;background:var(--bg2);z-index:1">' + visitanteNombre + ' <span style="color:var(--neon)">(' + tv + ')</span></div>' +
+        renderEquipo(visitanteJugadores, 'right') +
+      '</div>' +
+    '</div>';
 }
 
 document.getElementById('partido-close')?.addEventListener('click', () => document.getElementById('modal-partido').classList.remove('open'));
