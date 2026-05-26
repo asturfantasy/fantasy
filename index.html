@@ -270,6 +270,18 @@
             </div>
         </div>
 
+        <!-- TARJETA 5: COMPARADOR -->
+        <div class="ranking-card" id="ranking-card-comparador">
+            <div class="ranking-card-header" onclick="goTo('ranking-comparador')">
+                <div class="ranking-card-icon">⚡</div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Comparador</div>
+                    <div class="ranking-card-sub">Compara dos jugadores cara a cara</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -361,6 +373,20 @@
             <select id="rentable-jornada-select" class="formation-select" style="width:100%"></select>
         </div>
         <div id="rentable-container"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: COMPARADOR -->
+<div id="screen-ranking-comparador" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Comparador</span>
+    </div>
+    <main class="page-body">
+        <div id="comparador-container"></div>
     </main>
 </div>
 
@@ -577,6 +603,7 @@
 <script src="js/lineup.js"></script>
 <script src="js/myteam.js"></script>
 <script src="js/ranking.js"></script>
+<script src="js/comparador.js"></script>
 <script src="js/auth.js"></script>
 <script>
     if ('serviceWorker' in navigator) {
