@@ -106,22 +106,22 @@ async function abrirConsultaPuntos() {
     if (!partidos?.length) { content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin partidos para esta jornada</div>'; return; }
     content.innerHTML = partidos.map(p => `
       <div class="match-card" style="cursor:pointer;margin-bottom:8px" onclick="mostrarPartido('${p.local_abrev}','${p.visitante_abrev}','${p.local_nombre}','${p.visitante_nombre}',${jornada},true)">
-        <div class="match-team">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;text-align:center">
           <div class="crest" style="display:flex;align-items:center;justify-content:center">
             ${p.local_escudo_url ? '<img loading="lazy" src="' + p.local_escudo_url + '" width="44" height="44" style="object-fit:contain">' : p.local_abrev}
           </div>
-          <div><div class="team-name">${p.local_nombre}</div></div>
+          <div class="team-name" style="font-size:11px;line-height:1.2">${p.local_nombre}</div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 8px;min-width:90px">
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 8px;flex-shrink:0">
           ${p.finalizado
             ? '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:2px">' + p.resultado_local + ' - ' + p.resultado_visitante + '</div><div style="font-family:var(--font-mono);font-size:9px;color:var(--neon);text-transform:uppercase">Final</div>'
             : '<div class="match-vs">' + (p.estadio || '') + '</div><div class="match-date">' + (p.fecha || '') + '</div>'}
         </div>
-        <div class="match-team right">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;text-align:center">
           <div class="crest" style="display:flex;align-items:center;justify-content:center">
             ${p.visitante_escudo_url ? '<img loading="lazy" src="' + p.visitante_escudo_url + '" width="44" height="44" style="object-fit:contain">' : p.visitante_abrev}
           </div>
-          <div style="text-align:right"><div class="team-name">${p.visitante_nombre}</div></div>
+          <div class="team-name" style="font-size:11px;line-height:1.2">${p.visitante_nombre}</div>
         </div>
       </div>`).join('');
   };

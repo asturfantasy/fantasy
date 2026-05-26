@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style-game.css" />
+    <link rel="stylesheet" href="css/style-game-two.css" />
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d1117">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -86,8 +86,8 @@
     </div>
     <main class="page-body">
         <div id="card-mensaje-home" style="display:none;background:rgba(227,179,65,0.12);border:1px solid rgba(227,179,65,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;font-family:var(--font-mono);font-size:11px;color:var(--yellow);text-align:center"></div>
-        <button class="action-btn" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:14px">
-            <span class="action-label">VER PUNTOS DE JORNADAS ANTERIORES</span>
+        <button class="action-btn" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:14px;background:var(--white)">
+            <span class="action-label" style="color:var(--black)">VER PUNTOS DE JORNADAS ANTERIORES</span>
         </button>
         <div class="section-label"><strong id="titulo-jornada-home"></strong></div>
         <div id="matches-container" class="matches-grid">
@@ -270,6 +270,18 @@
             </div>
         </div>
 
+        <!-- TARJETA 5: COMPARADOR -->
+        <div class="ranking-card" id="ranking-card-comparador">
+            <div class="ranking-card-header" onclick="goTo('ranking-comparador')">
+                <div class="ranking-card-icon">⚡</div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Comparador</div>
+                    <div class="ranking-card-sub">Compara dos jugadores cara a cara</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -361,6 +373,20 @@
             <select id="rentable-jornada-select" class="formation-select" style="width:100%"></select>
         </div>
         <div id="rentable-container"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: COMPARADOR -->
+<div id="screen-ranking-comparador" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Comparador</span>
+    </div>
+    <main class="page-body">
+        <div id="comparador-container"></div>
     </main>
 </div>
 
@@ -577,6 +603,7 @@
 <script src="js/lineup.js"></script>
 <script src="js/myteam.js"></script>
 <script src="js/ranking.js"></script>
+<script src="js/comparador.js"></script>
 <script src="js/auth.js"></script>
 <script>
     if ('serviceWorker' in navigator) {

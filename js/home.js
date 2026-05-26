@@ -40,7 +40,7 @@ async function loadHome() {
       const media = mediaData?.length ? Math.round(mediaData.reduce((acc, r) => acc + r.puntos, 0) / mediaData.length) : 0;
       const diff = clSemanal.puntos - media;
       const deltaEl = document.getElementById('stat-puntos-delta');
-      if (deltaEl) { deltaEl.textContent = diff >= 0 ? '+' + diff + ' vs media' : diff + ' vs media'; deltaEl.style.color = diff >= 0 ? 'var(--neon)' : 'var(--red)'; }
+      //if (deltaEl) { deltaEl.textContent = diff >= 0 ? '+' + diff + ' vs media' : diff + ' vs media'; deltaEl.style.color = diff >= 0 ? 'var(--neon)' : 'var(--red)'; }
       document.getElementById('stat-media').textContent = media;
     }
   }

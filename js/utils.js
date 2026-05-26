@@ -79,13 +79,17 @@ function actualizarPresupuesto() {
 function updateNavUser(user) {
   const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
   const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  ['', '-lineup', '-myteam', '-ranking', '-criterios'].forEach(s => {
-    const av = document.getElementById('nav-avatar' + s);
-    const mn = document.getElementById('user-menu-name' + (s || ''));
-    const me = document.getElementById('user-menu-email' + (s || ''));
-    if (av) { av.textContent = initials; av.title = name; }
-    if (mn) mn.textContent = '¡Hola, ' + name.split(' ')[0] + '!';
-    if (me) me.textContent = user?.email || '';
+
+  // Actualizar todos los avatares de la página
+  document.querySelectorAll('[id^="nav-avatar"]').forEach(av => {
+    av.textContent = initials;
+    av.title = name;
+  });
+  document.querySelectorAll('[id^="user-menu-name"]').forEach(el => {
+    el.textContent = '¡Hola, ' + name.split(' ')[0] + '!';
+  });
+  document.querySelectorAll('[id^="user-menu-email"]').forEach(el => {
+    el.textContent = user?.email || '';
   });
 }
 
@@ -135,7 +139,8 @@ function goTo(screenId) {
     'ranking-clasificacion': 'Clasificación',
     'ranking-jugadores': 'Jugadores',
     'ranking-once': 'Once ideal',
-    'ranking-rentable': 'Once rentable'
+    'ranking-rentable': 'Once rentable',
+    'ranking-comparador': 'Comparador'
   };
   document.title = 'AsturFantasy · ' + (titulos[screenId] || 'AsturFantasy');
   window.scrollTo(0, 0);
@@ -146,7 +151,8 @@ function goTo(screenId) {
     'ranking-clasificacion': loadRankingClasificacion,
     'ranking-jugadores': loadRankingJugadores,
     'ranking-once': loadRankingOnce,
-    'ranking-rentable': loadRankingRentable
+    'ranking-rentable': loadRankingRentable,
+     'ranking-comparador': loadComparador
   };
   if (loaders[screenId]) loaders[screenId]();
 }
