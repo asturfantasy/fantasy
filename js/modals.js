@@ -210,14 +210,104 @@ async function mostrarHistorial(nombre, club, posicion) {
   document.getElementById('historial-titulo').textContent = nombre;
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
-  const { data, error } = await db.from('jugadores').select('jornada, total_jornada, escudo_url, foto_url, rival, es_local').eq('nombre', nombre).eq('club', club).order('jornada', { ascending: true });
-  if (error || !data?.length) { content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>'; return; }
+
+  const { data, error } = await db.from('jugadores')
+    .select('jornada, total_jornada, escudo_url, foto_url, rival, es_local, gol, penalti, gol_pp, asistencia, amarilla, doble_amarilla, roja, puerta_cero, minutos, rol')
+    .eq('nombre', nombre).eq('club', club).order('jornada', { ascending: true });
+
+  if (error || !data?.length) {
+    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>';
+    return;
+  }
+
   const maxPts = Math.max(...data.map(d => d.total_jornada), 1);
-  const total = data.reduce((acc, d) => acc + d.total_jornada, 0);
-  const foto = data[0]?.foto_url || '';
+  const total  = data.reduce((acc, d) => acc + d.total_jornada, 0);
+  const foto   = data[0]?.foto_url || '';
   const escudo = data[0]?.escudo_url || '';
-  content.innerHTML = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)"><div style="width:56px;height:56px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px;color:var(--text-muted);flex-shrink:0;position:relative">' + (foto ? '<img loading="lazy" src="' + foto + '" width="56" height="56" style="object-fit:cover;border-radius:50%">' : nombre.substring(0,2).toUpperCase()) + (escudo ? '<img loading="lazy" src="' + escudo + '" width="18" height="18" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:var(--bg2);border:1px solid var(--border)">' : '') + '</div><div><div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text)">' + nombre + '</div><div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + posicion + '</div></div></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:right;margin-bottom:14px;letter-spacing:1px">TOTAL: <strong style="color:var(--neon)">' + total + ' pts</strong></div>' +
-    data.map(d => '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:80px"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">J' + d.jornada + '</span>' + (d.rival ? '<span style="font-size:10px">' + (d.es_local ? '🏠' : '✈️') + '</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + d.rival + '</span>' : '') + '</div><div style="flex:1;background:var(--surface);border-radius:4px;height:22px;overflow:hidden"><div style="height:100%;width:' + Math.max((d.total_jornada / maxPts) * 100, 0) + '%;background:var(--neon);border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:' + (d.total_jornada > 0 ? '24px' : '0') + '">' + (d.total_jornada > 0 ? '<span style="font-family:var(--font-display);font-size:11px;color:#0d1117;font-weight:700">' + d.total_jornada + '</span>' : '') + '</div></div>' + (d.total_jornada <= 0 ? '<span style="font-family:var(--font-display);font-size:12px;color:var(--text-muted)">0</span>' : '') + '</div>').join('');
+
+  const iconos = (d) => {
+    const items = [];
+
+    // Portería a cero
+    if (d.puerta_cero) items.push('<span title="Portería a cero" style="font-size:14px">🔒</span>');
+
+    // Goles normales
+    if (d.gol > 0) {
+      for (let i = 0; i < d.gol; i++)
+        items.push('<span title="Gol" style="font-size:14px">⚽</span>');
+    }
+
+    // Penalti según posición
+    if (d.penalti > 0) {
+      for (let i = 0; i < d.penalti; i++) {
+        if (posicion === 'POR')
+          items.push('<span title="Penalti parado" style="font-size:14px">🧤</span>');
+        else
+          items.push('<span title="Gol de penalti" style="font-size:14px">🎯</span>');
+      }
+    } else if (d.penalti < 0) {
+      for (let i = 0; i < Math.abs(d.penalti); i++)
+        items.push('<span title="Penalti fallado" style="font-size:14px">❌</span>');
+    }
+
+    // Gol en propia puerta
+    if (d.gol_pp > 0) {
+      for (let i = 0; i < d.gol_pp; i++)
+        items.push('<span title="Gol en propia puerta" style="font-size:14px">🔴</span>');
+    }
+
+    // Asistencias
+    if (d.asistencia > 0) {
+      for (let i = 0; i < d.asistencia; i++)
+        items.push('<span title="Asistencia" style="font-size:14px">👟</span>');
+    }
+
+    // Tarjetas
+    if (d.doble_amarilla) {
+      items.push('<span title="Doble amarilla" style="font-size:14px">🟨🟨</span>');
+    } else if (d.amarilla) {
+      items.push('<span title="Amarilla" style="font-size:14px">🟨</span>');
+    }
+    if (d.roja) items.push('<span title="Roja directa" style="font-size:14px">🟥</span>');
+
+    // Sustituido: titular que no llega a 90 min y no fue expulsado
+    const expulsado = d.doble_amarilla || d.roja;
+    if (d.rol === 'titular' && d.minutos < 90 && d.minutos > 0 && !expulsado) {
+      items.push('<span title="Sustituido (' + d.minutos + ' min)" style="font-size:14px">🔄</span>');
+    }
+
+    return items.length
+      ? '<div style="display:flex;gap:2px;align-items:center;flex-shrink:0">' + items.join('') + '</div>'
+      : '';
+  };
+
+  content.innerHTML =
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">' +
+      '<div style="width:56px;height:56px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px;color:var(--text-muted);flex-shrink:0;position:relative">' +
+        (foto ? '<img loading="lazy" src="' + foto + '" width="56" height="56" style="object-fit:cover;border-radius:50%">' : nombre.substring(0,2).toUpperCase()) +
+        (escudo ? '<img loading="lazy" src="' + escudo + '" width="18" height="18" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:var(--bg2);border:1px solid var(--border)">' : '') +
+      '</div>' +
+      '<div>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text)">' + nombre + '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + posicion + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:right;margin-bottom:14px;letter-spacing:1px">TOTAL: <strong style="color:var(--neon)">' + total + ' pts</strong></div>' +
+    data.map(d =>
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:80px">' +
+          '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">J' + d.jornada + '</span>' +
+          (d.rival ? '<span style="font-size:10px">' + (d.es_local ? '🏠' : '✈️') + '</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + d.rival + '</span>' : '') +
+        '</div>' +
+        '<div style="flex:1;background:var(--surface);border-radius:4px;height:22px;overflow:hidden">' +
+          '<div style="height:100%;width:' + Math.max((d.total_jornada / maxPts) * 100, 0) + '%;background:var(--neon);border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:' + (d.total_jornada > 0 ? '24px' : '0') + '">' +
+            (d.total_jornada > 0 ? '<span style="font-family:var(--font-display);font-size:11px;color:#0d1117;font-weight:700">' + d.total_jornada + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        (d.total_jornada <= 0 ? '<span style="font-family:var(--font-display);font-size:12px;color:var(--text-muted)">0</span>' : '') +
+        iconos(d) +
+      '</div>'
+    ).join('');
 }
 
 document.getElementById('historial-close')?.addEventListener('click', () => document.getElementById('modal-historial').classList.remove('open'));
