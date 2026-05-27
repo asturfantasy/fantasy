@@ -96,22 +96,22 @@
         <div class="section-label" style="margin-top:20px;margin-bottom:12px"><strong>HORA DE LA ACCIÓN</strong></div>
         <div class="action-grid">
             <button class="action-btn" data-target="lineup">
-                <span class="action-icon">📋</span>
+                <i class="ti ti-clipboard-list" style="font-size:28px;color:var(--green-light)"></i>
                 <span class="action-label">ALINEACIÓN</span>
                 <span class="action-desc">Haz tu once</span>
             </button>
             <button class="action-btn" data-target="myteam">
-                <span class="action-icon">👥</span>
+                <i class="ti ti-shirt" style="font-size:28px;color:var(--green-light)"></i>
                 <span class="action-label">MI EQUIPO</span>
                 <span class="action-desc">Tu plantilla</span>
             </button>
             <button class="action-btn" data-target="ranking">
-                <span class="action-icon">📊</span>
+                <i class="ti ti-trophy" style="font-size:28px;color:var(--green-light)"></i>
                 <span class="action-label">RANKINGS</span>
                 <span class="action-desc">Clasificaciones</span>
             </button>
             <button class="action-btn" data-target="criterios">
-                <span class="action-icon">➕</span>
+                <i class="ti ti-star" style="font-size:28px;color:var(--green-light)"></i>
                 <span class="action-label">PUNTUACIÓN</span>
                 <span class="action-desc">Criterios</span>
             </button>
@@ -414,7 +414,7 @@
 <div id="modal-desglose" class="modal-overlay">
     <div class="modal" style="max-width:320px">
         <div class="modal-header"><span class="modal-title" id="desglose-titulo">Desglose</span><button class="modal-close" id="desglose-close">✕</button></div>
-        <div style="padding:16px;overflow-y:auto;max-height:60vh" id="desglose-content"></div>
+        <div style="padding:16px;overflow-y:auto;max-height:55vh" id="desglose-content"></div>
     </div>
 </div>
 
@@ -552,7 +552,10 @@
             const screenId = screen?.id?.replace('screen-', '');
             placeholder.outerHTML = `
               <nav class="navbar">
-                <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+                <div style="display:flex;align-items:center;gap:8px">
+  <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="32" height="32" style="border-radius:8px">
+  <div class="nav-logo">ASTUR<span>FANTASY</span></div>
+</div>
                 <div class="nav-user">
                   <div class="avatar" id="nav-avatar${screenId === 'home' ? '' : '-' + screenId}" onclick="toggleUserMenu()">·</div>
                   <div id="user-menu${screenId === 'home' ? '' : '-' + screenId}" class="user-menu" style="display:none">

@@ -245,6 +245,21 @@ html, body {
 /* ── JORNADA BANNER ── */
 .jornada-banner {
   background: var(--green-brand);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 40px,
+      rgba(0,0,0,0.06) 40px,
+      rgba(0,0,0,0.06) 80px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 40px,
+      rgba(0,0,0,0.06) 40px,
+      rgba(0,0,0,0.06) 80px
+    );
   padding: 16px 20px;
   display: flex;
   align-items: center;

@@ -195,9 +195,56 @@ function mostrarDesglose(j) {
   document.getElementById('desglose-titulo').textContent = j.nombre;
   const items = desgloseFn(j);
   content.innerHTML = items.length
-    ? items.map(item => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-family:var(--font-body);font-size:13px;color:var(--text-muted)">' + item.label + '</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:' + (item.pts >= 0 ? 'var(--neon)' : 'var(--red)') + '">' + (item.pts > 0 ? '+' : '') + item.pts + '</span></div>').join('') + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin-top:4px"><span style="font-family:var(--font-display);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--text)">Total</span><span style="font-family:var(--font-display);font-weight:700;font-size:24px;color:var(--neon)">' + j.total_jornada + '</span></div>'
+    ? items.map(item => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-family:var(--font-body);font-size:13px;color:var(--text-muted)">' + item.label + '</span><span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:' + (item.pts >= 0 ? 'var(--neon)' : 'var(--red)') + '">' + (item.pts > 0 ? '+' : '') + item.pts + '</span></div>').join('') +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin-top:4px"><span style="font-family:var(--font-display);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--text)">Total</span><span style="font-family:var(--font-display);font-weight:700;font-size:24px;color:var(--neon)">' + j.total_jornada + '</span></div>' +
+      '<button onclick="compartirDesglose()" style="width:100%;margin-top:12px;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-share"></i> Compartir puntuación</button>'
     : '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin puntuación esta jornada</div>';
   modal.classList.add('open');
+}
+
+async function compartirDesglose() {
+  const modal = document.getElementById('modal-desglose');
+  const titulo = document.getElementById('desglose-titulo').textContent;
+  const content = document.getElementById('desglose-content');
+
+  const btn = content.querySelector('button');
+  if (btn) btn.style.display = 'none';
+  content.style.maxHeight = 'none';
+  content.style.paddingTop = '24px';
+
+  try {
+    const canvas = await html2canvas(modal.querySelector('.modal'), {
+      backgroundColor: '#1a2420',
+      scale: 2,
+      useCORS: true,
+    });
+
+    content.style.maxHeight = '60vh';
+    content.style.paddingTop = '';
+    if (btn) btn.style.display = 'flex';
+
+    canvas.toBlob(async blob => {
+      const file = new File([blob], titulo + '_puntos.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: titulo + ' · AsturFantasy',
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = titulo + '_puntos.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch (e) {
+    content.style.maxHeight = '60vh';
+    content.style.paddingTop = '';
+    if (btn) btn.style.display = 'flex';
+    showToast('Error al compartir');
+  }
 }
 
 document.getElementById('desglose-close')?.addEventListener('click', () => document.getElementById('modal-desglose').classList.remove('open'));
