@@ -87,15 +87,19 @@ async function loadRankingClasificacion() {
   const cargarSemanal = async (jornadaSel) => {
     const { data: semanal } = await db.from('clasificacion_automatica').select('*').eq('jornada', jornadaSel).order('puntos', { ascending: false });
     const tbody = document.getElementById('ranking-body');
+    const cerrada = jornadaSel < JORNADA_ACTIVA;
     if (!semanal?.length) {
       tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ' + jornadaSel + '</td></tr>';
     } else {
       tbody.innerHTML = semanal.map((r, i) => {
         const esYo = r.user_id === currentUser?.id;
-        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+        const clickable = cerrada ? 'cursor:pointer' : '';
+        const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo + '\',' + jornadaSel + ')"' : '';
+        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
       }).join('');
     }
   };
+
   const selectSemanal = document.getElementById('semanal-jornada-select');
   if (selectSemanal) {
     selectSemanal.innerHTML = '';
@@ -130,6 +134,70 @@ async function loadRankingClasificacion() {
           }).join('');
     }
   }
+}
+
+async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
+  const modal = document.getElementById('modal-historial');
+  const content = document.getElementById('historial-content');
+  document.getElementById('historial-titulo').textContent = nombreEquipo;
+  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+  modal.classList.add('open');
+
+  const { data, error } = await db.from('mi_equipo_detalle')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('jornada', jornada)
+    .order('posicion');
+
+  if (error || !data?.length) {
+    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin alineación para esta jornada</div>';
+    return;
+  }
+
+  const [{ data: capData }, { data: jugData }] = await Promise.all([
+    db.from('mi_equipo').select('jugador_id').eq('user_id', userId).eq('jornada', jornada).eq('capitan', true).single(),
+    db.from('jugadores').select('id, foto_url, escudo_url').in('id', data.map(j => j.jugador_id)).eq('jornada', jornada)
+  ]);
+
+  const capitanId = capData?.jugador_id || null;
+  const fotoMap = {}, escudoMap = {};
+  (jugData || []).forEach(j => { fotoMap[j.id] = j.foto_url; escudoMap[j.id] = j.escudo_url; });
+
+  const orden = ['POR','DEF','MED','DEL','ENT'];
+  const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion));
+  const totalPuntos = sorted.reduce((acc, j) => acc + (j.jugador_id === capitanId ? (j.puntos||0) * 2 : (j.puntos||0)), 0);
+  const formacion = data[0]?.formacion || '—';
+
+  const posColor = { POR:'var(--pos-gk)', DEF:'var(--pos-def)', MED:'var(--pos-mid)', DEL:'var(--pos-fwd)', ENT:'var(--pos-ent)' };
+
+  content.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">' +
+      '<div>' +
+        '<div style="font-family:var(--font-display);font-size:13px;color:var(--text-muted)">Formación: <strong style="color:var(--text)">' + formacion + '</strong></div>' +
+        '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:2px">Jornada ' + jornada + '</div>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+        '<div style="font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--neon);line-height:1">' + totalPuntos + '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px">PTS</div>' +
+      '</div>' +
+    '</div>' +
+    sorted.map(j => {
+      const esC = j.jugador_id === capitanId;
+      const pts = esC ? (j.puntos||0) * 2 : (j.puntos||0);
+      const foto = fotoMap[j.jugador_id];
+      const escudo = escudoMap[j.jugador_id];
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="width:36px;height:36px;border-radius:50%;background:' + (posColor[j.posicion]||'var(--surface)') + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:11px;font-weight:700;color:#111816;flex-shrink:0;position:relative;overflow:hidden">' +
+          (foto ? '<img loading="lazy" src="' + foto + '" width="36" height="36" style="object-fit:cover;border-radius:50%">' : j.posicion) +
+          (escudo ? '<img loading="lazy" src="' + escudo + '" width="14" height="14" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') +
+        '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--text)">' + j.nombre + (esC ? ' ⭐' : '') + '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + (esC ? ' · Cap.' : '') + '</div>' +
+        '</div>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--neon)">' + pts + '</div>' +
+      '</div>';
+    }).join('');
 }
 
 /* ============================================================
