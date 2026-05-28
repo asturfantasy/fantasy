@@ -212,11 +212,10 @@ async function mostrarHistorial(nombre, club, posicion) {
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
 
-  // Traer jornadas publicadas del club
-  const { data: partidosPublicados } = await db.from('partidos')
-    .select('jornada')
-    .eq('publicado', true)
-    .or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`);
+  const [{ data: partidosPublicados }, { data: todosPartidos }] = await Promise.all([
+    db.from('partidos').select('jornada').eq('publicado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`),
+    db.from('partidos').select('jornada, resultado_local, resultado_visitante, finalizado').eq('finalizado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
+  ]);
 
   const jornadasPublicadas = (partidosPublicados || []).map(p => p.jornada);
 
@@ -224,6 +223,15 @@ async function mostrarHistorial(nombre, club, posicion) {
     content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>';
     return;
   }
+
+  // Mapa jornada → resultado bruto (usamos es_local del jugador para ordenar)
+  const marcadores = {};
+  (todosPartidos || []).forEach(p => {
+    marcadores[p.jornada] = {
+      local: p.resultado_local,
+      visitante: p.resultado_visitante
+    };
+  });
 
   const { data, error } = await db.from('jugadores')
     .select('jornada, total_jornada, escudo_url, foto_url, rival, es_local, gol, penalti, gol_pp, asistencia, amarilla, doble_amarilla, roja, puerta_cero, minutos, rol, goles_encajados, puntos_entrenador')
@@ -241,6 +249,12 @@ async function mostrarHistorial(nombre, club, posicion) {
   const foto   = data[0]?.foto_url || '';
   const escudo = data[0]?.escudo_url || '';
 
+  const getMarcador = (d) => {
+    const m = marcadores[d.jornada];
+    if (!m) return '';
+    return m.local + '-' + m.visitante;
+  };
+
   const iconos = (d) => {
     if (posicion === 'ENT') return '';
     const items = [];
@@ -254,11 +268,11 @@ async function mostrarHistorial(nombre, club, posicion) {
     } else if (d.penalti < 0) {
       for (let i = 0; i < Math.abs(d.penalti); i++) items.push('<i class="ti ti-x" title="Penalti fallado" style="font-size:15px;color:var(--red)"></i>');
     }
-    if (d.gol_pp > 0) for (let i = 0; i < d.gol_pp; i++) items.push('<i class="ti ti-arrow-back-up" title="Gol en propia puerta" style="font-size:15px;color:var(--red)"></i>');
-    if (d.asistencia > 0) for (let i = 0; i < d.asistencia; i++) items.push('<i class="ti ti-shoe" title="Asistencia" style="font-size:15px;color:var(--amber)"></i>');
+    if (d.gol_pp > 0) for (let i = 0; i < d.gol_pp; i++) items.push('<i class="ti ti-ball-football" title="Gol en propia puerta" style="font-size:15px;color:var(--red)"></i>');
+    if (d.asistencia > 0) for (let i = 0; i < d.asistencia; i++) items.push('<i class="ti ti-shoe" title="Asistencia" style="font-size:15px;color:white"></i>');
     if (d.doble_amarilla) items.push('<i class="ti ti-cards" title="Doble amarilla" style="font-size:15px;color:var(--yellow)"></i>');
-    else if (d.amarilla) items.push('<i class="ti ti-card-filled" title="Amarilla" style="font-size:15px;color:var(--yellow)"></i>');
-    if (d.roja) items.push('<i class="ti ti-card-filled" title="Roja directa" style="font-size:15px;color:var(--red)"></i>');
+    else if (d.amarilla) items.push('<i class="ti ti-rectangle-filled" title="Amarilla" style="font-size:15px;color:var(--yellow)"></i>');
+    if (d.roja) items.push('<i class="ti ti-rectangle-filled" title="Roja directa" style="font-size:15px;color:var(--red)"></i>');
     const expulsado = d.doble_amarilla || d.roja;
     if (d.rol === 'titular' && d.minutos < 90 && d.minutos > 0 && !expulsado)
       items.push('<i class="ti ti-arrows-exchange" title="Sustituido (' + d.minutos + ' min)" style="font-size:15px;color:var(--text-muted)"></i>');
@@ -309,12 +323,12 @@ async function mostrarHistorial(nombre, club, posicion) {
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">P.CERO</div>
         </div>
         <div style="${cardStyle(amarillas > 0)}">
-          <i class="ti ti-card-filled" style="font-size:16px;color:#e3b341"></i>
+          <i class="ti ti-rectangle-filled" style="font-size:16px;color:#e3b341"></i>
           <div style="font-size:16px;font-weight:800;color:#e3b341;margin-top:2px">${amarillas}</div>
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">AMAR.</div>
         </div>
         <div style="${cardStyle(rojas > 0)}">
-          <i class="ti ti-card-filled" style="font-size:16px;color:#f05e5e"></i>
+          <i class="ti ti-rectangle-filled" style="font-size:16px;color:#f05e5e"></i>
           <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${rojas}</div>
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">ROJAS</div>
         </div>
@@ -332,17 +346,17 @@ async function mostrarHistorial(nombre, club, posicion) {
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">GOLES</div>
         </div>
         <div style="${cardStyle(asist > 0)}">
-          <i class="ti ti-shoe" style="font-size:16px;color:#d4a847"></i>
-          <div style="font-size:16px;font-weight:800;color:#d4a847;margin-top:2px">${asist}</div>
+          <i class="ti ti-shoe" style="font-size:16px;color:white"></i>
+          <div style="font-size:16px;font-weight:800;color:white;margin-top:2px">${asist}</div>
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">ASIST.</div>
         </div>
         <div style="${cardStyle(amarillas > 0)}">
-          <i class="ti ti-card-filled" style="font-size:16px;color:#e3b341"></i>
+          <i class="ti ti-rectangle-filled" style="font-size:16px;color:#e3b341"></i>
           <div style="font-size:16px;font-weight:800;color:#e3b341;margin-top:2px">${amarillas}</div>
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">AMAR.</div>
         </div>
         <div style="${cardStyle(rojas > 0)}">
-          <i class="ti ti-card-filled" style="font-size:16px;color:#f05e5e"></i>
+          <i class="ti ti-rectangle-filled" style="font-size:16px;color:#f05e5e"></i>
           <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${rojas}</div>
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">ROJAS</div>
         </div>
@@ -367,11 +381,13 @@ async function mostrarHistorial(nombre, club, posicion) {
       '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:1px">TOTAL: <strong style="color:var(--neon)">' + total + ' pts</strong></span>' +
       '<button onclick="compartirHistorial()" style="background:var(--green-brand);color:white;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-share" style="font-size:15px"></i> Compartir</button>' +
     '</div>' +
-    data.map(d =>
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
-        '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:80px">' +
+    data.map(d => {
+      const marcador = getMarcador(d);
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:90px">' +
           '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">J' + d.jornada + '</span>' +
           (d.rival ? '<span style="font-size:10px">' + (d.es_local ? '🏠' : '✈️') + '</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + d.rival + '</span>' : '') +
+          (marcador ? '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-left:2px">(' + marcador + ')</span>' : '') +
         '</div>' +
         '<div style="flex:1;background:var(--surface);border-radius:4px;height:22px;overflow:hidden">' +
           '<div style="height:100%;width:' + Math.max((d.total_jornada / maxPts) * 100, 0) + '%;background:var(--neon);border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:' + (d.total_jornada > 0 ? '24px' : '0') + '">' +
@@ -380,8 +396,8 @@ async function mostrarHistorial(nombre, club, posicion) {
         '</div>' +
         (d.total_jornada <= 0 ? '<span style="font-family:var(--font-display);font-size:12px;color:var(--text-muted)">0</span>' : '') +
         iconos(d) +
-      '</div>'
-    ).join('');
+      '</div>';
+    }).join('');
 }
 
 document.getElementById('historial-close')?.addEventListener('click', () => document.getElementById('modal-historial').classList.remove('open'));
