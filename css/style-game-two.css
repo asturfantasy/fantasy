@@ -314,13 +314,14 @@ html, body {
 .section-label {
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--green-light);
-  margin-bottom: 10px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  margin-top: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
@@ -364,12 +365,17 @@ html, body {
   border-radius: var(--radius);
   padding: 18px 14px;
   cursor: pointer;
-  text-align: left;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
   color: var(--text);
   transition: all 0.2s;
 }
-.action-btn:hover { border-color: var(--border-neon); background: var(--green-subtle); transform: translateY(-2px); }
+.action-btn:hover {
+  border-color: var(--border-neon);
+  background: var(--green-subtle);
+  transform: translateY(-2px);
+  border-bottom: 2px solid var(--green-light);
+}
 .action-icon { font-size: 26px; line-height: 1; }
 .action-label { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--text); }
 .action-desc { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
@@ -503,7 +509,11 @@ html, body {
 .capitan-label { font-family: var(--font-display); font-weight: 600; font-size: 13px; color: var(--text-muted); }
 .es-capitan { border-color: var(--yellow) !important; box-shadow: 0 0 16px rgba(227,179,65,0.4); }
 .cap-badge { position: absolute; top: -8px; right: -8px; background: var(--yellow); color: #111816; font-family: var(--font-display); font-weight: 700; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10; }
-.card-capitan { border-color: rgba(227,179,65,0.4) !important; background: rgba(227,179,65,0.06) !important; }
+.card-capitan {
+  border-color: rgba(227,179,65,0.6) !important;
+  background: rgba(227,179,65,0.08) !important;
+  box-shadow: 0 0 12px rgba(227,179,65,0.15);
+}
 .capitan-card { background: var(--white); border: 1px solid rgba(227,179,65,0.2); border-radius: var(--radius); padding: 14px 18px; }
 .capitan-card-titulo { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--black); margin-bottom: 4px; }
 .capitan-card-sub { font-family: var(--font-mono); font-size: 10px; color: var(--black); }
@@ -582,14 +592,22 @@ html, body {
 .ranking-card-icon { font-size: 22px; flex-shrink: 0; }
 .ranking-card-info { flex: 1; min-width: 0; }
 .ranking-card-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--text); }
-.ranking-card-sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-.ranking-card-chevron { font-size: 18px; color: var(--text-dim); transition: transform 0.2s; flex-shrink: 0; }
+.ranking-card-sub { font-family: var(--font-body); font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.ranking-card-chevron { font-size: 20px; color: var(--green-light); opacity: 0.5; transition: opacity 0.2s; }
+.ranking-card-header:hover .ranking-card-chevron { opacity: 1; }
 .ranking-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
-.ranking-metric { padding: 14px 8px; text-align: center; cursor: pointer; border-right: 1px solid var(--border); transition: background 0.15s; }
+.ranking-metric {
+  padding: 14px 8px;
+  text-align: center;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  transition: background 0.15s;
+  background: var(--bg);
+}
 .ranking-metric:last-child { border-right: none; }
 .ranking-metric:hover { background: var(--surface); }
 .ranking-metric-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
-.ranking-metric-value { font-family: var(--font-display); font-weight: 800; font-size: 24px; color: var(--green-light); line-height: 1; }
+.ranking-metric-value { font-family: var(--font-display); font-weight: 800; font-size: 28px; color: var(--green-light); line-height: 1; }
 .ranking-metric-sub { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); margin-top: 3px; }
 .ranking-card-detail { padding: 14px 16px; border-top: 1px solid var(--border); }
 

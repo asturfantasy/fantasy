@@ -235,14 +235,15 @@ async function loadRankingOnce() {
 async function loadOnce(jornada) {
   const container = document.getElementById('once-container');
   container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
-  const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).neq('posicion', 'ENT').order('puntos', { ascending: false }).order('valor', { ascending: true });
+  const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).order('puntos', { ascending: false }).order('valor', { ascending: true });
   if (error || !data?.length) { container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>'; return; }
-  const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
+  const porPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
   data.forEach(j => porPos[j.posicion]?.push(j));
   const portero = porPos.POR.sort((a,b) => b.puntos - a.puntos).slice(0,1);
   const defs = porPos.DEF.sort((a,b) => b.puntos - a.puntos);
   const meds = porPos.MED.sort((a,b) => b.puntos - a.puntos);
   const dels = porPos.DEL.sort((a,b) => b.puntos - a.puntos);
+  const entrenador = porPos.ENT.sort((a,b) => b.puntos - a.puntos).slice(0,1);
   let defOnce = defs.slice(0,3), medOnce = meds.slice(0,3), delOnce = dels.slice(0,1);
   const candidatos = [...defs.slice(3,5).map(j=>({...j,_pos:'DEF'})),...meds.slice(3,4).map(j=>({...j,_pos:'MED'})),...dels.slice(1,3).map(j=>({...j,_pos:'DEL'}))].sort((a,b)=>b.puntos-a.puntos);
   let huecos = 3;
@@ -252,12 +253,36 @@ async function loadOnce(jornada) {
     else if (c._pos==='MED' && medOnce.length<4) { medOnce.push(c); huecos--; }
     else if (c._pos==='DEL' && delOnce.length<3) { delOnce.push(c); huecos--; }
   }
-  const totalPuntos = [...portero,...defOnce,...medOnce,...delOnce].reduce((acc,j)=>acc+j.puntos,0);
+  const totalPuntos = [...portero,...defOnce,...medOnce,...delOnce,...entrenador].reduce((acc,j)=>acc+j.puntos,0);
   if (!totalPuntos) { container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-family:var(--font-display);font-size:16px">Aún no tenemos el once de la jornada</div>'; return; }
-  const filas = [{ label:'🧤 PORTERO',jugadores:portero },{ label:'🛑 DEFENSAS',jugadores:defOnce },{ label:'🧠 MEDIOS',jugadores:medOnce },{ label:'⚽ DELANTEROS',jugadores:delOnce }];
-  container.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--neon);letter-spacing:2px">Formación: ' + defOnce.length + '-' + medOnce.length + '-' + delOnce.length + '</div><div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">TOTAL: <strong style="color:var(--neon)">' + totalPuntos + ' pts</strong></div></div>' +
-    filas.map(fila => '<div style="margin-bottom:18px"><div style="font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px">' + fila.label + '</div>' +
-      fila.jugadores.map(j => '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">' + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="26" height="26" style="object-fit:contain">' : '<div style="width:26px;height:26px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:9px">' + j.club + '</div>') + '<div style="flex:1"><div style="font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text)">' + j.nombre + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + ' · ' + (j.valor || 0) + 'M' + '</div></div><div style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">' + j.puntos + '</div></div>').join('') + '</div>').join('');
+  const filas = [{ label:'🧤 PORTERO', pos:'POR', jugadores:portero },{ label:'🛑 DEFENSAS', pos:'DEF', jugadores:defOnce },{ label:'🧠 MEDIOS', pos:'MED', jugadores:medOnce },{ label:'⚽ DELANTEROS', pos:'DEL', jugadores:delOnce },{ label:'👔 ENTRENADOR', pos:'ENT', jugadores:entrenador }];
+
+  window._onceIdealData = { jornada, portero, defOnce, medOnce, delOnce, entrenador, totalPuntos };
+
+  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+
+  container.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--neon);letter-spacing:2px">Formación: ' + defOnce.length + '-' + medOnce.length + '-' + delOnce.length + '</div>' +
+      '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">TOTAL: <strong style="color:var(--neon)">' + totalPuntos + ' pts</strong></div>' +
+    '</div>' +
+    filas.map(fila => fila.jugadores.length === 0 ? '' :
+      '<div style="margin-bottom:14px">' +
+        '<div style="font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px">' + fila.label + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px">' +
+          fila.jugadores.map(j =>
+            '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface);border-radius:8px">' +
+              '<div style="width:10px;height:10px;border-radius:50%;background:' + posColor[fila.pos] + ';flex-shrink:0"></div>' +
+              (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="20" height="20" style="object-fit:contain;flex-shrink:0">' : '') +
+              '<div style="flex:1;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--text)">' + j.nombre + '</div>' +
+              '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + '</div>' +
+              '<div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--neon);min-width:28px;text-align:right">' + j.puntos + '</div>' +
+            '</div>'
+          ).join('') +
+        '</div>' +
+      '</div>'
+    ).join('') +
+    '<button onclick="compartirOnceIdeal()" style="width:100%;margin-top:16px;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-share"></i> Compartir once ideal</button>';
 }
 
 async function loadRankingRentable() {
@@ -323,4 +348,195 @@ async function cargarRentable(jornada) {
             </div>
           </div>`).join('')}
       </div>`).join('')}`;
+}
+
+/* ============================================================
+   compartirOnce.js — Compartir Once Ideal y Once Rentable
+   ============================================================ */
+
+async function compartirOnceIdeal() {
+  const { jornada, portero, defOnce, medOnce, delOnce, entrenador, totalPuntos } = window._onceIdealData;
+  const formacion = defOnce.length + '-' + medOnce.length + '-' + delOnce.length;
+  const filas = [
+    { label: 'PORTERO', pos: 'POR', jugadores: portero },
+    { label: 'DEFENSAS', pos: 'DEF', jugadores: defOnce },
+    { label: 'MEDIOS', pos: 'MED', jugadores: medOnce },
+    { label: 'DELANTEROS', pos: 'DEL', jugadores: delOnce },
+    { label: 'ENTRENADOR', pos: 'ENT', jugadores: entrenador }
+  ];
+  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
+
+  tarjeta.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
+      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
+      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
+      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.5)">J' + jornada + ' · Once ideal</span>' +
+    '</div>' +
+    '<div style="font-size:10px;color:#4cd97b;letter-spacing:2px;font-weight:600;margin-bottom:12px">FORMACIÓN ' + formacion + ' · ' + totalPuntos + ' PTS</div>' +
+    filas.map(fila => fila.jugadores.length === 0 ? '' :
+      '<div style="margin-bottom:10px">' +
+        '<div style="font-size:9px;color:#4a5e58;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">' + fila.label + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:3px">' +
+          fila.jugadores.map(j =>
+            '<div style="background:#1a2420;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">' +
+              '<div style="width:10px;height:10px;border-radius:50%;background:' + posColor[fila.pos] + ';flex-shrink:0"></div>' +
+              (j.escudo_url ? '<img src="' + j.escudo_url + '" width="16" height="16" style="object-fit:contain;flex-shrink:0">' : '') +
+              '<span style="font-size:12px;font-weight:600;color:white;flex:1">' + j.nombre + '</span>' +
+              '<span style="font-size:9px;color:#7a9088">' + j.club + '</span>' +
+              '<span style="font-size:16px;font-weight:800;color:#4cd97b;min-width:24px;text-align:right">' + j.puntos + '</span>' +
+            '</div>'
+          ).join('') +
+        '</div>' +
+      '</div>'
+    ).join('') +
+    '<div style="margin-top:12px;text-align:center;font-size:10px;color:#4a5e58">asturfantasy.com</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], 'once_ideal_J' + jornada + '.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Once ideal J' + jornada + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'once_ideal_J' + jornada + '.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al compartir');
+  }
+}
+
+async function cargarRentable(jornada) {
+  const container = document.getElementById('rentable-container');
+  container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
+  const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).neq('posicion', 'ENT').gt('valor', 0).gt('puntos', 0).order('puntos', { ascending: false });
+  const { data: entData } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).eq('posicion', 'ENT').gt('puntos', 0).order('puntos', { ascending: false }).limit(1);
+  const entrenador = entData?.length ? [{ ...entData[0], rentabilidad: entData[0].puntos / (entData[0].valor || 1) }] : [];
+  if (error || !data?.length) { container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>'; return; }
+  const conRentabilidad = data.map(j => ({ ...j, rentabilidad: j.puntos / j.valor }));
+  const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
+  conRentabilidad.forEach(j => porPos[j.posicion]?.push(j));
+  Object.keys(porPos).forEach(pos => porPos[pos].sort((a, b) => b.rentabilidad - a.rentabilidad));
+  const portero = porPos.POR.slice(0, 1);
+  const defs = porPos.DEF, meds = porPos.MED, dels = porPos.DEL;
+  let defOnce = defs.slice(0, 3), medOnce = meds.slice(0, 3), delOnce = dels.slice(0, 1);
+  const candidatos = [...defs.slice(3,5).map(j=>({...j,_pos:'DEF'})),...meds.slice(3,4).map(j=>({...j,_pos:'MED'})),...dels.slice(1,3).map(j=>({...j,_pos:'DEL'}))].sort((a,b)=>b.rentabilidad-a.rentabilidad);
+  let huecos = 3;
+  for (const c of candidatos) {
+    if (!huecos) break;
+    if (c._pos==='DEF' && defOnce.length<5) { defOnce.push(c); huecos--; }
+    else if (c._pos==='MED' && medOnce.length<4) { medOnce.push(c); huecos--; }
+    else if (c._pos==='DEL' && delOnce.length<3) { delOnce.push(c); huecos--; }
+  }
+  const filas = [{ label:'🧤 PORTERO', pos:'POR', jugadores:portero },{ label:'🛑 DEFENSAS', pos:'DEF', jugadores:defOnce },{ label:'🧠 MEDIOS', pos:'MED', jugadores:medOnce },{ label:'⚽ DELANTEROS', pos:'DEL', jugadores:delOnce },{ label:'👔 ENTRENADOR', pos:'ENT', jugadores:entrenador }];
+  const costeTotal = [...portero,...defOnce,...medOnce,...delOnce,...entrenador].reduce((acc,j)=>acc+(j.valor||0),0);
+  const puntosTotal = [...portero,...defOnce,...medOnce,...delOnce,...entrenador].reduce((acc,j)=>acc+j.puntos,0);
+  const formacion = defOnce.length + '-' + medOnce.length + '-' + delOnce.length;
+  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+
+  window._onceRentableData = { jornada, portero, defOnce, medOnce, delOnce, entrenador, costeTotal, puntosTotal };
+
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--neon);letter-spacing:2px">Formación: ${formacion}</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">
+        <div>COSTE: <strong style="color:var(--amber)">${costeTotal.toFixed(1)}M</strong></div>
+        <div>PUNTOS: <strong style="color:var(--neon)">${puntosTotal} pts</strong></div>
+      </div>
+    </div>
+    ${filas.map(fila => fila.jugadores.length === 0 ? '' : `
+      <div style="margin-bottom:14px">
+        <div style="font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px">${fila.label}</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${fila.jugadores.map(j => `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface);border-radius:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background:${posColor[fila.pos]};flex-shrink:0"></div>
+              ${j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="20" height="20" style="object-fit:contain;flex-shrink:0">' : ''}
+              <div style="flex:1;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--text)">${j.nombre}</div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${j.club} · ${j.valor}M</div>
+              <div style="text-align:right">
+                <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--neon)">${j.puntos} pts</div>
+                <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">${j.rentabilidad.toFixed(2)} pts/M</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}
+    <button onclick="compartirOnceRentable()" style="width:100%;margin-top:16px;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-share"></i> Compartir once rentable</button>`;
+}
+
+async function compartirOnceRentable() {
+  const { jornada, portero, defOnce, medOnce, delOnce, entrenador, costeTotal, puntosTotal } = window._onceRentableData;
+  const formacion = defOnce.length + '-' + medOnce.length + '-' + delOnce.length;
+  const filas = [
+    { label: 'PORTERO', pos: 'POR', jugadores: portero },
+    { label: 'DEFENSAS', pos: 'DEF', jugadores: defOnce },
+    { label: 'MEDIOS', pos: 'MED', jugadores: medOnce },
+    { label: 'DELANTEROS', pos: 'DEL', jugadores: delOnce },
+    { label: 'ENTRENADOR', pos: 'ENT', jugadores: entrenador }
+  ];
+  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(227,179,65,0.2)';
+
+  tarjeta.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
+      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
+      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
+      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.5)">J' + jornada + ' · Once rentable</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">' +
+      '<div style="background:#1a2420;border-radius:8px;padding:10px;text-align:center">' +
+        '<div style="font-size:9px;color:#7a9088;letter-spacing:1px;margin-bottom:2px">COSTE</div>' +
+        '<div style="font-size:20px;font-weight:800;color:#e3b341">' + costeTotal.toFixed(1) + 'M</div>' +
+      '</div>' +
+      '<div style="background:#1a2420;border-radius:8px;padding:10px;text-align:center">' +
+        '<div style="font-size:9px;color:#7a9088;letter-spacing:1px;margin-bottom:2px">PUNTOS</div>' +
+        '<div style="font-size:20px;font-weight:800;color:#4cd97b">' + puntosTotal + '</div>' +
+      '</div>' +
+    '</div>' +
+    filas.map(fila => fila.jugadores.length === 0 ? '' :
+      '<div style="margin-bottom:10px">' +
+        '<div style="font-size:9px;color:#4a5e58;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">' + fila.label + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:3px">' +
+          fila.jugadores.map(j =>
+            '<div style="background:#1a2420;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">' +
+              '<div style="width:10px;height:10px;border-radius:50%;background:' + posColor[fila.pos] + ';flex-shrink:0"></div>' +
+              (j.escudo_url ? '<img src="' + j.escudo_url + '" width="16" height="16" style="object-fit:contain;flex-shrink:0">' : '') +
+              '<span style="font-size:12px;font-weight:600;color:white;flex:1">' + j.nombre + '</span>' +
+              '<span style="font-size:9px;color:#7a9088">' + j.valor + 'M</span>' +
+              '<span style="font-size:12px;font-weight:700;color:#e3b341;min-width:40px;text-align:right">' + j.rentabilidad.toFixed(2) + '</span>' +
+            '</div>'
+          ).join('') +
+        '</div>' +
+      '</div>'
+    ).join('') +
+    '<div style="margin-top:12px;text-align:center;font-size:10px;color:#4a5e58">asturfantasy.com</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], 'once_rentable_J' + jornada + '.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Once rentable J' + jornada + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'once_rentable_J' + jornada + '.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al compartir');
+  }
 }
