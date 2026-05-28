@@ -335,15 +335,17 @@ async function mostrarHistorial(nombre, club, posicion) {
       </div>`;
   } else {
     const goles     = data.reduce((a,d) => a + (d.gol||0), 0);
+    const penaltis  = data.reduce((a,d) => a + Math.max(0, d.penalti||0), 0);
+    const totalGoles = goles + penaltis;
     const asist     = data.reduce((a,d) => a + (d.asistencia||0), 0);
     const amarillas = data.reduce((a,d) => a + (d.amarilla||0), 0);
     const rojas     = data.reduce((a,d) => a + (d.roja||0) + (d.doble_amarilla||0), 0);
     statsCards = `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
-        <div style="${cardStyle(goles > 0)}">
+        <div style="${cardStyle(totalGoles > 0)}">
           <i class="ti ti-ball-football" style="font-size:16px;color:white"></i>
-          <div style="font-size:16px;font-weight:800;color:white;margin-top:2px">${goles}</div>
-          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">GOLES</div>
+          <div style="font-size:16px;font-weight:800;color:white;margin-top:2px">${totalGoles}${penaltis > 0 ? ' (' + penaltis + ')' : ''}</div>
+          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">GOLES TOTALES (PENALTI)</div>
         </div>
         <div style="${cardStyle(asist > 0)}">
           <i class="ti ti-shoe" style="font-size:16px;color:white"></i>

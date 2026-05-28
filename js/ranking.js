@@ -64,6 +64,8 @@ async function loadRanking() {
     const mpP = document.getElementById('metric-pos-pena');
     if (mpP) mpP.textContent = miPosP >= 0 ? (miPosP + 1) + 'º' : '—';
   }
+  // Al final de loadRanking():
+  cargarMVPPreview(jornadaRanking);
 }
 
 async function loadRankingClasificacion() {
@@ -127,6 +129,193 @@ async function loadRankingClasificacion() {
             return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
           }).join('');
     }
+  }
+}
+
+/* ============================================================
+   MVP de la jornada — añadir a ranking.js
+   ============================================================ */
+
+async function loadMVP() {
+  const jornadaActual = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+  const selectMVP = document.getElementById('mvp-jornada-select');
+
+  if (selectMVP && !selectMVP.options.length) {
+    for (let i = jornadaActual; i >= 1; i--) {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = 'Jornada ' + i;
+      selectMVP.appendChild(opt);
+    }
+    selectMVP.value = jornadaActual;
+    selectMVP.addEventListener('change', e => cargarMVP(parseInt(e.target.value)));
+  }
+
+  await cargarMVP(jornadaActual);
+  cargarMVPPreview(jornadaActual);
+}
+
+async function cargarMVPPreview(jornada) {
+  const preview = document.getElementById('mvp-preview');
+  if (!preview) return;
+
+  const { data: partidosPublicados } = await db.from('partidos')
+    .select('jornada, local_abrev, visitante_abrev')
+    .eq('jornada', jornada)
+    .eq('publicado', true);
+
+  if (!partidosPublicados?.length) {
+    preview.innerHTML = '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Sin datos</div>';
+    return;
+  }
+
+  const clubsPublicados = new Set();
+  partidosPublicados.forEach(p => { clubsPublicados.add(p.local_abrev); clubsPublicados.add(p.visitante_abrev); });
+
+  const { data: jugadores } = await db.from('jugadores')
+    .select('nombre, club, posicion, puntos, minutos, foto_url, escudo_url')
+    .eq('jornada', jornada)
+    .order('puntos', { ascending: false })
+    .order('minutos', { ascending: true })
+    .order('asistencia', { ascending: false });
+
+  const mvp = (jugadores || []).find(j => clubsPublicados.has(j.club) && (j.minutos || 0) > 0);
+  if (!mvp) { preview.innerHTML = '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Sin datos</div>'; return; }
+
+  const posColor = { POR:'var(--pos-gk)', DEF:'var(--pos-def)', MED:'var(--pos-mid)', DEL:'var(--pos-fwd)', ENT:'var(--pos-ent)' };
+
+  preview.innerHTML =
+    '<div style="width:48px;height:48px;border-radius:50%;background:' + (posColor[mvp.posicion]||'var(--surface)') + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:16px;font-weight:700;color:#111816;flex-shrink:0;overflow:hidden">' +
+      (mvp.foto_url ? '<img src="' + mvp.foto_url + '" width="48" height="48" style="object-fit:cover;border-radius:50%">' : mvp.nombre.substring(0,2).toUpperCase()) +
+    '</div>' +
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + mvp.nombre + '</div>' +
+      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + mvp.posicion + ' · ' + mvp.club + ' · J' + jornada + '</div>' +
+    '</div>' +
+    '<div style="text-align:right;flex-shrink:0">' +
+      '<div style="font-family:var(--font-display);font-weight:900;font-size:28px;color:var(--neon);line-height:1">' + mvp.puntos + '</div>' +
+      '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px">PTS</div>' +
+    '</div>';
+}
+
+async function cargarMVP(jornada) {
+  const container = document.getElementById('mvp-container');
+  container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
+
+  const { data: partidosPublicados } = await db.from('partidos')
+    .select('jornada, local_abrev, visitante_abrev')
+    .eq('jornada', jornada)
+    .eq('publicado', true);
+
+  if (!partidosPublicados?.length) {
+    container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>';
+    return;
+  }
+
+  const clubsPublicados = new Set();
+  partidosPublicados.forEach(p => { clubsPublicados.add(p.local_abrev); clubsPublicados.add(p.visitante_abrev); });
+
+  const { data: jugadores } = await db.from('jugadores')
+    .select('nombre, club, posicion, puntos, minutos, gol, penalti, asistencia, amarilla, roja, goles_encajados, foto_url, escudo_url, valor')
+    .eq('jornada', jornada)
+    .order('puntos', { ascending: false })
+    .order('minutos', { ascending: true })
+    .order('asistencia', { ascending: false });
+
+  const mvp = (jugadores || []).find(j => clubsPublicados.has(j.club) && (j.minutos || 0) > 0);
+
+  if (!mvp) {
+    container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>';
+    return;
+  }
+
+  window._mvpData = { mvp, jornada };
+
+  const statsGrid = (bg) => `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      <div style="background:${bg};border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:900;color:white">${mvp.puntos}</div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">PTS</div>
+      </div>
+      <div style="background:${bg};border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:900;color:white">${mvp.minutos||0}</div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">MIN</div>
+      </div>
+      <div style="background:${bg};border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:900;color:white">${(mvp.gol||0) + Math.max(0, mvp.penalti||0)}</div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">GOLES</div>
+      </div>
+      <div style="background:${bg};border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:900;color:white">${mvp.asistencia||0}</div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">ASIST.</div>
+      </div>
+    </div>`;
+
+  container.innerHTML =
+    '<div style="background:var(--green-brand);border-radius:var(--radius);padding:20px;margin-bottom:16px;background-image:repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(0,0,0,0.06) 40px,rgba(0,0,0,0.06) 80px),repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(0,0,0,0.06) 40px,rgba(0,0,0,0.06) 80px)">' +
+      '<div style="font-size:9px;color:rgba(255,255,255,0.6);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px">MVP JORNADA ' + jornada + '</div>' +
+      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">' +
+        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;flex-shrink:0;overflow:hidden">' +
+          (mvp.foto_url ? '<img src="' + mvp.foto_url + '" width="64" height="64" style="object-fit:cover;border-radius:50%">' : mvp.nombre.substring(0,2).toUpperCase()) +
+        '</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-display);font-size:22px;font-weight:800;color:white;line-height:1.1">' + mvp.nombre + '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.6);margin-top:4px">' + mvp.posicion + ' · ' + mvp.club + '</div>' +
+        '</div>' +
+      '</div>' +
+      statsGrid('rgba(0,0,0,0.2)') +
+    '</div>' +
+    '<button onclick="exportarMVP()" style="width:100%;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">' +
+      '<i class="ti ti-share"></i> Compartir MVP' +
+    '</button>';
+}
+
+async function exportarMVP() {
+  const { mvp, jornada } = window._mvpData;
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#007a45;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;background-image:repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(0,0,0,0.06) 40px,rgba(0,0,0,0.06) 80px),repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(0,0,0,0.06) 40px,rgba(0,0,0,0.06) 80px)';
+
+  tarjeta.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
+      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
+      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:rgba(255,255,255,0.7)">Fantasy</span></span>' +
+      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.6)">J' + jornada + ' · MVP</span>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">' +
+      '<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;flex-shrink:0;overflow:hidden">' +
+        (mvp.foto_url ? '<img src="' + mvp.foto_url + '" width="64" height="64" style="object-fit:cover;border-radius:50%">' : mvp.nombre.substring(0,2).toUpperCase()) +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:9px;color:rgba(255,255,255,0.6);letter-spacing:2px;margin-bottom:2px">MVP JORNADA ' + jornada + '</div>' +
+        '<div style="font-size:22px;font-weight:800;color:white;line-height:1.1">' + mvp.nombre + '</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px">' + mvp.posicion + ' · ' + mvp.club + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">' +
+      '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + mvp.puntos + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">PTS</div></div>' +
+      '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + (mvp.minutos||0) + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">MIN</div></div>' +
+      '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + ((mvp.gol||0) + Math.max(0, mvp.penalti||0)) + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">GOLES</div></div>' +
+      '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + (mvp.asistencia||0) + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">ASIST.</div></div>' +
+    '</div>' +
+    '<div style="text-align:center;font-size:10px;color:rgba(255,255,255,0.4)">asturfantasy.com</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#007a45', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], 'MVP_J' + jornada + '_' + mvp.nombre + '.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'MVP J' + jornada + ': ' + mvp.nombre + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'MVP_J' + jornada + '.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al compartir');
   }
 }
 

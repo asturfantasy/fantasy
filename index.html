@@ -275,7 +275,19 @@
             </div>
         </div>
 
-        <!-- TARJETA 5: COMPARADOR -->
+        <!-- TARJETA 5: MVP DE LA JORNADA -->
+        <div class="ranking-card" id="ranking-card-mvp">
+            <div class="ranking-card-header" onclick="goTo('ranking-mvp')">
+                <div class="ranking-card-icon"><i class="ti ti-star-filled" style="color:var(--green-light)"></i></div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">MVP</div>
+                    <div class="ranking-card-sub">El mejor jugador de cada jornada</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
+        <!-- TARJETA 6: COMPARADOR -->
         <div class="ranking-card" id="ranking-card-comparador">
             <div class="ranking-card-header" onclick="goTo('ranking-comparador')">
                 <div class="ranking-card-icon"><i class="ti ti-bolt" style="color:var(--green-light)"></i></div>
@@ -378,6 +390,23 @@
             <select id="rentable-jornada-select" class="formation-select" style="width:100%"></select>
         </div>
         <div id="rentable-container"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: MVP -->
+<div id="screen-ranking-mvp" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">MVP de la jornada</span>
+    </div>
+    <main class="page-body">
+        <div style="margin-bottom:14px">
+            <select id="mvp-jornada-select" class="formation-select" style="width:100%"></select>
+        </div>
+        <div id="mvp-container"></div>
     </main>
 </div>
 
