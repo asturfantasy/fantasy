@@ -186,15 +186,16 @@ async function mostrarComparativa() {
   const esEnt2 = j2.posicion === 'ENT';
 
   let filas = [];
+  let stats1, stats2;
 
   if (esEnt1 || esEnt2) {
-    // Al menos uno es entrenador — comparativa de entrenadores
     const [s1, s2] = await Promise.all([
       esEnt1 ? calcStatsEntrenador(j1.nombre, j1.club) : null,
       esEnt2 ? calcStatsEntrenador(j2.nombre, j2.club) : null,
     ]);
     const e1 = s1 || { puntos:0, partidos:0, victorias:0, empates:0, derrotas:0, goles_favor:0, goles_contra:0, amarillas:0, doble_am:0, rojas:0 };
     const e2 = s2 || { puntos:0, partidos:0, victorias:0, empates:0, derrotas:0, goles_favor:0, goles_contra:0, amarillas:0, doble_am:0, rojas:0 };
+    stats1 = e1; stats2 = e2;
     filas = [
       ['Puntos',         e1.puntos,      e2.puntos,      e1.puntos,      e2.puntos,      'mayor'],
       ['Partidos',       e1.partidos,    e2.partidos,    e1.partidos,    e2.partidos,    'mayor'],
@@ -208,7 +209,6 @@ async function mostrarComparativa() {
       ['Rojas',          e1.rojas,       e2.rojas,       e1.rojas,       e2.rojas,       'menor'],
     ];
   } else {
-    // Jugadores de campo
     const [r1, r2] = await Promise.all([
       db.from('jugadores').select('minutos,rol,gol,penalti,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
       db.from('jugadores').select('minutos,rol,gol,penalti,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
@@ -231,26 +231,29 @@ async function mostrarComparativa() {
         porterias_cero: r.filter(x => (x.goles_encajados||0) === 0 && (x.minutos||0) >= 60).length,
       };
     };
-    const s1 = calc(r1.data);
-    const s2 = calc(r2.data);
+    stats1 = calc(r1.data);
+    stats2 = calc(r2.data);
     filas = [
-      ['Puntos',           s1.puntos,        s2.puntos,        s1.puntos,        s2.puntos,        'mayor'],
-      ['Partidos',         s1.partidos,      s2.partidos,      s1.partidos,      s2.partidos,      'mayor'],
-      ['Titularidades',    s1.titularidades, s2.titularidades, s1.titularidades, s2.titularidades, 'mayor'],
-      ['Minutos',          s1.minutos,       s2.minutos,       s1.minutos,       s2.minutos,       'mayor'],
+      ['Puntos',           stats1.puntos,        stats2.puntos,        stats1.puntos,        stats2.puntos,        'mayor'],
+      ['Partidos',         stats1.partidos,      stats2.partidos,      stats1.partidos,      stats2.partidos,      'mayor'],
+      ['Titularidades',    stats1.titularidades, stats2.titularidades, stats1.titularidades, stats2.titularidades, 'mayor'],
+      ['Minutos',          stats1.minutos,       stats2.minutos,       stats1.minutos,       stats2.minutos,       'mayor'],
       ['Goles',
-        s1.goles + (s1.penaltis > 0 ? ` (${s1.penaltis})` : ''),
-        s2.goles + (s2.penaltis > 0 ? ` (${s2.penaltis})` : ''),
-        s1.goles, s2.goles, 'mayor'],
-      ['Asistencias',      s1.asistencias,   s2.asistencias,   s1.asistencias,   s2.asistencias,   'mayor'],
-      ['Gol PP',           s1.gol_pp,        s2.gol_pp,        s1.gol_pp,        s2.gol_pp,        'menor'],
-      ['Amarillas',        s1.amarillas,     s2.amarillas,     s1.amarillas,     s2.amarillas,     'menor'],
-      ['Doble amarilla',   s1.doble_am,      s2.doble_am,      s1.doble_am,      s2.doble_am,      'menor'],
-      ['Rojas',            s1.rojas,         s2.rojas,         s1.rojas,         s2.rojas,         'menor'],
-      ['Goles encajados',  s1.goles_enc,     s2.goles_enc,     s1.goles_enc,     s2.goles_enc,     'menor'],
-      ['Porterías a cero', s1.porterias_cero,s2.porterias_cero,s1.porterias_cero,s2.porterias_cero,'mayor'],
+        stats1.goles + (stats1.penaltis > 0 ? ` (${stats1.penaltis})` : ''),
+        stats2.goles + (stats2.penaltis > 0 ? ` (${stats2.penaltis})` : ''),
+        stats1.goles, stats2.goles, 'mayor'],
+      ['Asistencias',      stats1.asistencias,   stats2.asistencias,   stats1.asistencias,   stats2.asistencias,   'mayor'],
+      ['Gol PP',           stats1.gol_pp,        stats2.gol_pp,        stats1.gol_pp,        stats2.gol_pp,        'menor'],
+      ['Amarillas',        stats1.amarillas,     stats2.amarillas,     stats1.amarillas,     stats2.amarillas,     'menor'],
+      ['Doble amarilla',   stats1.doble_am,      stats2.doble_am,      stats1.doble_am,      stats2.doble_am,      'menor'],
+      ['Rojas',            stats1.rojas,         stats2.rojas,         stats1.rojas,         stats2.rojas,         'menor'],
+      ['Goles encajados',  stats1.goles_enc,     stats2.goles_enc,     stats1.goles_enc,     stats2.goles_enc,     'menor'],
+      ['Porterías a cero', stats1.porterias_cero,stats2.porterias_cero,stats1.porterias_cero,stats2.porterias_cero,'mayor'],
     ];
   }
+
+  // Guardar para exportar
+  window._comparadorData = { j1, j2, filas, stats1, stats2 };
 
   const fila = ([label, v1, v2, n1, n2, tipo]) => {
     const empate = n1 === n2;
@@ -263,8 +266,81 @@ async function mostrarComparativa() {
     </div>`;
   };
 
-  res.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">${filas.map(f => fila(f)).join('')}</div>`;
+  res.innerHTML = `
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+      ${filas.map(f => fila(f)).join('')}
+    </div>
+    <button onclick="exportarComparador()" style="width:100%;margin-top:16px;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      <i class="ti ti-share"></i> Compartir comparativa
+    </button>`;
 }
+
+async function exportarComparador() {
+  const { j1, j2, filas } = window._comparadorData;
+  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+
+  const avatar = (j) =>
+    j.foto_url
+      ? `<img src="${j.foto_url}" width="40" height="40" style="object-fit:cover;border-radius:50%;width:100%;height:100%">`
+      : `<span style="font-size:14px;font-weight:700;color:white">${j.nombre.substring(0,2).toUpperCase()}</span>`;
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
+
+  tarjeta.innerHTML =
+    // Header
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
+      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
+      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
+      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.5)">Comparador</span>' +
+    '</div>' +
+    // Jugadores
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
+      [j1, j2].map(j =>
+        '<div style="background:#1a2420;border-radius:10px;padding:12px;text-align:center">' +
+          '<div style="width:44px;height:44px;border-radius:50%;background:' + (posColor[j.posicion] || '#243028') + ';margin:0 auto 6px;display:flex;align-items:center;justify-content:center;overflow:hidden">' +
+            avatar(j) +
+          '</div>' +
+          '<div style="font-size:12px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + '</div>' +
+          '<div style="font-size:9px;color:#7a9088">' + j.posicion + ' · ' + j.club + '</div>' +
+        '</div>'
+      ).join('') +
+    '</div>' +
+    // Stats
+    '<div style="display:flex;flex-direction:column;gap:0">' +
+      filas.map(([label, v1, v2, n1, n2, tipo]) => {
+        const empate = n1 === n2;
+        const gana1 = !empate && tipo !== 'none' && (tipo === 'mayor' ? n1 > n2 : n1 < n2);
+        const gana2 = !empate && tipo !== 'none' && (tipo === 'mayor' ? n2 > n1 : n2 < n1);
+        return '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+          '<div style="font-size:13px;font-weight:700;color:' + (gana1 ? '#4cd97b' : 'white') + ';text-align:left">' + v1 + '</div>' +
+          '<div style="font-size:8px;color:#7a9088;text-transform:uppercase;letter-spacing:1px;text-align:center;padding:0 8px">' + label + '</div>' +
+          '<div style="font-size:13px;font-weight:700;color:' + (gana2 ? '#4cd97b' : 'white') + ';text-align:right">' + v2 + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>' +
+    '<div style="margin-top:14px;text-align:center;font-size:10px;color:#4a5e58">asturfantasy.com</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], j1.nombre + '_vs_' + j2.nombre + '.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: j1.nombre + ' vs ' + j2.nombre + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = j1.nombre + '_vs_' + j2.nombre + '.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al compartir');
+  }
+}
+
 
 // Cerrar sugerencias al hacer click fuera
 document.addEventListener('click', e => {
