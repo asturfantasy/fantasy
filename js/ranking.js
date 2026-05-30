@@ -283,7 +283,7 @@ async function cargarMVP(jornada) {
   partidosPublicados.forEach(p => { clubsPublicados.add(p.local_abrev); clubsPublicados.add(p.visitante_abrev); });
 
   const { data: jugadores } = await db.from('jugadores')
-    .select('nombre, club, posicion, puntos, minutos, gol, penalti, asistencia, amarilla, roja, goles_encajados, foto_url, escudo_url, valor')
+    .select('nombre, club, posicion, puntos, minutos, gol, penalti_marcado, asistencia, amarilla, roja, goles_encajados, foto_url, escudo_url, valor')
     .eq('jornada', jornada)
     .order('puntos', { ascending: false })
     .order('minutos', { ascending: true })
@@ -309,7 +309,7 @@ async function cargarMVP(jornada) {
         <div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">MIN</div>
       </div>
       <div style="background:${bg};border-radius:8px;padding:10px;text-align:center">
-        <div style="font-size:22px;font-weight:900;color:white">${(mvp.gol||0) + Math.max(0, mvp.penalti||0)}</div>
+        <div style="font-size:22px;font-weight:900;color:white">${(mvp.gol||0) + (mvp.penalti_marcado||0)}</div>
         <div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">GOLES</div>
       </div>
       <div style="background:${bg};border-radius:8px;padding:10px;text-align:center">
@@ -362,7 +362,7 @@ async function exportarMVP() {
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">' +
       '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + mvp.puntos + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">PTS</div></div>' +
       '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + (mvp.minutos||0) + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">MIN</div></div>' +
-      '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + ((mvp.gol||0) + Math.max(0, mvp.penalti||0)) + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">GOLES</div></div>' +
+      '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + ((mvp.gol||0) + (mvp.penalti_marcado||0)) + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">GOLES</div></div>' +
       '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:white">' + (mvp.asistencia||0) + '</div><div style="font-size:8px;color:rgba(255,255,255,0.5);letter-spacing:1px">ASIST.</div></div>' +
     '</div>' +
     '<div style="text-align:center;font-size:10px;color:rgba(255,255,255,0.4)">asturfantasy.com</div>';

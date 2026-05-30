@@ -87,6 +87,26 @@
     .score-inputs { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
     .score-input { width:70px; text-align:center; font-size:24px; font-weight:700; }
     .score-sep { font-size:24px; font-weight:700; color:var(--text-muted); }
+    /* PROCESADO */
+    .step { display:flex; gap:16px; margin-bottom:24px; }
+    .step-num { width:32px; height:32px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--text-muted); flex-shrink:0; margin-top:2px; }
+    .step-num.done { background:rgba(0,217,126,0.15); border-color:var(--neon); color:var(--neon); }
+    .step-num.active { background:rgba(227,179,65,0.15); border-color:var(--amber); color:var(--amber); }
+    .step-body { flex:1; }
+    .step-title { font-size:14px; font-weight:600; margin-bottom:8px; }
+    .step-sub { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-bottom:12px; }
+    .log-box { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:var(--font-mono); font-size:11px; color:var(--text-muted); max-height:180px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; margin-top:10px; }
+    .log-box.ok { border-color:rgba(0,217,126,0.3); color:var(--neon); }
+    .log-box.err { border-color:rgba(248,81,73,0.3); color:var(--red); }
+    .file-drop { border:2px dashed var(--border); border-radius:8px; padding:24px; text-align:center; cursor:pointer; transition:border-color 0.15s; }
+    .file-drop:hover, .file-drop.over { border-color:var(--neon); }
+    .file-drop input { display:none; }
+    .file-list { margin-top:10px; display:flex; flex-direction:column; gap:4px; }
+    .file-item { display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; color:var(--text-muted); background:var(--surface); border-radius:6px; padding:6px 10px; }
+    .publicar-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+    .publicar-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .publicar-card-title { font-size:12px; font-weight:600; }
+    .publicar-card-sub { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
   </style>
 </head>
 <body>
@@ -120,7 +140,8 @@
         <div class="nav-section-label">Jornada</div>
         <div class="nav-item active" data-panel="jornada"><i class="ti ti-layout-dashboard"></i> Jornada activa</div>
         <div class="nav-item" data-panel="partidos"><i class="ti ti-ball-football"></i> Partidos</div>
-        <div class="nav-item" data-panel="notificaciones"><i class="ti ti-bell"></i> Notificaciones</div>
+        <div class="nav-item" data-panel="procesado"><i class="ti ti-cpu"></i> Procesar datos</div>
+        <div class="nav-item" data-panel="publicar"><i class="ti ti-eye"></i> Publicar jornada</div>
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Datos</div>
@@ -129,6 +150,8 @@
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Sistema</div>
+        <div class="nav-item" data-panel="mina"><i class="ti ti-hammer"></i> La Mina</div>
+        <div class="nav-item" data-panel="edicion"><i class="ti ti-edit"></i> Edición manual</div>
         <div class="nav-item" data-panel="config"><i class="ti ti-settings"></i> Configuración</div>
       </div>
       <div class="sidebar-user">
@@ -198,30 +221,88 @@
         </div>
       </div>
 
-      <!-- NOTIFICACIONES -->
-      <div class="panel" id="panel-notificaciones">
-        <div class="page-header"><div class="page-title">Notificaciones push</div></div>
+      <!-- PROCESAR DATOS -->
+      <div class="panel" id="panel-procesado">
+        <div class="page-header">
+          <div class="page-title">Procesar datos</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">API: <span style="color:var(--neon)" id="api-status">comprobando...</span></div>
+        </div>
+
+        <!-- PASO 1: Subir HTMLs -->
         <div class="section">
           <div class="section-head">
-            <div class="section-title">Enviar notificación</div>
-            <button class="btn btn-primary" id="btn-enviar-notif"><i class="ti ti-send"></i> Enviar ahora</button>
+            <div class="section-title"><span style="color:var(--text-muted);font-family:var(--font-mono);margin-right:8px">01</span> Subir HTMLs y extraer datos</div>
           </div>
           <div class="section-body">
-            <div class="form-grid">
-              <div class="form-group"><div class="form-label">Título</div><input class="form-input" id="notif-titulo" type="text" placeholder="¡Ya están los puntos!" /></div>
-              <div class="form-group"><div class="form-label">Mensaje</div><input class="form-input" id="notif-mensaje" type="text" placeholder="Consulta tu puntuación..." /></div>
+            <div class="step-sub">Sube los HTMLs de la LNE para esta jornada. El extractor generará el CSV con los datos de los jugadores.</div>
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="form-group">
+                <div class="form-label">Jornada</div>
+                <input class="form-input" id="proc-jornada" type="number" placeholder="36" />
+              </div>
+              <div class="form-group">
+                <div class="form-label">Contraseña API</div>
+                <input class="form-input" id="proc-password" type="password" />
+              </div>
             </div>
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-              <button class="btn btn-sm" onclick="document.getElementById('notif-titulo').value='¡Ya puedes hacer tu alineación!';document.getElementById('notif-mensaje').value='El plazo para la jornada está abierto. ¡Elige tu once!'">Apertura plazo</button>
-              <button class="btn btn-sm" onclick="document.getElementById('notif-titulo').value='¡2 horas para el cierre!';document.getElementById('notif-mensaje').value='El plazo cierra pronto. Revisa tu alineación antes de que sea tarde.'">Recordatorio</button>
-              <button class="btn btn-sm" onclick="document.getElementById('notif-titulo').value='¡Ya están los puntos!';document.getElementById('notif-mensaje').value='Los puntos de la última jornada ya están disponibles. ¿Cómo te ha ido?'">Puntos publicados</button>
+            <div class="file-drop" id="drop-htmls" onclick="document.getElementById('input-htmls').click()">
+              <input type="file" id="input-htmls" multiple accept=".html,.htm" onchange="actualizarListaHTMLs()" />
+              <i class="ti ti-upload" style="font-size:24px;color:var(--text-muted);margin-bottom:8px"></i>
+              <div style="font-size:13px;font-weight:600">Arrastra los HTMLs aquí o haz clic para seleccionar</div>
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:4px">Puedes subir varios a la vez</div>
             </div>
+            <div class="file-list" id="lista-htmls"></div>
+            <div style="margin-top:14px;display:flex;gap:8px">
+              <button class="btn btn-primary" id="btn-procesar"><i class="ti ti-cpu"></i> Extraer datos</button>
+              <button class="btn" id="btn-descargar-csv" style="display:none"><i class="ti ti-download"></i> Descargar CSV</button>
+            </div>
+            <div class="log-box" id="log-procesar" style="display:none"></div>
           </div>
         </div>
-        <div class="section">
-          <div class="section-head"><div class="section-title">Suscriptores</div></div>
+
+        <!-- PASO 2: Sin mapeo -->
+        <div class="section" id="section-sin-mapeo" style="display:none">
+          <div class="section-head">
+            <div class="section-title"><span style="color:var(--amber);font-family:var(--font-mono);margin-right:8px">02</span> Nombres sin mapeo</div>
+          </div>
           <div class="section-body">
-            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Suscriptores activos: <strong id="num-suscriptores" style="color:var(--neon)">—</strong></div>
+            <div class="step-sub">Estos nombres del HTML no tienen jugador asociado en la BD. Revísalos antes de actualizar.</div>
+            <div class="log-box" id="log-sin-mapeo" style="border-color:rgba(227,179,65,0.3);color:var(--amber)"></div>
+          </div>
+        </div>
+
+        <!-- PASO 3: Actualizar Supabase -->
+        <div class="section" id="section-actualizar" style="display:none">
+          <div class="section-head">
+            <div class="section-title"><span style="color:var(--text-muted);font-family:var(--font-mono);margin-right:8px">03</span> Actualizar Supabase</div>
+          </div>
+          <div class="section-body">
+            <div class="step-sub">Sube el CSV generado a Supabase. Esto actualiza los puntos de los jugadores.</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" id="btn-actualizar"><i class="ti ti-database-import"></i> Actualizar Supabase</button>
+            </div>
+            <div class="log-box" id="log-actualizar" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUBLICAR JORNADA -->
+      <div class="panel" id="panel-publicar">
+        <div class="page-header">
+          <div class="page-title">Publicar jornada</div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Marcar partidos como publicados</div>
+            <select id="select-jornada-publicar" class="form-input" style="width:140px"></select>
+          </div>
+          <div class="section-body">
+            <div class="step-sub" style="margin-bottom:16px">Al publicar una jornada los usuarios podrán ver los puntos y el historial de esa jornada.</div>
+            <div id="publicar-partidos-list"></div>
+            <div style="display:flex;gap:8px;margin-top:16px">
+              <button class="btn btn-primary" id="btn-publicar-todos"><i class="ti ti-eye"></i> Publicar todos los partidos de la jornada</button>
+              <button class="btn btn-danger" id="btn-despublicar-todos"><i class="ti ti-eye-off"></i> Despublicar todos</button>
+            </div>
           </div>
         </div>
       </div>
@@ -248,6 +329,76 @@
             <thead><tr><th>Jornada</th><th>Participantes</th><th>Media puntos</th></tr></thead>
             <tbody id="tabla-stats-jornadas"></tbody>
           </table>
+        </div>
+      </div>
+
+
+
+      <!-- LA MINA -->
+      <div class="panel" id="panel-mina">
+        <div class="page-header"><div class="page-title">⛏️ La mina</div></div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Puntos de La Mina del Fútbol por equipo</div></div>
+          <div class="section-body">
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+              <select id="mina-jornada" class="form-input" style="width:160px"></select>
+              <select id="mina-club" class="form-input" style="width:200px">
+                <option value="">Selecciona un club...</option>
+              </select>
+            </div>
+            <div id="mina-tabla"></div>
+            <button id="btn-guardar-mina" class="btn btn-primary" style="width:100%;margin-top:14px;padding:12px;font-size:14px;display:none">
+              <i class="ti ti-device-floppy"></i> Guardar notas del equipo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDICIÓN MANUAL -->
+      <div class="panel" id="panel-edicion">
+        <div class="page-header"><div class="page-title">Edición manual de jugadores</div></div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Buscar jugador</div></div>
+          <div class="section-body">
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="form-group">
+                <div class="form-label">Jornada</div>
+                <input class="form-input" id="ed-jornada" type="number" placeholder="36" />
+              </div>
+              <div class="form-group">
+                <div class="form-label">Buscar jugador</div>
+                <input class="form-input" id="ed-buscar" type="text" placeholder="Nombre del jugador..." oninput="buscarJugadorEdicion()" />
+              </div>
+            </div>
+            <div id="ed-resultados"></div>
+          </div>
+        </div>
+        <div class="section" id="ed-form-section" style="display:none">
+          <div class="section-head">
+            <div class="section-title" id="ed-jugador-titulo">—</div>
+            <button class="btn btn-primary" onclick="guardarEdicion()"><i class="ti ti-device-floppy"></i> Guardar</button>
+          </div>
+          <div class="section-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <div class="form-label">Asistencias</div>
+                <input class="form-input" id="ed-asistencia" type="number" min="0" value="0" />
+              </div>
+              <div class="form-group">
+                <div class="form-label">Penaltis marcados / parados (portero)</div>
+                <input class="form-input" id="ed-penalti-marcado" type="number" min="0" value="0" />
+              </div>
+              <div class="form-group">
+                <div class="form-label">Penaltis fallados / parados rival (portero)</div>
+                <input class="form-input" id="ed-penalti-fallado" type="number" min="0" value="0" />
+              </div>
+
+              <div class="form-group">
+                <div class="form-label">Puntos tras guardar</div>
+                <input class="form-input" id="ed-puntos-actuales" type="text" disabled style="opacity:0.5" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -319,10 +470,12 @@
   const SUPABASE_URL = 'https://rtmclmqzasktshlzwcyn.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0bWNsbXF6YXNrdHNobHp3Y3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDUwMjAsImV4cCI6MjA5NDEyMTAyMH0.Z1X05a8EFzCA58iGjXymIBBTs01V5uY7XgIfb8yqiqk';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const API_URL = 'http://178.105.48.241:8000';
 </script>
 <script>
   let adminUser = null;
   let partidoEditando = null;
+  let csvGenerado = null;
 
   function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
@@ -348,8 +501,11 @@
       item.classList.add('active');
       document.getElementById('panel-' + item.dataset.panel).classList.add('active');
       if (item.dataset.panel === 'partidos') cargarPartidos();
-      if (item.dataset.panel === 'notificaciones') cargarSuscriptores();
+      if (item.dataset.panel === 'procesado') comprobarAPI();
+      if (item.dataset.panel === 'publicar') cargarPublicar();
       if (item.dataset.panel === 'config') cargarAdmins();
+      if (item.dataset.panel === 'edicion') { document.getElementById('ed-jornada').value = document.getElementById('cfg-jornada-activa').value || ''; }
+      if (item.dataset.panel === 'mina') inicializarMina();
       if (item.dataset.panel === 'clasificacion') cargarClasificacion();
       if (item.dataset.panel === 'stats') cargarStats();
     });
@@ -405,7 +561,7 @@
     document.getElementById('cfg-jornada-activa').value = jornadaActiva;
     document.getElementById('cfg-jornada-visible').value = jornadaVisible;
     const offset = deadline.getTimezoneOffset() * 60000;
-document.getElementById('cfg-deadline').value = new Date(deadline - offset).toISOString().slice(0, 16);
+    document.getElementById('cfg-deadline').value = new Date(deadline - offset).toISOString().slice(0, 16);
     document.getElementById('cfg-presupuesto').value = config.presupuesto;
     document.getElementById('cfg-titulo').value = config.titulo_jornada || '';
     document.getElementById('cfg-mensaje').value = config.mensaje_aviso || '';
@@ -419,6 +575,8 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
       document.getElementById('stat-deadline').textContent = 'Cerrada';
       document.getElementById('stat-deadline-sub').textContent = 'La jornada ya comenzó';
     }
+    // Prerellenar jornada en procesar datos
+    document.getElementById('proc-jornada').value = jornadaActiva;
   }
 
   document.getElementById('btn-guardar-config').addEventListener('click', async () => {
@@ -453,7 +611,17 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
     const { data } = await db.from('partidos').select('*').eq('jornada', jornada).order('fecha');
     const tbody = document.getElementById('tabla-partidos');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">Sin partidos para esta jornada</td></tr>'; return; }
-    tbody.innerHTML = data.map(p => '<tr><td><strong>' + p.local_nombre + '</strong></td><td>' + p.visitante_nombre + '</td><td style="color:var(--text-muted);font-size:12px">' + (p.estadio || '—') + '</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (p.fecha || '—') + '</td><td>' + (p.finalizado ? '<span class="pill pill-green">' + p.resultado_local + ' - ' + p.resultado_visitante + '</span>' : '<span class="pill pill-amber">Pendiente</span>') + '</td><td style="display:flex;gap:6px"><button class="btn btn-sm btn-primary" onclick="abrirModalResultado(\'' + p.id + '\')">' + (p.finalizado ? 'Editar' : 'Meter resultado') + '<button class="btn btn-sm" onclick="restablecerPartido(\'' + p.id + '\',' + jornada + ')"  ' + (!p.finalizado ? 'style="display:none"' : '') + '>Restablecer</button>' + '</button><button class="btn btn-sm btn-danger" onclick="eliminarPartido(\'' + p.id + '\',' + jornada + ')">Eliminar</button></td></tr>').join('');
+    tbody.innerHTML = data.map(p =>
+      '<tr><td><strong>' + p.local_nombre + '</strong></td><td>' + p.visitante_nombre + '</td>' +
+      '<td style="color:var(--text-muted);font-size:12px">' + (p.estadio || '—') + '</td>' +
+      '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (p.fecha || '—') + '</td>' +
+      '<td>' + (p.finalizado ? '<span class="pill pill-green">' + p.resultado_local + ' - ' + p.resultado_visitante + '</span>' : '<span class="pill pill-amber">Pendiente</span>') + '</td>' +
+      '<td style="display:flex;gap:6px">' +
+        '<button class="btn btn-sm btn-primary" onclick="abrirModalResultado(\'' + p.id + '\')">' + (p.finalizado ? 'Editar' : 'Meter resultado') + '</button>' +
+        (p.finalizado ? '<button class="btn btn-sm" onclick="restablecerPartido(\'' + p.id + '\',' + jornada + ')">Restablecer</button>' : '') +
+        '<button class="btn btn-sm btn-danger" onclick="eliminarPartido(\'' + p.id + '\',' + jornada + ')">Eliminar</button>' +
+      '</td></tr>'
+    ).join('');
   }
 
   async function abrirModalResultado(id) {
@@ -467,15 +635,11 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
   }
 
   async function restablecerPartido(id, jornada) {
-  if (!confirm('¿Quitar el resultado de este partido?')) return;
-  const { error } = await db.from('partidos').update({
-    resultado_local: null,
-    resultado_visitante: null,
-    finalizado: false
-  }).eq('id', id);
-  if (error) showToast('Error: ' + error.message, true);
-  else { showToast('Resultado eliminado'); cargarTablaPartidos(jornada); }
-}
+    if (!confirm('¿Quitar el resultado de este partido?')) return;
+    const { error } = await db.from('partidos').update({ resultado_local: null, resultado_visitante: null, finalizado: false }).eq('id', id);
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast('Resultado eliminado'); cargarTablaPartidos(jornada); }
+  }
 
   document.getElementById('btn-guardar-resultado').addEventListener('click', async () => {
     const btn = document.getElementById('btn-guardar-resultado');
@@ -501,12 +665,7 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
   document.getElementById('btn-nuevo-partido').addEventListener('click', () => {
     const select = document.getElementById('select-jornada-partidos');
     document.getElementById('np-jornada').value = select.value || '';
-    document.getElementById('np-estadio').value = '';
-    document.getElementById('np-local-abrev').value = '';
-    document.getElementById('np-local-nombre').value = '';
-    document.getElementById('np-visitante-abrev').value = '';
-    document.getElementById('np-visitante-nombre').value = '';
-    document.getElementById('np-fecha').value = '';
+    ['np-estadio','np-local-abrev','np-local-nombre','np-visitante-abrev','np-visitante-nombre','np-fecha'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('modal-nuevo-partido').classList.add('open');
   });
 
@@ -516,12 +675,10 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
     const j = parseInt(nueva);
     const select = document.getElementById('select-jornada-partidos');
     if (![...select.options].some(o => parseInt(o.value) === j)) {
-      const opt = document.createElement('option');
-      opt.value = j; opt.textContent = 'Jornada ' + j;
+      const opt = document.createElement('option'); opt.value = j; opt.textContent = 'Jornada ' + j;
       select.insertBefore(opt, select.firstChild);
     }
-    select.value = j;
-    cargarTablaPartidos(j);
+    select.value = j; cargarTablaPartidos(j);
     showToast('Jornada ' + j + ' lista — añade los partidos');
   });
 
@@ -557,28 +714,168 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
         const opt = document.createElement('option'); opt.value = jornada; opt.textContent = 'Jornada ' + jornada;
         select.insertBefore(opt, select.firstChild);
       }
-      select.value = jornada;
-      cargarTablaPartidos(jornada);
+      select.value = jornada; cargarTablaPartidos(jornada);
     }
   }
 
-  /* ── NOTIFICACIONES ── */
-  async function cargarSuscriptores() {
-    const { count } = await db.from('push_subscriptions').select('*', { count: 'exact', head: true });
-    document.getElementById('num-suscriptores').textContent = count || 0;
+  /* ── PROCESAR DATOS ── */
+  async function comprobarAPI() {
+    const el = document.getElementById('api-status');
+    try {
+      const r = await fetch(API_URL + '/');
+      el.textContent = r.ok ? 'conectada ✓' : 'error ' + r.status;
+      el.style.color = r.ok ? 'var(--neon)' : 'var(--red)';
+    } catch(e) {
+      el.textContent = 'sin conexión ✗';
+      el.style.color = 'var(--red)';
+    }
   }
 
-  document.getElementById('btn-enviar-notif').addEventListener('click', async () => {
-    const titulo = document.getElementById('notif-titulo').value.trim();
-    const mensaje = document.getElementById('notif-mensaje').value.trim();
-    if (!titulo || !mensaje) { showToast('Rellena título y mensaje', true); return; }
-    const btn = document.getElementById('btn-enviar-notif');
-    btn.disabled = true; btn.textContent = 'Enviando...';
-    const { error } = await db.functions.invoke('send-push', { body: { titulo, mensaje } });
-    btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> Enviar ahora';
-    if (error) showToast('Error: ' + error.message, true);
-    else { showToast('Notificación enviada'); document.getElementById('notif-titulo').value = ''; document.getElementById('notif-mensaje').value = ''; }
+  function actualizarListaHTMLs() {
+    const files = document.getElementById('input-htmls').files;
+    const lista = document.getElementById('lista-htmls');
+    lista.innerHTML = [...files].map(f =>
+      '<div class="file-item"><i class="ti ti-file-code" style="color:var(--neon)"></i>' + f.name + ' <span style="margin-left:auto">' + (f.size / 1024).toFixed(1) + ' KB</span></div>'
+    ).join('');
+  }
+
+  // Drag & drop
+  const dropZone = document.getElementById('drop-htmls');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('over');
+    const dt = new DataTransfer();
+    [...e.dataTransfer.files].forEach(f => dt.items.add(f));
+    document.getElementById('input-htmls').files = dt.files;
+    actualizarListaHTMLs();
   });
+
+  document.getElementById('btn-procesar').addEventListener('click', async () => {
+    const jornada = document.getElementById('proc-jornada').value;
+    const password = document.getElementById('proc-password').value;
+    const files = document.getElementById('input-htmls').files;
+    if (!jornada || !password) { showToast('Rellena jornada y contraseña', true); return; }
+    if (!files.length) { showToast('Selecciona al menos un HTML', true); return; }
+
+    const btn = document.getElementById('btn-procesar');
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
+
+    const log = document.getElementById('log-procesar');
+    log.style.display = 'block'; log.className = 'log-box'; log.textContent = 'Enviando HTMLs al servidor...';
+
+    const fd = new FormData();
+    fd.append('password', password);
+    fd.append('jornada', jornada);
+    [...files].forEach(f => fd.append('htmls', f));
+
+    try {
+      const r = await fetch(API_URL + '/procesar', { method:'POST', body: fd });
+      const data = await r.json();
+      btn.disabled = false; btn.innerHTML = '<i class="ti ti-cpu"></i> Extraer datos';
+
+      if (!data.ok) {
+        log.className = 'log-box err'; log.textContent = data.error || data.stderr || 'Error desconocido'; return;
+      }
+
+      log.className = 'log-box ok';
+      log.textContent = '✓ Extracción completada\n\n' + (data.stdout || '');
+
+      if (data.sin_mapeo?.trim()) {
+        document.getElementById('section-sin-mapeo').style.display = 'block';
+        document.getElementById('log-sin-mapeo').textContent = data.sin_mapeo;
+      }
+
+      if (data.csv) {
+        csvGenerado = data.csv;
+        document.getElementById('section-actualizar').style.display = 'block';
+        const btnDesc = document.getElementById('btn-descargar-csv');
+        btnDesc.style.display = 'inline-flex';
+        btnDesc.onclick = () => {
+          const blob = new Blob([csvGenerado], { type: 'text/csv' });
+          const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+          a.download = 'jugadores_J' + jornada + '.csv'; a.click();
+        };
+      }
+    } catch(e) {
+      btn.disabled = false; btn.innerHTML = '<i class="ti ti-cpu"></i> Extraer datos';
+      log.className = 'log-box err'; log.textContent = 'Error de conexión: ' + e.message;
+    }
+  });
+
+  document.getElementById('btn-actualizar').addEventListener('click', async () => {
+    if (!csvGenerado) { showToast('Primero extrae los datos', true); return; }
+    const password = document.getElementById('proc-password').value;
+    if (!password) { showToast('Introduce la contraseña', true); return; }
+
+    const btn = document.getElementById('btn-actualizar');
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Actualizando...';
+
+    const log = document.getElementById('log-actualizar');
+    log.style.display = 'block'; log.className = 'log-box'; log.textContent = 'Subiendo datos a Supabase...';
+
+    const fd = new FormData();
+    fd.append('password', password);
+    fd.append('csv', new Blob([csvGenerado], { type: 'text/csv' }), 'jugadores.csv');
+
+    try {
+      const r = await fetch(API_URL + '/actualizar', { method:'POST', body: fd });
+      const data = await r.json();
+      btn.disabled = false; btn.innerHTML = '<i class="ti ti-database-import"></i> Actualizar Supabase';
+
+      if (!data.ok) {
+        log.className = 'log-box err'; log.textContent = data.stderr || data.error || 'Error'; return;
+      }
+      log.className = 'log-box ok';
+      log.textContent = '✓ Supabase actualizado\n\n' + (data.stdout || '');
+      showToast('¡Datos actualizados correctamente!');
+    } catch(e) {
+      btn.disabled = false; btn.innerHTML = '<i class="ti ti-database-import"></i> Actualizar Supabase';
+      log.className = 'log-box err'; log.textContent = 'Error de conexión: ' + e.message;
+    }
+  });
+
+  /* ── PUBLICAR JORNADA ── */
+  async function cargarPublicar() {
+    const { data: jornadas } = await db.from('partidos').select('jornada').order('jornada', { ascending: false });
+    const jornadasUnicas = [...new Set((jornadas || []).map(p => p.jornada))];
+    const select = document.getElementById('select-jornada-publicar');
+    select.innerHTML = jornadasUnicas.map(j => '<option value="' + j + '">Jornada ' + j + '</option>').join('');
+    if (jornadasUnicas.length) cargarListaPublicar(jornadasUnicas[0]);
+    select.onchange = e => cargarListaPublicar(parseInt(e.target.value));
+  }
+
+  async function cargarListaPublicar(jornada) {
+    const { data } = await db.from('partidos').select('*').eq('jornada', jornada).order('fecha');
+    const container = document.getElementById('publicar-partidos-list');
+    if (!data?.length) { container.innerHTML = '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px">Sin partidos para esta jornada</div>'; return; }
+    container.innerHTML = data.map(p =>
+      '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="flex:1;font-size:13px;font-weight:600">' + p.local_nombre + ' vs ' + p.visitante_nombre + '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">' + (p.finalizado ? p.resultado_local + '-' + p.resultado_visitante : 'Sin resultado') + '</div>' +
+        '<span class="pill ' + (p.publicado ? 'pill-green' : 'pill-amber') + '">' + (p.publicado ? 'Publicado' : 'Oculto') + '</span>' +
+        '<button class="btn btn-sm ' + (p.publicado ? 'btn-danger' : 'btn-primary') + '" onclick="togglePublicado(\'' + p.id + '\',' + !p.publicado + ',' + jornada + ')">' +
+          (p.publicado ? 'Ocultar' : 'Publicar') +
+        '</button>' +
+      '</div>'
+    ).join('');
+
+    document.getElementById('btn-publicar-todos').onclick = () => toggleTodosPublicado(jornada, true);
+    document.getElementById('btn-despublicar-todos').onclick = () => toggleTodosPublicado(jornada, false);
+  }
+
+  async function togglePublicado(id, valor, jornada) {
+    const { error } = await db.from('partidos').update({ publicado: valor }).eq('id', id);
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast(valor ? 'Partido publicado' : 'Partido ocultado'); cargarListaPublicar(jornada); }
+  }
+
+  async function toggleTodosPublicado(jornada, valor) {
+    if (!confirm(valor ? '¿Publicar todos los partidos de la jornada?' : '¿Ocultar todos los partidos de la jornada?')) return;
+    const { error } = await db.from('partidos').update({ publicado: valor }).eq('jornada', jornada);
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast(valor ? 'Jornada publicada' : 'Jornada ocultada'); cargarListaPublicar(jornada); }
+  }
 
   /* ── CLASIFICACIÓN ── */
   async function cargarClasificacion() {
@@ -588,7 +885,11 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
     (equipos || []).forEach(e => { favMap[e.user_id] = e.equipo_favorito; });
     const tbody = document.getElementById('tabla-clasificacion');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</td></tr>'; return; }
-    tbody.innerHTML = data.map((r, i) => '<tr><td><strong>' + (i+1) + '</strong></td><td>' + r.nombre_equipo + '</td><td style="color:var(--neon);font-weight:700">' + r.puntos_total + '</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (favMap[r.user_id] || '—') + '</td></tr>').join('');
+    tbody.innerHTML = data.map((r, i) =>
+      '<tr><td><strong>' + (i+1) + '</strong></td><td>' + r.nombre_equipo + '</td>' +
+      '<td style="color:var(--neon);font-weight:700">' + r.puntos_total + '</td>' +
+      '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (favMap[r.user_id] || '—') + '</td></tr>'
+    ).join('');
   }
 
   /* ── ESTADÍSTICAS ── */
@@ -619,7 +920,14 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
     const { data } = await db.from('equipos').select('user_id, nombre_equipo, is_admin').order('nombre_equipo');
     const tbody = document.getElementById('tabla-admins');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</td></tr>'; return; }
-    tbody.innerHTML = data.map(e => '<tr><td><strong>' + e.nombre_equipo + '</strong></td><td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + e.user_id.substring(0,8) + '...</td><td>' + (e.is_admin ? '<span class="pill pill-green">Admin</span>' : '<span class="pill" style="background:var(--surface2);color:var(--text-muted)">Usuario</span>') + '</td><td>' + (e.user_id !== adminUser?.id ? '<button class="btn btn-sm ' + (e.is_admin ? 'btn-danger' : '') + '" onclick="toggleAdmin(\'' + e.user_id + '\',' + !e.is_admin + ')">' + (e.is_admin ? 'Quitar admin' : 'Hacer admin') + '</button>' : '<span style="font-size:12px;color:var(--text-muted)">Tú</span>') + '</td></tr>').join('');
+    tbody.innerHTML = data.map(e =>
+      '<tr><td><strong>' + e.nombre_equipo + '</strong></td>' +
+      '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + e.user_id.substring(0,8) + '...</td>' +
+      '<td>' + (e.is_admin ? '<span class="pill pill-green">Admin</span>' : '<span class="pill" style="background:var(--surface2);color:var(--text-muted)">Usuario</span>') + '</td>' +
+      '<td>' + (e.user_id !== adminUser?.id ?
+        '<button class="btn btn-sm ' + (e.is_admin ? 'btn-danger' : '') + '" onclick="toggleAdmin(\'' + e.user_id + '\',' + !e.is_admin + ')">' + (e.is_admin ? 'Quitar admin' : 'Hacer admin') + '</button>' :
+        '<span style="font-size:12px;color:var(--text-muted)">Tú</span>') + '</td></tr>'
+    ).join('');
   }
 
   async function toggleAdmin(userId, valor) {
@@ -627,6 +935,175 @@ document.getElementById('cfg-deadline').value = new Date(deadline - offset).toIS
     if (error) showToast('Error: ' + error.message, true);
     else { showToast(valor ? 'Admin concedido' : 'Admin retirado'); cargarAdmins(); }
   }
+
+  /* ── EDICIÓN MANUAL ── */
+  let edJugadorSeleccionado = null;
+
+  async function buscarJugadorEdicion() {
+    const buscar = document.getElementById('ed-buscar').value.trim();
+    const jornada = parseInt(document.getElementById('ed-jornada').value);
+    const container = document.getElementById('ed-resultados');
+    if (!buscar || buscar.length < 2 || !jornada) { container.innerHTML = ''; return; }
+    const { data } = await db.from('jugadores')
+      .select('id, nombre, club, posicion, asistencia, penalti_marcado, penalti_fallado, lne, total_jornada')
+      .eq('jornada', jornada)
+      .ilike('nombre', `%${buscar}%`)
+      .limit(8);
+    if (!data?.length) { container.innerHTML = '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);padding:8px">Sin resultados</div>'; return; }
+    window._edJugadores = {};
+    data.forEach(j => { window._edJugadores[j.id] = j; });
+    container.innerHTML = data.map(j => [
+      '<div data-jugid="' + j.id + '" class="ed-result-item" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:6px;background:var(--surface)">',
+        '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + j.nombre + '</div>',
+        '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.posicion + ' · ' + j.club + '</div></div>',
+        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">Asist: <strong>' + (j.asistencia||0) + '</strong> · Pen: <strong>' + (j.penalti||0) + '</strong> · LNE: <strong>' + (j.nota_lne||0) + '</strong></div>',
+        '<div style="font-size:16px;font-weight:700;color:var(--neon)">' + (j.total_jornada||0) + ' pts</div>',
+      '</div>'
+    ].join('')).join('');
+    container.querySelectorAll('.ed-result-item').forEach(el => {
+      el.addEventListener('click', () => seleccionarJugadorEdicion(el.dataset.jugid));
+    });
+  }
+
+  function seleccionarJugadorEdicion(id) {
+    const jugador = window._edJugadores[id];
+    if (!jugador) return;
+    edJugadorSeleccionado = jugador;
+    document.getElementById('ed-form-section').style.display = 'block';
+    document.getElementById('ed-jugador-titulo').textContent = jugador.nombre + ' · J' + document.getElementById('ed-jornada').value + ' · ' + jugador.club;
+    document.getElementById('ed-asistencia').value = jugador.asistencia || 0;
+    document.getElementById('ed-penalti-marcado').value = jugador.penalti_marcado || 0;
+    document.getElementById('ed-penalti-fallado').value = jugador.penalti_fallado || 0;
+    document.getElementById('ed-puntos-actuales').value = (jugador.total_jornada || 0) + ' pts';
+    document.getElementById('ed-resultados').innerHTML = '';
+    document.getElementById('ed-buscar').value = jugador.nombre;
+  }
+
+  async function guardarEdicion() {
+    if (!edJugadorSeleccionado) return;
+    const jornada = parseInt(document.getElementById('ed-jornada').value);
+    const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
+    const penalti = parseInt(document.getElementById('ed-penalti').value) || 0;
+      const btn = document.querySelector('#ed-form-section .btn-primary');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const { error, data: updated } = await db.from('jugadores')
+      .update({ asistencia, penalti_marcado, penalti_fallado })
+      .eq('id', edJugadorSeleccionado.id)
+      .eq('jornada', jornada)
+      .select('total_jornada')
+      .single();
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
+    if (error) {
+      showToast('Error: ' + error.message, true);
+    } else {
+      showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
+      if (updated) document.getElementById('ed-puntos-actuales').value = updated.total_jornada + ' pts';
+    }
+  }
+
+  /* ── LA MINA ── */
+  let minaJugadores = [];
+
+  async function inicializarMina() {
+    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa').value) || 1;
+    const selectJornada = document.getElementById('mina-jornada');
+    if (!selectJornada.options.length) {
+      for (let i = jornadaActiva; i >= 1; i--) {
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = 'Jornada ' + i;
+        selectJornada.appendChild(opt);
+      }
+      selectJornada.value = jornadaActiva;
+    }
+
+    // Cargar clubes
+    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornadaActiva);
+    const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
+    const selectClub = document.getElementById('mina-club');
+    selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
+      clubes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    selectJornada.onchange = () => cargarMina();
+    selectClub.onchange = () => cargarMina();
+  }
+
+  async function cargarMina() {
+    const jornada = parseInt(document.getElementById('mina-jornada').value);
+    const club = document.getElementById('mina-club').value;
+    const tabla = document.getElementById('mina-tabla');
+    const btnGuardar = document.getElementById('btn-guardar-mina');
+
+    if (!club) { tabla.innerHTML = ''; btnGuardar.style.display = 'none'; return; }
+
+    tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+
+    const { data } = await db.from('jugadores')
+      .select('id, nombre, posicion, minutos, lne')
+      .eq('jornada', jornada)
+      .eq('club', club)
+      .order('posicion')
+      .order('nombre');
+
+    if (!data?.length) { tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin jugadores para esta jornada</div>'; btnGuardar.style.display = 'none'; return; }
+
+    minaJugadores = data;
+
+    const orden = ['POR','DEF','MED','DEL','ENT'];
+    const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion) || a.nombre.localeCompare(b.nombre));
+
+    tabla.innerHTML =
+      '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
+        '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;padding:8px 16px;border-bottom:1px solid var(--border)">' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">POS</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">MIN</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">NOTA LNE</div>' +
+        '</div>' +
+        sorted.map((j, i) =>
+          '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--surface)">' +
+            '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + (j.minutos||0) + '</div>' +
+            '<div style="text-align:center">' +
+              '<select data-jugid="' + j.id + '" class="mina-lne-select" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-family:var(--font-mono);font-size:11px;width:100%">' +
+                '<option value="0"' + ((!j.lne||j.lne===0) ? ' selected' : '') + '>0 — SC</option>' +
+                '<option value="1"' + (j.lne===1 ? ' selected' : '') + '>1</option>' +
+                '<option value="2"' + (j.lne===2 ? ' selected' : '') + '>2</option>' +
+                '<option value="3"' + (j.lne===3 ? ' selected' : '') + '>3</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>'
+        ).join('') +
+      '</div>';
+
+    btnGuardar.style.display = 'flex';
+  }
+
+  document.getElementById('btn-guardar-mina')?.addEventListener('click', async () => {
+    const jornada = parseInt(document.getElementById('mina-jornada').value);
+    const btn = document.getElementById('btn-guardar-mina');
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Guardando...';
+
+    const selects = document.querySelectorAll('.mina-lne-select');
+    const updates = [...selects].map(sel => ({
+      id: sel.dataset.jugid,
+      lne: parseInt(sel.value) || 0
+    }));
+
+    let errores = 0;
+    for (const u of updates) {
+      const { error } = await db.from('jugadores')
+        .update({ lne: u.lne })
+        .eq('id', u.id)
+        .eq('jornada', jornada);
+      if (error) errores++;
+    }
+
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar notas del equipo';
+    if (errores) showToast('Algunos errores al guardar (' + errores + ')', true);
+    else showToast('✓ Notas guardadas correctamente');
+  });
+
 </script>
 </body>
 </html>
