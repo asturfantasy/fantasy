@@ -150,6 +150,7 @@
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Sistema</div>
+        <div class="nav-item" data-panel="mina"><i class="ti ti-hammer"></i> La Mina</div>
         <div class="nav-item" data-panel="edicion"><i class="ti ti-edit"></i> Edición manual</div>
         <div class="nav-item" data-panel="config"><i class="ti ti-settings"></i> Configuración</div>
       </div>
@@ -332,6 +333,27 @@
       </div>
 
 
+
+      <!-- LA MINA -->
+      <div class="panel" id="panel-mina">
+        <div class="page-header"><div class="page-title">⛏️ La mina</div></div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Puntos de La Mina del Fútbol por equipo</div></div>
+          <div class="section-body">
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+              <select id="mina-jornada" class="form-input" style="width:160px"></select>
+              <select id="mina-club" class="form-input" style="width:200px">
+                <option value="">Selecciona un club...</option>
+              </select>
+            </div>
+            <div id="mina-tabla"></div>
+            <button id="btn-guardar-mina" class="btn btn-primary" style="width:100%;margin-top:14px;padding:12px;font-size:14px;display:none">
+              <i class="ti ti-device-floppy"></i> Guardar notas del equipo
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- EDICIÓN MANUAL -->
       <div class="panel" id="panel-edicion">
         <div class="page-header"><div class="page-title">Edición manual de jugadores</div></div>
@@ -363,18 +385,14 @@
                 <input class="form-input" id="ed-asistencia" type="number" min="0" value="0" />
               </div>
               <div class="form-group">
-                <div class="form-label">Penalti (+ marcado/parado · - fallado)</div>
-                <input class="form-input" id="ed-penalti" type="number" value="0" />
+                <div class="form-label">Penaltis marcados / parados (portero)</div>
+                <input class="form-input" id="ed-penalti-marcado" type="number" min="0" value="0" />
               </div>
               <div class="form-group">
-                <div class="form-label">Nota LNE (0=SC · 1 · 2 · 3)</div>
-                <select class="form-input" id="ed-nota-lne">
-                  <option value="0">0 — SC (sin comentario)</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                </select>
+                <div class="form-label">Penaltis fallados / parados rival (portero)</div>
+                <input class="form-input" id="ed-penalti-fallado" type="number" min="0" value="0" />
               </div>
+
               <div class="form-group">
                 <div class="form-label">Puntos tras guardar</div>
                 <input class="form-input" id="ed-puntos-actuales" type="text" disabled style="opacity:0.5" />
@@ -487,6 +505,7 @@
       if (item.dataset.panel === 'publicar') cargarPublicar();
       if (item.dataset.panel === 'config') cargarAdmins();
       if (item.dataset.panel === 'edicion') { document.getElementById('ed-jornada').value = document.getElementById('cfg-jornada-activa').value || ''; }
+      if (item.dataset.panel === 'mina') inicializarMina();
       if (item.dataset.panel === 'clasificacion') cargarClasificacion();
       if (item.dataset.panel === 'stats') cargarStats();
     });
@@ -926,7 +945,7 @@
     const container = document.getElementById('ed-resultados');
     if (!buscar || buscar.length < 2 || !jornada) { container.innerHTML = ''; return; }
     const { data } = await db.from('jugadores')
-      .select('id, nombre, club, posicion, asistencia, penalti, lne, total_jornada')
+      .select('id, nombre, club, posicion, asistencia, penalti_marcado, penalti_fallado, lne, total_jornada')
       .eq('jornada', jornada)
       .ilike('nombre', `%${buscar}%`)
       .limit(8);
@@ -953,38 +972,137 @@
     document.getElementById('ed-form-section').style.display = 'block';
     document.getElementById('ed-jugador-titulo').textContent = jugador.nombre + ' · J' + document.getElementById('ed-jornada').value + ' · ' + jugador.club;
     document.getElementById('ed-asistencia').value = jugador.asistencia || 0;
-    document.getElementById('ed-penalti').value = jugador.penalti || 0;
-    document.getElementById('ed-nota-lne').value = jugador.lne || 0;
+    document.getElementById('ed-penalti-marcado').value = jugador.penalti_marcado || 0;
+    document.getElementById('ed-penalti-fallado').value = jugador.penalti_fallado || 0;
     document.getElementById('ed-puntos-actuales').value = (jugador.total_jornada || 0) + ' pts';
     document.getElementById('ed-resultados').innerHTML = '';
     document.getElementById('ed-buscar').value = jugador.nombre;
   }
 
   async function guardarEdicion() {
-  if (!edJugadorSeleccionado) return;
-  const jornada = parseInt(document.getElementById('ed-jornada').value);
-  const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
-  const penalti = parseInt(document.getElementById('ed-penalti').value) || 0;
-  const nota_lne = parseInt(document.getElementById('ed-nota-lne').value) || 0;
-  const btn = document.querySelector('#ed-form-section .btn-primary');
-  btn.disabled = true; btn.textContent = 'Guardando...';
-  const { error } = await db.from('jugadores')
-    .update({ asistencia, penalti, lne: nota_lne })
-    .eq('id', edJugadorSeleccionado.id)
-    .eq('jornada', jornada);
-  btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
-  if (error) {
-    showToast('Error: ' + error.message, true);
-  } else {
-    showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
-    const { data, error: err2 } = await db.from('jugadores')
-      .select('total_jornada')
+    if (!edJugadorSeleccionado) return;
+    const jornada = parseInt(document.getElementById('ed-jornada').value);
+    const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
+    const penalti = parseInt(document.getElementById('ed-penalti').value) || 0;
+      const btn = document.querySelector('#ed-form-section .btn-primary');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const { error, data: updated } = await db.from('jugadores')
+      .update({ asistencia, penalti_marcado, penalti_fallado })
       .eq('id', edJugadorSeleccionado.id)
       .eq('jornada', jornada)
-      .maybeSingle();
-    if (data) document.getElementById('ed-puntos-actuales').value = data.total_jornada + ' pts';
+      .select('total_jornada')
+      .single();
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
+    if (error) {
+      showToast('Error: ' + error.message, true);
+    } else {
+      showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
+      if (updated) document.getElementById('ed-puntos-actuales').value = updated.total_jornada + ' pts';
+    }
   }
-}
+
+  /* ── LA MINA ── */
+  let minaJugadores = [];
+
+  async function inicializarMina() {
+    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa').value) || 1;
+    const selectJornada = document.getElementById('mina-jornada');
+    if (!selectJornada.options.length) {
+      for (let i = jornadaActiva; i >= 1; i--) {
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = 'Jornada ' + i;
+        selectJornada.appendChild(opt);
+      }
+      selectJornada.value = jornadaActiva;
+    }
+
+    // Cargar clubes
+    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornadaActiva);
+    const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
+    const selectClub = document.getElementById('mina-club');
+    selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
+      clubes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    selectJornada.onchange = () => cargarMina();
+    selectClub.onchange = () => cargarMina();
+  }
+
+  async function cargarMina() {
+    const jornada = parseInt(document.getElementById('mina-jornada').value);
+    const club = document.getElementById('mina-club').value;
+    const tabla = document.getElementById('mina-tabla');
+    const btnGuardar = document.getElementById('btn-guardar-mina');
+
+    if (!club) { tabla.innerHTML = ''; btnGuardar.style.display = 'none'; return; }
+
+    tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+
+    const { data } = await db.from('jugadores')
+      .select('id, nombre, posicion, minutos, lne')
+      .eq('jornada', jornada)
+      .eq('club', club)
+      .order('posicion')
+      .order('nombre');
+
+    if (!data?.length) { tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin jugadores para esta jornada</div>'; btnGuardar.style.display = 'none'; return; }
+
+    minaJugadores = data;
+
+    const orden = ['POR','DEF','MED','DEL','ENT'];
+    const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion) || a.nombre.localeCompare(b.nombre));
+
+    tabla.innerHTML =
+      '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
+        '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;padding:8px 16px;border-bottom:1px solid var(--border)">' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">POS</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">MIN</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">NOTA LNE</div>' +
+        '</div>' +
+        sorted.map((j, i) =>
+          '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--surface)">' +
+            '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + (j.minutos||0) + '</div>' +
+            '<div style="text-align:center">' +
+              '<select data-jugid="' + j.id + '" class="mina-lne-select" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-family:var(--font-mono);font-size:11px;width:100%">' +
+                '<option value="0"' + ((!j.lne||j.lne===0) ? ' selected' : '') + '>0 — SC</option>' +
+                '<option value="1"' + (j.lne===1 ? ' selected' : '') + '>1</option>' +
+                '<option value="2"' + (j.lne===2 ? ' selected' : '') + '>2</option>' +
+                '<option value="3"' + (j.lne===3 ? ' selected' : '') + '>3</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>'
+        ).join('') +
+      '</div>';
+
+    btnGuardar.style.display = 'flex';
+  }
+
+  document.getElementById('btn-guardar-mina')?.addEventListener('click', async () => {
+    const jornada = parseInt(document.getElementById('mina-jornada').value);
+    const btn = document.getElementById('btn-guardar-mina');
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Guardando...';
+
+    const selects = document.querySelectorAll('.mina-lne-select');
+    const updates = [...selects].map(sel => ({
+      id: sel.dataset.jugid,
+      lne: parseInt(sel.value) || 0
+    }));
+
+    let errores = 0;
+    for (const u of updates) {
+      const { error } = await db.from('jugadores')
+        .update({ lne: u.lne })
+        .eq('id', u.id)
+        .eq('jornada', jornada);
+      if (error) errores++;
+    }
+
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar notas del equipo';
+    if (errores) showToast('Algunos errores al guardar (' + errores + ')', true);
+    else showToast('✓ Notas guardadas correctamente');
+  });
 
 </script>
 </body>

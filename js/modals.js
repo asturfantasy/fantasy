@@ -179,8 +179,13 @@ function desgloseFn(j) {
   if (pcPts > 0) items.push({ label: 'Portería a cero', pts: (j.puerta_cero && (j.minutos || 0) >= 60) ? pcPts : 0 });
   items.push({ label: 'Nota LNE (' + (j.lne || 0) + ')', pts: lnePts });
   items.push({ label: 'Goles (' + (j.gol || 0) + ')', pts: (j.gol || 0) * golPts });
+  items.push({ label: 'Gol de penalti (' + (j.penalti_marcado || 0) + ')', pts: (j.penalti_marcado || 0) * 3 });
+  if (j.posicion === 'POR') {
+    items.push({ label: 'Penalti parado (' + (j.penalti_fallado || 0) + ')', pts: (j.penalti_fallado || 0) * 3 });
+  } else {
+    items.push({ label: 'Penalti fallado (' + (j.penalti_fallado || 0) + ')', pts: (j.penalti_fallado || 0) * -3 });
+  }
   items.push({ label: 'Asistencias (' + (j.asistencia || 0) + ')', pts: (j.asistencia || 0) * 3 });
-  items.push({ label: 'Penaltis (' + (j.penalti || 0) + ')', pts: (j.penalti || 0) * 3 });
   items.push({ label: 'Gol PP (' + (j.gol_pp || 0) + ')', pts: (j.gol_pp || 0) * -2 });
   items.push({ label: 'Amarillas (' + (j.amarilla || 0) + ')', pts: (j.amarilla || 0) * -1 });
   items.push({ label: 'Doble amarilla (' + (j.doble_amarilla || 0) + ')', pts: (j.doble_amarilla || 0) * -3 });
@@ -224,17 +229,13 @@ async function mostrarHistorial(nombre, club, posicion) {
     return;
   }
 
-  // Mapa jornada → resultado bruto (usamos es_local del jugador para ordenar)
   const marcadores = {};
   (todosPartidos || []).forEach(p => {
-    marcadores[p.jornada] = {
-      local: p.resultado_local,
-      visitante: p.resultado_visitante
-    };
+    marcadores[p.jornada] = { local: p.resultado_local, visitante: p.resultado_visitante };
   });
 
   const { data, error } = await db.from('jugadores')
-    .select('jornada, total_jornada, escudo_url, foto_url, rival, es_local, gol, penalti, gol_pp, asistencia, amarilla, doble_amarilla, roja, puerta_cero, minutos, rol, goles_encajados, puntos_entrenador')
+    .select('jornada, total_jornada, escudo_url, foto_url, rival, es_local, gol, penalti_marcado, penalti_fallado, gol_pp, asistencia, amarilla, doble_amarilla, roja, puerta_cero, minutos, rol, goles_encajados, puntos_entrenador')
     .eq('nombre', nombre).eq('club', club)
     .in('jornada', jornadasPublicadas)
     .order('jornada', { ascending: true });
@@ -260,13 +261,15 @@ async function mostrarHistorial(nombre, club, posicion) {
     const items = [];
     if (d.puerta_cero) items.push('<i class="ti ti-lock" title="Portería a cero" style="font-size:15px;color:var(--green-light)"></i>');
     if (d.gol > 0) for (let i = 0; i < d.gol; i++) items.push('<i class="ti ti-ball-football" title="Gol" style="font-size:15px;color:white"></i>');
-    if (d.penalti > 0) {
-      for (let i = 0; i < d.penalti; i++)
+    if (d.penalti_marcado > 0) {
+      for (let i = 0; i < d.penalti_marcado; i++)
+        items.push('<i class="ti ti-target" title="Gol de penalti" style="font-size:15px;color:var(--green-light)"></i>');
+    }
+    if (d.penalti_fallado > 0) {
+      for (let i = 0; i < d.penalti_fallado; i++)
         items.push(posicion === 'POR'
           ? '<i class="ti ti-hand-stop" title="Penalti parado" style="font-size:15px;color:var(--green-light)"></i>'
-          : '<i class="ti ti-target" title="Gol de penalti" style="font-size:15px;color:var(--green-light)"></i>');
-    } else if (d.penalti < 0) {
-      for (let i = 0; i < Math.abs(d.penalti); i++) items.push('<i class="ti ti-x" title="Penalti fallado" style="font-size:15px;color:var(--red)"></i>');
+          : '<i class="ti ti-x" title="Penalti fallado" style="font-size:15px;color:var(--red)"></i>');
     }
     if (d.gol_pp > 0) for (let i = 0; i < d.gol_pp; i++) items.push('<i class="ti ti-ball-football" title="Gol en propia puerta" style="font-size:15px;color:var(--red)"></i>');
     if (d.asistencia > 0) for (let i = 0; i < d.asistencia; i++) items.push('<i class="ti ti-shoe" title="Asistencia" style="font-size:15px;color:white"></i>');
@@ -306,12 +309,13 @@ async function mostrarHistorial(nombre, club, posicion) {
         </div>
       </div>`;
   } else if (posicion === 'POR') {
-    const golesEnc  = data.reduce((a,d) => a + (d.goles_encajados||0), 0);
-    const portCero  = data.filter(d => (d.goles_encajados||0) === 0 && (d.minutos||0) >= 60).length;
-    const amarillas = data.reduce((a,d) => a + (d.amarilla||0), 0);
-    const rojas     = data.reduce((a,d) => a + (d.roja||0) + (d.doble_amarilla||0), 0);
+    const golesEnc    = data.reduce((a,d) => a + (d.goles_encajados||0), 0);
+    const portCero    = data.filter(d => (d.goles_encajados||0) === 0 && (d.minutos||0) >= 60).length;
+    const penParados  = data.reduce((a,d) => a + (d.penalti_fallado||0), 0);
+    const amarillas   = data.reduce((a,d) => a + (d.amarilla||0), 0);
+    const rojas       = data.reduce((a,d) => a + (d.roja||0) + (d.doble_amarilla||0), 0);
     statsCards = `
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">
         <div style="${cardStyle(golesEnc > 0)}">
           <i class="ti ti-ball-football" style="font-size:16px;color:#f05e5e"></i>
           <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${golesEnc}</div>
@@ -321,6 +325,11 @@ async function mostrarHistorial(nombre, club, posicion) {
           <i class="ti ti-lock" style="font-size:16px;color:#4cd97b"></i>
           <div style="font-size:16px;font-weight:800;color:#4cd97b;margin-top:2px">${portCero}</div>
           <div style="font-size:8px;color:#7a9088;letter-spacing:1px">P.CERO</div>
+        </div>
+        <div style="${cardStyle(penParados > 0)}">
+          <i class="ti ti-hand-stop" style="font-size:16px;color:#4cd97b"></i>
+          <div style="font-size:16px;font-weight:800;color:#4cd97b;margin-top:2px">${penParados}</div>
+          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">P.PARADOS</div>
         </div>
         <div style="${cardStyle(amarillas > 0)}">
           <i class="ti ti-rectangle-filled" style="font-size:16px;color:#e3b341"></i>
@@ -334,18 +343,18 @@ async function mostrarHistorial(nombre, club, posicion) {
         </div>
       </div>`;
   } else {
-    const goles     = data.reduce((a,d) => a + (d.gol||0), 0);
-    const penaltis  = data.reduce((a,d) => a + Math.max(0, d.penalti||0), 0);
-    const totalGoles = goles + penaltis;
-    const asist     = data.reduce((a,d) => a + (d.asistencia||0), 0);
-    const amarillas = data.reduce((a,d) => a + (d.amarilla||0), 0);
-    const rojas     = data.reduce((a,d) => a + (d.roja||0) + (d.doble_amarilla||0), 0);
+    const goles        = data.reduce((a,d) => a + (d.gol||0), 0);
+    const penMarcados  = data.reduce((a,d) => a + (d.penalti_marcado||0), 0);
+    const totalGoles   = goles + penMarcados;
+    const asist        = data.reduce((a,d) => a + (d.asistencia||0), 0);
+    const amarillas    = data.reduce((a,d) => a + (d.amarilla||0), 0);
+    const rojas        = data.reduce((a,d) => a + (d.roja||0) + (d.doble_amarilla||0), 0);
     statsCards = `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
         <div style="${cardStyle(totalGoles > 0)}">
           <i class="ti ti-ball-football" style="font-size:16px;color:white"></i>
-          <div style="font-size:16px;font-weight:800;color:white;margin-top:2px">${totalGoles}${penaltis > 0 ? ' (' + penaltis + ')' : ''}</div>
-          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">GOLES TOTALES (PENALTI)</div>
+          <div style="font-size:16px;font-weight:800;color:white;margin-top:2px">${totalGoles}${penMarcados > 0 ? ' (' + penMarcados + ')' : ''}</div>
+          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">GOLES</div>
         </div>
         <div style="${cardStyle(asist > 0)}">
           <i class="ti ti-shoe" style="font-size:16px;color:white"></i>
@@ -513,7 +522,7 @@ async function mostrarPartido(localAbrev, visitanteAbrev, localNombre, visitante
   modal.classList.add('open');
 
   const { data, error } = await db.from('jugadores')
-    .select('nombre, club, posicion, rol, total_jornada, escudo_url, foto_url, minutos, puerta_cero, lne, gol, asistencia, penalti, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador, goles_encajados')
+    .select('nombre, club, posicion, rol, total_jornada, escudo_url, foto_url, minutos, puerta_cero, lne, gol, asistencia, penalti_marcado, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador, goles_encajados')
     .in('club', [localAbrev, visitanteAbrev]).eq('jornada', jornada).order('total_jornada', { ascending: false });
 
   if (error || !data?.length) { content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>'; return; }

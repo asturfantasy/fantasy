@@ -61,9 +61,7 @@ function filtrarSugerencias(idx) {
   if (!input || !lista) return;
   const q = input.value.toLowerCase().trim();
   const base = getJugadoresFiltrados();
-  const filtrados = q.length >= 0
-    ? base.filter(j => q === '' || j.nombre.toLowerCase().includes(q)).slice(0, 8)
-    : [];
+  const filtrados = base.filter(j => q === '' || j.nombre.toLowerCase().includes(q)).slice(0, 8);
   if (!filtrados.length) { lista.style.display = 'none'; return; }
   lista.style.display = 'block';
   lista.innerHTML = filtrados.map(j => `
@@ -116,7 +114,6 @@ function limpiarJugador(idx) {
 }
 
 async function calcStatsEntrenador(nombre, club) {
-  // Traer todas las jornadas del entrenador
   const [{ data: rawJornadas }, { data: partidosFinalizados }] = await Promise.all([
     db.from('jugadores').select('total_jornada, puntos_entrenador, amarilla, doble_amarilla, roja, jornada').eq('nombre', nombre).eq('posicion', 'ENT'),
     db.from('partidos').select('jornada').eq('finalizado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
@@ -140,7 +137,6 @@ async function calcStatsEntrenador(nombre, club) {
     doble_am  += j.doble_amarilla || 0;
     rojas     += j.roja || 0;
 
-    // Obtener partido primero para saber el rival exacto
     const { data: partido } = await db.from('partidos')
       .select('resultado_local, resultado_visitante, local_abrev, visitante_abrev')
       .eq('jornada', j.jornada)
@@ -149,18 +145,16 @@ async function calcStatsEntrenador(nombre, club) {
 
     const rivalAbrev = partido ? (partido.local_abrev === club ? partido.visitante_abrev : partido.local_abrev) : null;
 
-    // Goles a favor: goles propios + penaltis + goles en propia del rival exacto
     const [{ data: jugClub }, { data: jugRival }] = await Promise.all([
-      db.from('jugadores').select('gol, penalti').eq('club', club).eq('jornada', j.jornada).neq('posicion', 'ENT'),
+      db.from('jugadores').select('gol, penalti_marcado').eq('club', club).eq('jornada', j.jornada).neq('posicion', 'ENT'),
       rivalAbrev ? db.from('jugadores').select('gol_pp').eq('club', rivalAbrev).eq('jornada', j.jornada).neq('posicion', 'ENT') : Promise.resolve({ data: [] })
     ]);
 
     if (jugClub?.length) {
-      goles_favor += jugClub.reduce((a, x) => a + (x.gol || 0) + Math.max(0, x.penalti || 0), 0);
+      goles_favor += jugClub.reduce((a, x) => a + (x.gol || 0) + (x.penalti_marcado || 0), 0);
       goles_favor += (jugRival || []).reduce((a, x) => a + (x.gol_pp || 0), 0);
     }
 
-    // Goles en contra: del marcador final
     if (partido) {
       const esLocal = partido.local_abrev === club;
       goles_contra += esLocal ? (partido.resultado_visitante || 0) : (partido.resultado_local || 0);
@@ -210,18 +204,23 @@ async function mostrarComparativa() {
     ];
   } else {
     const [r1, r2] = await Promise.all([
-      db.from('jugadores').select('minutos,rol,gol,penalti,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
-      db.from('jugadores').select('minutos,rol,gol,penalti,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
+      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
+      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
     ]);
-    const calc = (rows) => {
+    const calc = (rows, posicion) => {
       const r = rows || [];
+      const goles        = r.reduce((a,x) => a + (x.gol||0), 0);
+      const penMarcados  = r.reduce((a,x) => a + (x.penalti_marcado||0), 0);
+      const penFallados  = r.reduce((a,x) => a + (x.penalti_fallado||0), 0);
       return {
         puntos:         r.reduce((a,x) => a + (x.total_jornada||0), 0),
         partidos:       r.filter(x => (x.minutos||0) > 0).length,
         titularidades:  r.filter(x => x.rol === 'titular' && (x.minutos||0) > 0).length,
         minutos:        r.reduce((a,x) => a + (x.minutos||0), 0),
-        goles:          r.reduce((a,x) => a + (x.gol||0), 0),
-        penaltis:       r.reduce((a,x) => a + (x.penalti||0), 0),
+        goles,
+        penMarcados,
+        penFallados,
+        totalGoles:     goles + penMarcados,
         asistencias:    r.reduce((a,x) => a + (x.asistencia||0), 0),
         gol_pp:         r.reduce((a,x) => a + (x.gol_pp||0), 0),
         amarillas:      r.reduce((a,x) => a + (x.amarilla||0), 0),
@@ -231,17 +230,19 @@ async function mostrarComparativa() {
         porterias_cero: r.filter(x => (x.goles_encajados||0) === 0 && (x.minutos||0) >= 60).length,
       };
     };
-    stats1 = calc(r1.data);
-    stats2 = calc(r2.data);
+    stats1 = calc(r1.data, j1.posicion);
+    stats2 = calc(r2.data, j2.posicion);
+
+    const goles1 = stats1.totalGoles + (stats1.penMarcados > 0 ? ` (${stats1.penMarcados})` : '');
+    const goles2 = stats2.totalGoles + (stats2.penMarcados > 0 ? ` (${stats2.penMarcados})` : '');
+
     filas = [
       ['Puntos',           stats1.puntos,        stats2.puntos,        stats1.puntos,        stats2.puntos,        'mayor'],
       ['Partidos',         stats1.partidos,      stats2.partidos,      stats1.partidos,      stats2.partidos,      'mayor'],
       ['Titularidades',    stats1.titularidades, stats2.titularidades, stats1.titularidades, stats2.titularidades, 'mayor'],
       ['Minutos',          stats1.minutos,       stats2.minutos,       stats1.minutos,       stats2.minutos,       'mayor'],
-      ['Goles',
-        stats1.goles + (stats1.penaltis > 0 ? ` (${stats1.penaltis})` : ''),
-        stats2.goles + (stats2.penaltis > 0 ? ` (${stats2.penaltis})` : ''),
-        stats1.goles, stats2.goles, 'mayor'],
+      ['Goles',            goles1,               goles2,               stats1.totalGoles,    stats2.totalGoles,    'mayor'],
+      ['Pen. fallados',    stats1.penFallados,   stats2.penFallados,   stats1.penFallados,   stats2.penFallados,   'menor'],
       ['Asistencias',      stats1.asistencias,   stats2.asistencias,   stats1.asistencias,   stats2.asistencias,   'mayor'],
       ['Gol PP',           stats1.gol_pp,        stats2.gol_pp,        stats1.gol_pp,        stats2.gol_pp,        'menor'],
       ['Amarillas',        stats1.amarillas,     stats2.amarillas,     stats1.amarillas,     stats2.amarillas,     'menor'],
@@ -252,7 +253,6 @@ async function mostrarComparativa() {
     ];
   }
 
-  // Guardar para exportar
   window._comparadorData = { j1, j2, filas, stats1, stats2 };
 
   const fila = ([label, v1, v2, n1, n2, tipo]) => {
@@ -288,13 +288,11 @@ async function exportarComparador() {
   tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
 
   tarjeta.innerHTML =
-    // Header
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
       '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
       '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
       '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.5)">Comparador</span>' +
     '</div>' +
-    // Jugadores
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
       [j1, j2].map(j =>
         '<div style="background:#1a2420;border-radius:10px;padding:12px;text-align:center">' +
@@ -306,7 +304,6 @@ async function exportarComparador() {
         '</div>'
       ).join('') +
     '</div>' +
-    // Stats
     '<div style="display:flex;flex-direction:column;gap:0">' +
       filas.map(([label, v1, v2, n1, n2, tipo]) => {
         const empate = n1 === n2;
@@ -341,8 +338,6 @@ async function exportarComparador() {
   }
 }
 
-
-// Cerrar sugerencias al hacer click fuera
 document.addEventListener('click', e => {
   [0,1].forEach(i => {
     const input = document.getElementById(`buscador-${i}`);
