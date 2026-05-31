@@ -107,6 +107,32 @@
     .publicar-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px; }
     .publicar-card-title { font-size:12px; font-weight:600; }
     .publicar-card-sub { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
+
+    /* ── MOBILE HAMBURGER ── */
+    .hamburger { display:none; background:none; border:none; color:var(--text); cursor:pointer; padding:8px; font-size:22px; }
+    .mobile-header { display:none; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--bg2); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:200; }
+    .mobile-header-title { font-size:15px; font-weight:700; }
+    .mobile-header-title span { color:var(--neon); }
+    .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+    .sidebar-overlay.open { display:block; }
+
+    @media (max-width: 768px) {
+      .admin-layout { grid-template-columns:1fr; }
+      .sidebar { position:fixed; left:-260px; top:0; height:100vh; width:260px; z-index:300; transition:left 0.25s ease; border-right:1px solid var(--border); }
+      .sidebar.open { left:0; }
+      .mobile-header { display:flex; }
+      .hamburger { display:block; }
+      .main { padding:16px; }
+      .stats-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+      .form-grid { grid-template-columns:1fr; }
+      .page-header { flex-wrap:wrap; gap:10px; }
+      .page-header > div { flex-wrap:wrap; gap:6px; }
+      .admin-table { font-size:12px; }
+      .admin-table th, .admin-table td { padding:8px 8px; }
+      .section-head { flex-wrap:wrap; gap:8px; }
+      .modal-box, .modal-box-wide { max-width:95vw; padding:16px; }
+      .score-inputs { justify-content:center; }
+    }
   </style>
 </head>
 <body>
@@ -133,6 +159,12 @@
 
 <!-- PANEL ADMIN -->
 <div id="screen-admin" style="display:none">
+  <!-- Mobile header -->
+  <div class="mobile-header">
+    <div class="mobile-header-title">ASTUR<span>FANTASY</span> <small style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);font-weight:400">Admin</small></div>
+    <button class="hamburger" id="btn-hamburger"><i class="ti ti-menu-2"></i></button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
   <div class="admin-layout">
     <div class="sidebar">
       <div class="sidebar-logo">ASTUR<span>FANTASY</span><small>Admin panel</small></div>
@@ -152,6 +184,7 @@
         <div class="nav-section-label">Sistema</div>
         <div class="nav-item" data-panel="mina"><i class="ti ti-hammer"></i> La Mina</div>
         <div class="nav-item" data-panel="edicion"><i class="ti ti-edit"></i> Edición manual</div>
+        <div class="nav-item" data-panel="notificaciones"><i class="ti ti-bell"></i> Notificaciones</div>
         <div class="nav-item" data-panel="config"><i class="ti ti-settings"></i> Configuración</div>
       </div>
       <div class="sidebar-user">
@@ -336,9 +369,9 @@
 
       <!-- LA MINA -->
       <div class="panel" id="panel-mina">
-        <div class="page-header"><div class="page-title">La Mina</div></div>
+        <div class="page-header"><div class="page-title">⛏️ La mina</div></div>
         <div class="section">
-          <div class="section-head"><div class="section-title">Puntos de La Mina del Fútbol por equipo</div></div>
+          <div class="section-head"><div class="section-title">Notas LNE por equipo</div></div>
           <div class="section-body">
             <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
               <select id="mina-jornada" class="form-input" style="width:160px"></select>
@@ -398,6 +431,45 @@
                 <input class="form-input" id="ed-puntos-actuales" type="text" disabled style="opacity:0.5" />
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- NOTIFICACIONES -->
+      <div class="panel" id="panel-notificaciones">
+        <div class="page-header"><div class="page-title">Notificaciones push</div></div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Enviar notificación</div></div>
+          <div class="section-body">
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Título</div>
+              <input class="form-input" id="notif-titulo" type="text" placeholder="AsturFantasy" />
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Mensaje</div>
+              <input class="form-input" id="notif-mensaje" type="text" placeholder="¡Ya están disponibles los puntos de la jornada!" />
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-primary" id="btn-enviar-notif"><i class="ti ti-send"></i> Enviar a todos</button>
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)" id="notif-resultado"></div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Mensajes rápidos</div></div>
+          <div class="section-body">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn" onclick="notifRapida('¡Puntos disponibles! 🟢', '¡Ya puedes ver los puntos de la última jornada!')"><i class="ti ti-trophy"></i> Puntos disponibles</button>
+              <button class="btn" onclick="notifRapida('⏰ Deadline en 2 horas', '¡Date prisa! El plazo para cambiar tu equipo cierra pronto.')"><i class="ti ti-clock"></i> Deadline próximo</button>
+              <button class="btn" onclick="notifRapida('🆕 Nueva jornada abierta', '¡Ya puedes fichar y configurar tu equipo para la nueva jornada!')"><i class="ti ti-calendar-plus"></i> Nueva jornada</button>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Suscriptores</div></div>
+          <div class="section-body">
+            <div id="notif-suscriptores" style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted)">Cargando...</div>
           </div>
         </div>
       </div>
@@ -506,6 +578,7 @@
       if (item.dataset.panel === 'config') cargarAdmins();
       if (item.dataset.panel === 'edicion') { document.getElementById('ed-jornada').value = document.getElementById('cfg-jornada-activa').value || ''; }
       if (item.dataset.panel === 'mina') inicializarMina();
+      if (item.dataset.panel === 'notificaciones') cargarNotificaciones();
       if (item.dataset.panel === 'clasificacion') cargarClasificacion();
       if (item.dataset.panel === 'stats') cargarStats();
     });
@@ -1007,15 +1080,17 @@
   async function inicializarMina() {
     const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa').value) || 1;
     const selectJornada = document.getElementById('mina-jornada');
+    if (!selectJornada.options.length) {
+      for (let i = jornadaActiva; i >= 1; i--) {
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = 'Jornada ' + i;
+        selectJornada.appendChild(opt);
+      }
+      selectJornada.value = jornadaActiva;
+    }
 
-    const { data: config } = await db.from('config_jornada').select('jornada_activa').eq('id', 1).single();
-    const jornada = config?.jornada_activa || jornadaActiva;
-
-    selectJornada.innerHTML = '<option value="' + jornada + '">Jornada ' + jornada + '</option>';
-    selectJornada.value = jornada;
-    selectJornada.disabled = true;
-
-    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornada);
+    // Cargar clubes
+    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornadaActiva);
     const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
     const selectClub = document.getElementById('mina-club');
     selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
@@ -1036,12 +1111,11 @@
     tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
 
     const { data } = await db.from('jugadores')
-  .select('id, nombre, posicion, minutos, lne')
-  .eq('jornada', jornada)
-  .eq('club', club)
-  .neq('posicion', 'ENT')
-  .order('posicion')
-  .order('nombre');
+      .select('id, nombre, posicion, minutos, lne')
+      .eq('jornada', jornada)
+      .eq('club', club)
+      .order('posicion')
+      .order('nombre');
 
     if (!data?.length) { tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin jugadores para esta jornada</div>'; btnGuardar.style.display = 'none'; return; }
 
@@ -1050,20 +1124,7 @@
     const orden = ['POR','DEF','MED','DEL','ENT'];
     const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion) || a.nombre.localeCompare(b.nombre));
 
-    const valorados = sorted.filter(j => j.lne && j.lne > 0).length;
-    const total = sorted.length;
-
     tabla.innerHTML =
-      // Indicador de progreso
-      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px">' +
-        '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Valorados:</div>' +
-        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:' + (valorados === total ? 'var(--neon)' : 'var(--amber)') + '">' + valorados + ' / ' + total + '</div>' +
-        '<div style="flex:1;background:var(--surface);border-radius:4px;height:6px;overflow:hidden">' +
-          '<div style="height:100%;width:' + Math.round((valorados/total)*100) + '%;background:' + (valorados === total ? 'var(--neon)' : 'var(--amber)') + ';border-radius:4px;transition:width 0.3s"></div>' +
-        '</div>' +
-        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + Math.round((valorados/total)*100) + '%</div>' +
-      '</div>' +
-      // Tabla
       '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
         '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;padding:8px 16px;border-bottom:1px solid var(--border)">' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
@@ -1071,15 +1132,9 @@
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">MIN</div>' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">NOTA LNE</div>' +
         '</div>' +
-        sorted.map(j => {
-          const valorado = j.lne && j.lne > 0;
-          const bg = valorado ? 'rgba(0,217,126,0.06)' : 'transparent';
-          const border = valorado ? '1px solid rgba(0,217,126,0.15)' : '1px solid var(--surface)';
-          return '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:' + border + ';background:' + bg + '">' +
-            '<div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">' +
-              (valorado ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--neon);flex-shrink:0;display:inline-block"></span>' : '<span style="width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;display:inline-block"></span>') +
-              j.nombre +
-            '</div>' +
+        sorted.map((j, i) =>
+          '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--surface)">' +
+            '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + (j.minutos||0) + '</div>' +
             '<div style="text-align:center">' +
@@ -1090,16 +1145,14 @@
                 '<option value="3"' + (j.lne===3 ? ' selected' : '') + '>3</option>' +
               '</select>' +
             '</div>' +
-          '</div>';
-        }).join('') +
+          '</div>'
+        ).join('') +
       '</div>';
 
     btnGuardar.style.display = 'flex';
   }
 
   document.getElementById('btn-guardar-mina')?.addEventListener('click', async () => {
-    if (!confirm('¿Seguro que quieres guardar las notas de este equipo?')) return;
-
     const jornada = parseInt(document.getElementById('mina-jornada').value);
     const btn = document.getElementById('btn-guardar-mina');
     btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Guardando...';
@@ -1121,11 +1174,74 @@
 
     btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar notas del equipo';
     if (errores) showToast('Algunos errores al guardar (' + errores + ')', true);
-    else {
-      showToast('✓ Notas guardadas correctamente');
-      cargarMina(); // Refresca para actualizar indicador de progreso
-    }
+    else showToast('✓ Notas guardadas correctamente');
   });
+
+  /* ── NOTIFICACIONES ── */
+  async function cargarNotificaciones() {
+    const { data } = await db.from('push_subscriptions').select('id, user_id, created_at');
+    const el = document.getElementById('notif-suscriptores');
+    if (!data?.length) { el.textContent = 'Sin suscriptores activos'; return; }
+    el.innerHTML = '<div style="font-size:14px;font-weight:700;color:var(--neon);margin-bottom:8px">' + data.length + ' suscriptores activos</div>' +
+      data.map(s => '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">' + s.user_id.substring(0,8) + '... · ' + new Date(s.created_at).toLocaleDateString('es-ES') + '</div>').join('');
+  }
+
+  async function enviarNotificacion(titulo, mensaje) {
+    const btn = document.getElementById('btn-enviar-notif');
+    const res = document.getElementById('notif-resultado');
+    if (!titulo || !mensaje) { showToast('Rellena título y mensaje', true); return; }
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Enviando...';
+    res.textContent = '';
+    try {
+      const { data, error } = await db.functions.invoke('send-push', { body: { titulo, mensaje } });
+      if (error) throw error;
+      res.textContent = '✓ Enviadas: ' + data.enviadas;
+      res.style.color = 'var(--neon)';
+      showToast('✓ Notificaciones enviadas: ' + data.enviadas);
+    } catch(e) {
+      res.textContent = 'Error: ' + e.message;
+      res.style.color = 'var(--red)';
+      showToast('Error al enviar', true);
+    }
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> Enviar a todos';
+  }
+
+  function notifRapida(titulo, mensaje) {
+    document.getElementById('notif-titulo').value = titulo;
+    document.getElementById('notif-mensaje').value = mensaje;
+    enviarNotificacion(titulo, mensaje);
+  }
+
+  document.getElementById('btn-enviar-notif')?.addEventListener('click', () => {
+    const titulo = document.getElementById('notif-titulo').value.trim();
+    const mensaje = document.getElementById('notif-mensaje').value.trim();
+    enviarNotificacion(titulo, mensaje);
+  });
+
+  /* ── MOBILE SIDEBAR ── */
+  const btnHamburger = document.getElementById('btn-hamburger');
+  const sidebarEl = document.querySelector('.sidebar');
+  const overlayEl = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebarEl.classList.add('open');
+    overlayEl.classList.add('open');
+  }
+  function closeSidebar() {
+    sidebarEl.classList.remove('open');
+    overlayEl.classList.remove('open');
+  }
+
+  btnHamburger?.addEventListener('click', openSidebar);
+  overlayEl?.addEventListener('click', closeSidebar);
+
+  // Cerrar sidebar al navegar en móvil
+  document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeSidebar();
+    });
+  });
+
 
 </script>
 </body>
