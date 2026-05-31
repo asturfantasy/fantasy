@@ -11,8 +11,6 @@ async function toggleNotificaciones() {
     showToast('Notificaciones desactivadas');
   } else {
     await registrarNotificaciones();
-    actualizarToggleNotif(true);
-    showToast('Notificaciones activadas');
   }
 }
 
@@ -29,8 +27,8 @@ async function registrarNotificaciones() {
   if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
   const permiso = await Notification.requestPermission();
   if (permiso !== 'granted') return;
-  const { data: existente } = await db.from('push_subscriptions').select('id').eq('user_id', currentUser.id).single();
-  if (existente) return;
+  const { data: existente } = await db.from('push_subscriptions').select('id').eq('user_id', currentUser.id).limit(1);
+  if (existente?.length) return;
   const registro = await navigator.serviceWorker.ready;
   const subscription = await registro.pushManager.subscribe({
     userVisibleOnly: true,
