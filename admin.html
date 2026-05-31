@@ -336,7 +336,7 @@
 
       <!-- LA MINA -->
       <div class="panel" id="panel-mina">
-        <div class="page-header"><div class="page-title">⛏️ La mina</div></div>
+        <div class="page-header"><div class="page-title">La Mina</div></div>
         <div class="section">
           <div class="section-head"><div class="section-title">Puntos de La Mina del Fútbol por equipo</div></div>
           <div class="section-body">
@@ -1007,17 +1007,15 @@
   async function inicializarMina() {
     const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa').value) || 1;
     const selectJornada = document.getElementById('mina-jornada');
-    if (!selectJornada.options.length) {
-      for (let i = jornadaActiva; i >= 1; i--) {
-        const opt = document.createElement('option');
-        opt.value = i; opt.textContent = 'Jornada ' + i;
-        selectJornada.appendChild(opt);
-      }
-      selectJornada.value = jornadaActiva;
-    }
 
-    // Cargar clubes
-    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornadaActiva);
+    const { data: config } = await db.from('config_jornada').select('jornada_activa').eq('id', 1).single();
+    const jornada = config?.jornada_activa || jornadaActiva;
+
+    selectJornada.innerHTML = '<option value="' + jornada + '">Jornada ' + jornada + '</option>';
+    selectJornada.value = jornada;
+    selectJornada.disabled = true;
+
+    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornada);
     const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
     const selectClub = document.getElementById('mina-club');
     selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
@@ -1038,11 +1036,12 @@
     tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
 
     const { data } = await db.from('jugadores')
-      .select('id, nombre, posicion, minutos, lne')
-      .eq('jornada', jornada)
-      .eq('club', club)
-      .order('posicion')
-      .order('nombre');
+  .select('id, nombre, posicion, minutos, lne')
+  .eq('jornada', jornada)
+  .eq('club', club)
+  .neq('posicion', 'ENT')
+  .order('posicion')
+  .order('nombre');
 
     if (!data?.length) { tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin jugadores para esta jornada</div>'; btnGuardar.style.display = 'none'; return; }
 
@@ -1051,7 +1050,20 @@
     const orden = ['POR','DEF','MED','DEL','ENT'];
     const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion) || a.nombre.localeCompare(b.nombre));
 
+    const valorados = sorted.filter(j => j.lne && j.lne > 0).length;
+    const total = sorted.length;
+
     tabla.innerHTML =
+      // Indicador de progreso
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px">' +
+        '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Valorados:</div>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:' + (valorados === total ? 'var(--neon)' : 'var(--amber)') + '">' + valorados + ' / ' + total + '</div>' +
+        '<div style="flex:1;background:var(--surface);border-radius:4px;height:6px;overflow:hidden">' +
+          '<div style="height:100%;width:' + Math.round((valorados/total)*100) + '%;background:' + (valorados === total ? 'var(--neon)' : 'var(--amber)') + ';border-radius:4px;transition:width 0.3s"></div>' +
+        '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + Math.round((valorados/total)*100) + '%</div>' +
+      '</div>' +
+      // Tabla
       '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
         '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;padding:8px 16px;border-bottom:1px solid var(--border)">' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
@@ -1059,9 +1071,15 @@
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">MIN</div>' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">NOTA LNE</div>' +
         '</div>' +
-        sorted.map((j, i) =>
-          '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--surface)">' +
-            '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
+        sorted.map(j => {
+          const valorado = j.lne && j.lne > 0;
+          const bg = valorado ? 'rgba(0,217,126,0.06)' : 'transparent';
+          const border = valorado ? '1px solid rgba(0,217,126,0.15)' : '1px solid var(--surface)';
+          return '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:' + border + ';background:' + bg + '">' +
+            '<div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">' +
+              (valorado ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--neon);flex-shrink:0;display:inline-block"></span>' : '<span style="width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;display:inline-block"></span>') +
+              j.nombre +
+            '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + (j.minutos||0) + '</div>' +
             '<div style="text-align:center">' +
@@ -1072,14 +1090,16 @@
                 '<option value="3"' + (j.lne===3 ? ' selected' : '') + '>3</option>' +
               '</select>' +
             '</div>' +
-          '</div>'
-        ).join('') +
+          '</div>';
+        }).join('') +
       '</div>';
 
     btnGuardar.style.display = 'flex';
   }
 
   document.getElementById('btn-guardar-mina')?.addEventListener('click', async () => {
+    if (!confirm('¿Seguro que quieres guardar las notas de este equipo?')) return;
+
     const jornada = parseInt(document.getElementById('mina-jornada').value);
     const btn = document.getElementById('btn-guardar-mina');
     btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Guardando...';
@@ -1101,7 +1121,10 @@
 
     btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar notas del equipo';
     if (errores) showToast('Algunos errores al guardar (' + errores + ')', true);
-    else showToast('✓ Notas guardadas correctamente');
+    else {
+      showToast('✓ Notas guardadas correctamente');
+      cargarMina(); // Refresca para actualizar indicador de progreso
+    }
   });
 
 </script>

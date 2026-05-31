@@ -644,7 +644,27 @@
 <script src="js/auth.js"></script>
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register('/sw.js').then(async reg => {
+        // Pedir permiso de notificaciones
+        const permiso = await Notification.requestPermission();
+        if (permiso !== 'granted') return;
+
+        // Suscribirse a push
+        const VAPID_PUBLIC_KEY = 'BO8jjePXwsFyfbvbYDG4ybLum0RpYkieXNXadNgIvn55YXtV8AHi1rdtSet4uhn7s6goILwqX2L_q7W24iozc5k';
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: VAPID_PUBLIC_KEY
+        });
+
+        // Guardar en Supabase cuando el usuario esté autenticado
+        db.auth.onAuthStateChange(async (event, session) => {
+          if (!session?.user) return;
+          await db.from('push_subscriptions').upsert({
+            user_id: session.user.id,
+            subscription: sub.toJSON()
+          }, { onConflict: 'user_id' });
+        });
+      });
     }
 </script>
 </body>
