@@ -34,7 +34,7 @@ async function registrarNotificaciones() {
   const registro = await navigator.serviceWorker.ready;
   const subscription = await registro.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: 'BKuhEIkRfRwx5RT6uZeVF_ZRhHQ_mVOVqgGfrBMhZ1KLwCaOvqoaabX3OeRt_k7Edi1nFguD9x5pS0_nI99bPQ0'
+    applicationServerKey: 'BO8jjePXwsFyfbvbYDG4ybLum0RpYkieXNXadNgIvn55YXtV8AHi1rdtSet4uhn7s6goILwqX2L_q7W24iozc5k'
   });
   await db.from('push_subscriptions').insert({ user_id: currentUser.id, subscription: JSON.stringify(subscription) });
   actualizarToggleNotif(true);
