@@ -1005,27 +1005,27 @@
   let minaJugadores = [];
 
   async function inicializarMina() {
-    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa').value) || 1;
-    const selectJornada = document.getElementById('mina-jornada');
-    if (!selectJornada.options.length) {
-      for (let i = jornadaActiva; i >= 1; i--) {
-        const opt = document.createElement('option');
-        opt.value = i; opt.textContent = 'Jornada ' + i;
-        selectJornada.appendChild(opt);
-      }
-      selectJornada.value = jornadaActiva;
-    }
+  const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa').value) || 1;
+  const selectJornada = document.getElementById('mina-jornada');
 
-    // Cargar clubes
-    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornadaActiva);
-    const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
-    const selectClub = document.getElementById('mina-club');
-    selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
-      clubes.map(c => `<option value="${c}">${c}</option>`).join('');
+  // Cargar desde config para asegurar el valor correcto
+  const { data: config } = await db.from('config_jornada').select('jornada_activa').eq('id', 1).single();
+  const jornada = config?.jornada_activa || jornadaActiva;
 
-    selectJornada.onchange = () => cargarMina();
-    selectClub.onchange = () => cargarMina();
-  }
+  selectJornada.innerHTML = '<option value="' + jornada + '">Jornada ' + jornada + '</option>';
+  selectJornada.value = jornada;
+  selectJornada.disabled = true;
+
+  // Cargar clubes
+  const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornada);
+  const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
+  const selectClub = document.getElementById('mina-club');
+  selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
+    clubes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  selectJornada.onchange = () => cargarMina();
+  selectClub.onchange = () => cargarMina();
+}
 
   async function cargarMina() {
     const jornada = parseInt(document.getElementById('mina-jornada').value);
