@@ -1053,26 +1053,27 @@
   }
 
   async function guardarEdicion() {
-    if (!edJugadorSeleccionado) return;
-    const jornada = parseInt(document.getElementById('ed-jornada').value);
-    const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
-    const penalti = parseInt(document.getElementById('ed-penalti').value) || 0;
-      const btn = document.querySelector('#ed-form-section .btn-primary');
-    btn.disabled = true; btn.textContent = 'Guardando...';
-    const { error, data: updated } = await db.from('jugadores')
-      .update({ asistencia, penalti_marcado, penalti_fallado })
-      .eq('id', edJugadorSeleccionado.id)
-      .eq('jornada', jornada)
-      .select('total_jornada')
-      .single();
-    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
-    if (error) {
-      showToast('Error: ' + error.message, true);
-    } else {
-      showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
-      if (updated) document.getElementById('ed-puntos-actuales').value = updated.total_jornada + ' pts';
-    }
+  if (!edJugadorSeleccionado) return;
+  const jornada = parseInt(document.getElementById('ed-jornada').value);
+  const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
+  const penalti_marcado = parseInt(document.getElementById('ed-penalti-marcado').value) || 0;
+  const penalti_fallado = parseInt(document.getElementById('ed-penalti-fallado').value) || 0;
+  const btn = document.querySelector('#ed-form-section .btn-primary');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const { error, data: updated } = await db.from('jugadores')
+    .update({ asistencia, penalti_marcado, penalti_fallado })
+    .eq('id', edJugadorSeleccionado.id)
+    .eq('jornada', jornada)
+    .select('total_jornada')
+    .single();
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
+  if (error) {
+    showToast('Error: ' + error.message, true);
+  } else {
+    showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
+    if (updated) document.getElementById('ed-puntos-actuales').value = updated.total_jornada + ' pts';
   }
+}
 
   /* ── LA MINA ── */
   let minaJugadores = [];
