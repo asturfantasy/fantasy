@@ -87,7 +87,6 @@
     .score-inputs { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
     .score-input { width:70px; text-align:center; font-size:24px; font-weight:700; }
     .score-sep { font-size:24px; font-weight:700; color:var(--text-muted); }
-    /* PROCESADO */
     .step { display:flex; gap:16px; margin-bottom:24px; }
     .step-num { width:32px; height:32px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--text-muted); flex-shrink:0; margin-top:2px; }
     .step-num.done { background:rgba(0,217,126,0.15); border-color:var(--neon); color:var(--neon); }
@@ -107,15 +106,12 @@
     .publicar-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px; }
     .publicar-card-title { font-size:12px; font-weight:600; }
     .publicar-card-sub { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
-
-    /* ── MOBILE HAMBURGER ── */
     .hamburger { display:none; background:none; border:none; color:var(--text); cursor:pointer; padding:8px; font-size:22px; }
     .mobile-header { display:none; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--bg2); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:200; }
     .mobile-header-title { font-size:15px; font-weight:700; }
     .mobile-header-title span { color:var(--neon); }
     .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
     .sidebar-overlay.open { display:block; }
-
     @media (max-width: 768px) {
       .admin-layout { grid-template-columns:1fr; }
       .sidebar { position:fixed; left:-260px; top:0; height:100vh; width:260px; z-index:300; transition:left 0.25s ease; border-right:1px solid var(--border); }
@@ -137,29 +133,22 @@
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="screen-login">
   <div class="login-card">
     <div class="login-title">ASTUR<span>FANTASY</span></div>
     <div class="login-sub">Panel de administración</div>
-    <button class="btn-google" id="btn-login">
-      <i class="ti ti-key" style="font-size:18px"></i>
-      Acceder con Google
-    </button>
+    <button class="btn-google" id="btn-login"><i class="ti ti-key" style="font-size:18px"></i> Acceder con Google</button>
   </div>
 </div>
 
-<!-- SIN ACCESO -->
 <div id="screen-noaccess" style="display:none;align-items:center;justify-content:center;min-height:100vh;text-align:center;flex-direction:column;gap:12px">
   <i class="ti ti-lock" style="font-size:48px;color:var(--red)"></i>
   <div style="font-size:18px;font-weight:700">Sin acceso</div>
-  <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Tu cuenta no tiene permisos de administrador</div>
+  <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Tu cuenta no tiene permisos</div>
   <button class="btn btn-danger" id="btn-logout-noaccess">Cerrar sesión</button>
 </div>
 
-<!-- PANEL ADMIN -->
 <div id="screen-admin" style="display:none">
-  <!-- Mobile header -->
   <div class="mobile-header">
     <div class="mobile-header-title">ASTUR<span>FANTASY</span> <small style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);font-weight:400">Admin</small></div>
     <button class="hamburger" id="btn-hamburger"><i class="ti ti-menu-2"></i></button>
@@ -260,23 +249,13 @@
           <div class="page-title">Procesar datos</div>
           <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">API: <span style="color:var(--neon)" id="api-status">comprobando...</span></div>
         </div>
-
-        <!-- PASO 1: Subir HTMLs -->
         <div class="section">
-          <div class="section-head">
-            <div class="section-title"><span style="color:var(--text-muted);font-family:var(--font-mono);margin-right:8px">01</span> Subir HTMLs y extraer datos</div>
-          </div>
+          <div class="section-head"><div class="section-title"><span style="color:var(--text-muted);font-family:var(--font-mono);margin-right:8px">01</span> Subir HTMLs y extraer datos</div></div>
           <div class="section-body">
             <div class="step-sub">Sube los HTMLs de la LNE para esta jornada. El extractor generará el CSV con los datos de los jugadores.</div>
             <div class="form-grid" style="margin-bottom:14px">
-              <div class="form-group">
-                <div class="form-label">Jornada</div>
-                <input class="form-input" id="proc-jornada" type="number" placeholder="36" />
-              </div>
-              <div class="form-group">
-                <div class="form-label">Contraseña API</div>
-                <input class="form-input" id="proc-password" type="password" />
-              </div>
+              <div class="form-group"><div class="form-label">Jornada</div><input class="form-input" id="proc-jornada" type="number" placeholder="36" /></div>
+              <div class="form-group"><div class="form-label">Contraseña API</div><input class="form-input" id="proc-password" type="password" /></div>
             </div>
             <div class="file-drop" id="drop-htmls" onclick="document.getElementById('input-htmls').click()">
               <input type="file" id="input-htmls" multiple accept=".html,.htm" onchange="actualizarListaHTMLs()" />
@@ -292,23 +271,15 @@
             <div class="log-box" id="log-procesar" style="display:none"></div>
           </div>
         </div>
-
-        <!-- PASO 2: Sin mapeo -->
         <div class="section" id="section-sin-mapeo" style="display:none">
-          <div class="section-head">
-            <div class="section-title"><span style="color:var(--amber);font-family:var(--font-mono);margin-right:8px">02</span> Nombres sin mapeo</div>
-          </div>
+          <div class="section-head"><div class="section-title"><span style="color:var(--amber);font-family:var(--font-mono);margin-right:8px">02</span> Nombres sin mapeo</div></div>
           <div class="section-body">
             <div class="step-sub">Estos nombres del HTML no tienen jugador asociado en la BD. Revísalos antes de actualizar.</div>
             <div class="log-box" id="log-sin-mapeo" style="border-color:rgba(227,179,65,0.3);color:var(--amber)"></div>
           </div>
         </div>
-
-        <!-- PASO 3: Actualizar Supabase -->
         <div class="section" id="section-actualizar" style="display:none">
-          <div class="section-head">
-            <div class="section-title"><span style="color:var(--text-muted);font-family:var(--font-mono);margin-right:8px">03</span> Actualizar Supabase</div>
-          </div>
+          <div class="section-head"><div class="section-title"><span style="color:var(--text-muted);font-family:var(--font-mono);margin-right:8px">03</span> Actualizar Supabase</div></div>
           <div class="section-body">
             <div class="step-sub">Sube el CSV generado a Supabase. Esto actualiza los puntos de los jugadores.</div>
             <div style="display:flex;gap:8px">
@@ -321,9 +292,7 @@
 
       <!-- PUBLICAR JORNADA -->
       <div class="panel" id="panel-publicar">
-        <div class="page-header">
-          <div class="page-title">Publicar jornada</div>
-        </div>
+        <div class="page-header"><div class="page-title">Publicar jornada</div></div>
         <div class="section">
           <div class="section-head">
             <div class="section-title">Marcar partidos como publicados</div>
@@ -365,19 +334,15 @@
         </div>
       </div>
 
-
-
       <!-- LA MINA -->
       <div class="panel" id="panel-mina">
-        <div class="page-header"><div class="page-title">⛏️ La mina</div></div>
+        <div class="page-header"><div class="page-title">⛏️ La Mina</div></div>
         <div class="section">
-          <div class="section-head"><div class="section-title">Notas LNE por equipo</div></div>
+          <div class="section-head"><div class="section-title">Notas de La Mina por equipo</div></div>
           <div class="section-body">
             <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
               <select id="mina-jornada" class="form-input" style="width:160px"></select>
-              <select id="mina-club" class="form-input" style="width:200px">
-                <option value="">Selecciona un club...</option>
-              </select>
+              <select id="mina-club" class="form-input" style="width:200px"><option value="">Selecciona un club...</option></select>
             </div>
             <div id="mina-tabla"></div>
             <button id="btn-guardar-mina" class="btn btn-primary" style="width:100%;margin-top:14px;padding:12px;font-size:14px;display:none">
@@ -394,14 +359,8 @@
           <div class="section-head"><div class="section-title">Buscar jugador</div></div>
           <div class="section-body">
             <div class="form-grid" style="margin-bottom:14px">
-              <div class="form-group">
-                <div class="form-label">Jornada</div>
-                <input class="form-input" id="ed-jornada" type="number" placeholder="36" />
-              </div>
-              <div class="form-group">
-                <div class="form-label">Buscar jugador</div>
-                <input class="form-input" id="ed-buscar" type="text" placeholder="Nombre del jugador..." oninput="buscarJugadorEdicion()" />
-              </div>
+              <div class="form-group"><div class="form-label">Jornada</div><input class="form-input" id="ed-jornada" type="number" placeholder="36" /></div>
+              <div class="form-group"><div class="form-label">Buscar jugador</div><input class="form-input" id="ed-buscar" type="text" placeholder="Nombre del jugador..." oninput="buscarJugadorEdicion()" /></div>
             </div>
             <div id="ed-resultados"></div>
           </div>
@@ -413,28 +372,14 @@
           </div>
           <div class="section-body">
             <div class="form-grid">
-              <div class="form-group">
-                <div class="form-label">Asistencias</div>
-                <input class="form-input" id="ed-asistencia" type="number" min="0" value="0" />
-              </div>
-              <div class="form-group">
-                <div class="form-label">Penaltis marcados / parados (portero)</div>
-                <input class="form-input" id="ed-penalti-marcado" type="number" min="0" value="0" />
-              </div>
-              <div class="form-group">
-                <div class="form-label">Penaltis fallados / parados rival (portero)</div>
-                <input class="form-input" id="ed-penalti-fallado" type="number" min="0" value="0" />
-              </div>
-
-              <div class="form-group">
-                <div class="form-label">Puntos tras guardar</div>
-                <input class="form-input" id="ed-puntos-actuales" type="text" disabled style="opacity:0.5" />
-              </div>
+              <div class="form-group"><div class="form-label">Asistencias</div><input class="form-input" id="ed-asistencia" type="number" min="0" value="0" /></div>
+              <div class="form-group"><div class="form-label">Penaltis marcados / parados (portero)</div><input class="form-input" id="ed-penalti-marcado" type="number" min="0" value="0" /></div>
+              <div class="form-group"><div class="form-label">Penaltis fallados (-3 pts cada uno)</div><input class="form-input" id="ed-penalti-fallado" type="number" min="0" value="0" /></div>
+              <div class="form-group"><div class="form-label">Puntos tras guardar</div><input class="form-input" id="ed-puntos-actuales" type="text" disabled style="opacity:0.5" /></div>
             </div>
           </div>
         </div>
       </div>
-
 
       <!-- NOTIFICACIONES -->
       <div class="panel" id="panel-notificaciones">
@@ -442,14 +387,8 @@
         <div class="section">
           <div class="section-head"><div class="section-title">Enviar notificación</div></div>
           <div class="section-body">
-            <div class="form-group" style="margin-bottom:14px">
-              <div class="form-label">Título</div>
-              <input class="form-input" id="notif-titulo" type="text" placeholder="AsturFantasy" />
-            </div>
-            <div class="form-group" style="margin-bottom:14px">
-              <div class="form-label">Mensaje</div>
-              <input class="form-input" id="notif-mensaje" type="text" placeholder="¡Ya están disponibles los puntos de la jornada!" />
-            </div>
+            <div class="form-group" style="margin-bottom:14px"><div class="form-label">Título</div><input class="form-input" id="notif-titulo" type="text" placeholder="AsturFantasy" /></div>
+            <div class="form-group" style="margin-bottom:14px"><div class="form-label">Mensaje</div><input class="form-input" id="notif-mensaje" type="text" placeholder="¡Ya están disponibles los puntos de la jornada!" /></div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button class="btn btn-primary" id="btn-enviar-notif"><i class="ti ti-send"></i> Enviar a todos</button>
               <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)" id="notif-resultado"></div>
@@ -468,9 +407,7 @@
         </div>
         <div class="section">
           <div class="section-head"><div class="section-title">Suscriptores</div></div>
-          <div class="section-body">
-            <div id="notif-suscriptores" style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted)">Cargando...</div>
-          </div>
+          <div class="section-body"><div id="notif-suscriptores" style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted)">Cargando...</div></div>
         </div>
       </div>
 
@@ -478,10 +415,10 @@
       <div class="panel" id="panel-config">
         <div class="page-header"><div class="page-title">Configuración del sistema</div></div>
         <div class="section">
-          <div class="section-head"><div class="section-title">Administradores</div></div>
+          <div class="section-head"><div class="section-title">Usuarios y roles</div></div>
           <div class="section-body">
             <table class="admin-table">
-              <thead><tr><th>Equipo</th><th>User ID</th><th>Rol</th><th></th></tr></thead>
+              <thead><tr><th>Equipo</th><th>User ID</th><th>Rol</th><th>Acciones</th></tr></thead>
               <tbody id="tabla-admins"></tbody>
             </table>
           </div>
@@ -595,12 +532,25 @@
   async function verificarAcceso(session) {
     if (!session?.user) { mostrarPantalla('login'); return; }
     adminUser = session.user;
-    const { data } = await db.from('equipos').select('is_admin, nombre_equipo').eq('user_id', adminUser.id).single();
-    if (!data?.is_admin) { mostrarPantalla('noaccess'); return; }
+    const { data } = await db.from('equipos').select('is_admin, nombre_equipo, rol').eq('user_id', adminUser.id).single();
+    if (!data?.is_admin && data?.rol !== 'colaborador') { mostrarPantalla('noaccess'); return; }
     document.getElementById('admin-name').textContent = data.nombre_equipo || adminUser.email;
     document.getElementById('admin-email').textContent = adminUser.email;
     mostrarPantalla('admin');
-    cargarDashboard();
+    if (data.rol === 'colaborador' && !data.is_admin) {
+      // Ocultar todo el sidebar excepto La Mina
+      document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
+        if (item.dataset.panel !== 'mina') item.style.display = 'none';
+      });
+      document.querySelectorAll('.nav-section-label').forEach(el => el.style.display = 'none');
+      // Activar directamente La Mina
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-mina').classList.add('active');
+      document.querySelector('.nav-item[data-panel="mina"]').classList.add('active');
+      inicializarMina();
+    } else {
+      cargarDashboard();
+    }
   }
 
   db.auth.onAuthStateChange((event, session) => {
@@ -648,7 +598,6 @@
       document.getElementById('stat-deadline').textContent = 'Cerrada';
       document.getElementById('stat-deadline-sub').textContent = 'La jornada ya comenzó';
     }
-    // Prerellenar jornada en procesar datos
     document.getElementById('proc-jornada').value = jornadaActiva;
   }
 
@@ -812,7 +761,6 @@
     ).join('');
   }
 
-  // Drag & drop
   const dropZone = document.getElementById('drop-htmls');
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
@@ -830,35 +778,22 @@
     const files = document.getElementById('input-htmls').files;
     if (!jornada || !password) { showToast('Rellena jornada y contraseña', true); return; }
     if (!files.length) { showToast('Selecciona al menos un HTML', true); return; }
-
     const btn = document.getElementById('btn-procesar');
     btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Procesando...';
-
     const log = document.getElementById('log-procesar');
     log.style.display = 'block'; log.className = 'log-box'; log.textContent = 'Enviando HTMLs al servidor...';
-
     const fd = new FormData();
     fd.append('password', password);
     fd.append('jornada', jornada);
     [...files].forEach(f => fd.append('htmls', f));
-
     try {
       const r = await fetch(API_URL + '/procesar', { method:'POST', body: fd });
       const data = await r.json();
       btn.disabled = false; btn.innerHTML = '<i class="ti ti-cpu"></i> Extraer datos';
-
-      if (!data.ok) {
-        log.className = 'log-box err'; log.textContent = data.error || data.stderr || 'Error desconocido'; return;
-      }
-
+      if (!data.ok) { log.className = 'log-box err'; log.textContent = data.error || data.stderr || 'Error desconocido'; return; }
       log.className = 'log-box ok';
       log.textContent = '✓ Extracción completada\n\n' + (data.stdout || '');
-
-      if (data.sin_mapeo?.trim()) {
-        document.getElementById('section-sin-mapeo').style.display = 'block';
-        document.getElementById('log-sin-mapeo').textContent = data.sin_mapeo;
-      }
-
+      if (data.sin_mapeo?.trim()) { document.getElementById('section-sin-mapeo').style.display = 'block'; document.getElementById('log-sin-mapeo').textContent = data.sin_mapeo; }
       if (data.csv) {
         csvGenerado = data.csv;
         document.getElementById('section-actualizar').style.display = 'block';
@@ -880,25 +815,18 @@
     if (!csvGenerado) { showToast('Primero extrae los datos', true); return; }
     const password = document.getElementById('proc-password').value;
     if (!password) { showToast('Introduce la contraseña', true); return; }
-
     const btn = document.getElementById('btn-actualizar');
     btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Actualizando...';
-
     const log = document.getElementById('log-actualizar');
     log.style.display = 'block'; log.className = 'log-box'; log.textContent = 'Subiendo datos a Supabase...';
-
     const fd = new FormData();
     fd.append('password', password);
     fd.append('csv', new Blob([csvGenerado], { type: 'text/csv' }), 'jugadores.csv');
-
     try {
       const r = await fetch(API_URL + '/actualizar', { method:'POST', body: fd });
       const data = await r.json();
       btn.disabled = false; btn.innerHTML = '<i class="ti ti-database-import"></i> Actualizar Supabase';
-
-      if (!data.ok) {
-        log.className = 'log-box err'; log.textContent = data.stderr || data.error || 'Error'; return;
-      }
+      if (!data.ok) { log.className = 'log-box err'; log.textContent = data.stderr || data.error || 'Error'; return; }
       log.className = 'log-box ok';
       log.textContent = '✓ Supabase actualizado\n\n' + (data.stdout || '');
       showToast('¡Datos actualizados correctamente!');
@@ -927,12 +855,9 @@
         '<div style="flex:1;font-size:13px;font-weight:600">' + p.local_nombre + ' vs ' + p.visitante_nombre + '</div>' +
         '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">' + (p.finalizado ? p.resultado_local + '-' + p.resultado_visitante : 'Sin resultado') + '</div>' +
         '<span class="pill ' + (p.publicado ? 'pill-green' : 'pill-amber') + '">' + (p.publicado ? 'Publicado' : 'Oculto') + '</span>' +
-        '<button class="btn btn-sm ' + (p.publicado ? 'btn-danger' : 'btn-primary') + '" onclick="togglePublicado(\'' + p.id + '\',' + !p.publicado + ',' + jornada + ')">' +
-          (p.publicado ? 'Ocultar' : 'Publicar') +
-        '</button>' +
+        '<button class="btn btn-sm ' + (p.publicado ? 'btn-danger' : 'btn-primary') + '" onclick="togglePublicado(\'' + p.id + '\',' + !p.publicado + ',' + jornada + ')">' + (p.publicado ? 'Ocultar' : 'Publicar') + '</button>' +
       '</div>'
     ).join('');
-
     document.getElementById('btn-publicar-todos').onclick = () => toggleTodosPublicado(jornada, true);
     document.getElementById('btn-despublicar-todos').onclick = () => toggleTodosPublicado(jornada, false);
   }
@@ -990,23 +915,38 @@
 
   /* ── ADMINS ── */
   async function cargarAdmins() {
-    const { data } = await db.from('equipos').select('user_id, nombre_equipo, is_admin').order('nombre_equipo');
+    const { data } = await db.from('equipos').select('user_id, nombre_equipo, is_admin, rol').order('nombre_equipo');
     const tbody = document.getElementById('tabla-admins');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</td></tr>'; return; }
-    tbody.innerHTML = data.map(e =>
-      '<tr><td><strong>' + e.nombre_equipo + '</strong></td>' +
-      '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + e.user_id.substring(0,8) + '...</td>' +
-      '<td>' + (e.is_admin ? '<span class="pill pill-green">Admin</span>' : '<span class="pill" style="background:var(--surface2);color:var(--text-muted)">Usuario</span>') + '</td>' +
-      '<td>' + (e.user_id !== adminUser?.id ?
-        '<button class="btn btn-sm ' + (e.is_admin ? 'btn-danger' : '') + '" onclick="toggleAdmin(\'' + e.user_id + '\',' + !e.is_admin + ')">' + (e.is_admin ? 'Quitar admin' : 'Hacer admin') + '</button>' :
-        '<span style="font-size:12px;color:var(--text-muted)">Tú</span>') + '</td></tr>'
-    ).join('');
+    tbody.innerHTML = data.map(e => {
+      const rolLabel = e.is_admin
+        ? '<span class="pill pill-green">Admin</span>'
+        : e.rol === 'colaborador'
+          ? '<span class="pill pill-amber">Colaborador</span>'
+          : '<span class="pill" style="background:var(--surface2);color:var(--text-muted)">Usuario</span>';
+      const esTu = e.user_id === adminUser?.id;
+      return '<tr><td><strong>' + e.nombre_equipo + '</strong></td>' +
+        '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + e.user_id.substring(0,8) + '...</td>' +
+        '<td>' + rolLabel + '</td>' +
+        '<td>' + (esTu ? '<span style="font-size:12px;color:var(--text-muted)">Tú</span>' :
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+            '<button class="btn btn-sm ' + (e.is_admin ? 'btn-danger' : '') + '" onclick="toggleAdmin(\'' + e.user_id + '\',' + !e.is_admin + ')">' + (e.is_admin ? 'Quitar admin' : 'Hacer admin') + '</button>' +
+            '<button class="btn btn-sm ' + (e.rol === 'colaborador' ? 'btn-danger' : '') + '" onclick="toggleColaborador(\'' + e.user_id + '\',' + (e.rol !== 'colaborador') + ')">' + (e.rol === 'colaborador' ? 'Quitar colaborador' : 'Hacer colaborador') + '</button>' +
+          '</div>') +
+        '</td></tr>';
+    }).join('');
   }
 
   async function toggleAdmin(userId, valor) {
     const { error } = await db.from('equipos').update({ is_admin: valor }).eq('user_id', userId);
     if (error) showToast('Error: ' + error.message, true);
     else { showToast(valor ? 'Admin concedido' : 'Admin retirado'); cargarAdmins(); }
+  }
+
+  async function toggleColaborador(userId, valor) {
+    const { error } = await db.from('equipos').update({ rol: valor ? 'colaborador' : 'usuario' }).eq('user_id', userId);
+    if (error) showToast('Error: ' + error.message, true);
+    else { showToast(valor ? 'Colaborador asignado' : 'Rol eliminado'); cargarAdmins(); }
   }
 
   /* ── EDICIÓN MANUAL ── */
@@ -1029,7 +969,7 @@
       '<div data-jugid="' + j.id + '" class="ed-result-item" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:6px;background:var(--surface)">',
         '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + j.nombre + '</div>',
         '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.posicion + ' · ' + j.club + '</div></div>',
-        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">Asist: <strong>' + (j.asistencia||0) + '</strong> · Pen: <strong>' + (j.penalti||0) + '</strong> · LNE: <strong>' + (j.nota_lne||0) + '</strong></div>',
+        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">Asist: <strong>' + (j.asistencia||0) + '</strong> · PenM: <strong>' + (j.penalti_marcado||0) + '</strong> · PenF: <strong>' + (j.penalti_fallado||0) + '</strong></div>',
         '<div style="font-size:16px;font-weight:700;color:var(--neon)">' + (j.total_jornada||0) + ' pts</div>',
       '</div>'
     ].join('')).join('');
@@ -1053,45 +993,43 @@
   }
 
   async function guardarEdicion() {
-  if (!edJugadorSeleccionado) return;
-  const jornada = parseInt(document.getElementById('ed-jornada').value);
-  const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
-  const penalti_marcado = parseInt(document.getElementById('ed-penalti-marcado').value) || 0;
-  const penalti_fallado = parseInt(document.getElementById('ed-penalti-fallado').value) || 0;
-  const btn = document.querySelector('#ed-form-section .btn-primary');
-  btn.disabled = true; btn.textContent = 'Guardando...';
-  const { error, data: updated } = await db.from('jugadores')
-    .update({ asistencia, penalti_marcado, penalti_fallado })
-    .eq('id', edJugadorSeleccionado.id)
-    .eq('jornada', jornada)
-    .select('total_jornada')
-    .single();
-  btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
-  if (error) {
-    showToast('Error: ' + error.message, true);
-  } else {
-    showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
-    if (updated) document.getElementById('ed-puntos-actuales').value = updated.total_jornada + ' pts';
+    if (!edJugadorSeleccionado) return;
+    const jornada = parseInt(document.getElementById('ed-jornada').value);
+    const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
+    const penalti_marcado = parseInt(document.getElementById('ed-penalti-marcado').value) || 0;
+    const penalti_fallado = parseInt(document.getElementById('ed-penalti-fallado').value) || 0;
+    const btn = document.querySelector('#ed-form-section .btn-primary');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const { error, data: updated } = await db.from('jugadores')
+      .update({ asistencia, penalti_marcado, penalti_fallado })
+      .eq('id', edJugadorSeleccionado.id)
+      .eq('jornada', jornada)
+      .select('total_jornada')
+      .single();
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
+    if (error) {
+      showToast('Error: ' + error.message, true);
+    } else {
+      showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
+      if (updated) document.getElementById('ed-puntos-actuales').value = updated.total_jornada + ' pts';
+    }
   }
-}
 
   /* ── LA MINA ── */
   let minaJugadores = [];
 
   async function inicializarMina() {
-    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa').value) || 1;
+    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa')?.value) || 1;
     const selectJornada = document.getElementById('mina-jornada');
-    if (!selectJornada.options.length) {
-      for (let i = jornadaActiva; i >= 1; i--) {
-        const opt = document.createElement('option');
-        opt.value = i; opt.textContent = 'Jornada ' + i;
-        selectJornada.appendChild(opt);
-      }
-      selectJornada.value = jornadaActiva;
-    }
 
-    // Cargar clubes
-    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornadaActiva);
+    const { data: config } = await db.from('config_jornada').select('jornada_activa').eq('id', 1).single();
+    const jornada = config?.jornada_activa || jornadaActiva;
+
+    selectJornada.innerHTML = '<option value="' + jornada + '">Jornada ' + jornada + '</option>';
+    selectJornada.value = jornada;
+    selectJornada.disabled = true;
+
+    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornada);
     const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
     const selectClub = document.getElementById('mina-club');
     selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
@@ -1115,17 +1053,27 @@
       .select('id, nombre, posicion, minutos, lne')
       .eq('jornada', jornada)
       .eq('club', club)
+      .neq('posicion', 'ENT')
       .order('posicion')
       .order('nombre');
 
     if (!data?.length) { tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin jugadores para esta jornada</div>'; btnGuardar.style.display = 'none'; return; }
 
     minaJugadores = data;
-
-    const orden = ['POR','DEF','MED','DEL','ENT'];
+    const orden = ['POR','DEF','MED','DEL'];
     const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion) || a.nombre.localeCompare(b.nombre));
+    const valorados = sorted.filter(j => j.lne && j.lne > 0).length;
+    const total = sorted.length;
 
     tabla.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px">' +
+        '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Valorados:</div>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:' + (valorados === total ? 'var(--neon)' : 'var(--amber)') + '">' + valorados + ' / ' + total + '</div>' +
+        '<div style="flex:1;background:var(--surface);border-radius:4px;height:6px;overflow:hidden">' +
+          '<div style="height:100%;width:' + Math.round((valorados/total)*100) + '%;background:' + (valorados === total ? 'var(--neon)' : 'var(--amber)') + ';border-radius:4px;transition:width 0.3s"></div>' +
+        '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + Math.round((valorados/total)*100) + '%</div>' +
+      '</div>' +
       '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
         '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;padding:8px 16px;border-bottom:1px solid var(--border)">' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
@@ -1133,9 +1081,15 @@
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">MIN</div>' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">NOTA LNE</div>' +
         '</div>' +
-        sorted.map((j, i) =>
-          '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--surface)">' +
-            '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
+        sorted.map(j => {
+          const valorado = j.lne && j.lne > 0;
+          const bg = valorado ? 'rgba(0,217,126,0.06)' : 'transparent';
+          const border = valorado ? '1px solid rgba(0,217,126,0.15)' : '1px solid var(--surface)';
+          return '<div style="display:grid;grid-template-columns:1fr 60px 60px 140px;align-items:center;padding:10px 16px;border-bottom:' + border + ';background:' + bg + '">' +
+            '<div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">' +
+              (valorado ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--neon);flex-shrink:0;display:inline-block"></span>' : '<span style="width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;display:inline-block"></span>') +
+              j.nombre +
+            '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + (j.minutos||0) + '</div>' +
             '<div style="text-align:center">' +
@@ -1146,36 +1100,28 @@
                 '<option value="3"' + (j.lne===3 ? ' selected' : '') + '>3</option>' +
               '</select>' +
             '</div>' +
-          '</div>'
-        ).join('') +
+          '</div>';
+        }).join('') +
       '</div>';
 
     btnGuardar.style.display = 'flex';
   }
 
   document.getElementById('btn-guardar-mina')?.addEventListener('click', async () => {
+    if (!confirm('¿Seguro que quieres guardar las notas de este equipo?')) return;
     const jornada = parseInt(document.getElementById('mina-jornada').value);
     const btn = document.getElementById('btn-guardar-mina');
     btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Guardando...';
-
     const selects = document.querySelectorAll('.mina-lne-select');
-    const updates = [...selects].map(sel => ({
-      id: sel.dataset.jugid,
-      lne: parseInt(sel.value) || 0
-    }));
-
+    const updates = [...selects].map(sel => ({ id: sel.dataset.jugid, lne: parseInt(sel.value) || 0 }));
     let errores = 0;
     for (const u of updates) {
-      const { error } = await db.from('jugadores')
-        .update({ lne: u.lne })
-        .eq('id', u.id)
-        .eq('jornada', jornada);
+      const { error } = await db.from('jugadores').update({ lne: u.lne }).eq('id', u.id).eq('jornada', jornada);
       if (error) errores++;
     }
-
     btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar notas del equipo';
     if (errores) showToast('Algunos errores al guardar (' + errores + ')', true);
-    else showToast('✓ Notas guardadas correctamente');
+    else { showToast('✓ Notas guardadas correctamente'); cargarMina(); }
   });
 
   /* ── NOTIFICACIONES ── */
@@ -1224,25 +1170,15 @@
   const sidebarEl = document.querySelector('.sidebar');
   const overlayEl = document.getElementById('sidebar-overlay');
 
-  function openSidebar() {
-    sidebarEl.classList.add('open');
-    overlayEl.classList.add('open');
-  }
-  function closeSidebar() {
-    sidebarEl.classList.remove('open');
-    overlayEl.classList.remove('open');
-  }
+  function openSidebar() { sidebarEl.classList.add('open'); overlayEl.classList.add('open'); }
+  function closeSidebar() { sidebarEl.classList.remove('open'); overlayEl.classList.remove('open'); }
 
   btnHamburger?.addEventListener('click', openSidebar);
   overlayEl?.addEventListener('click', closeSidebar);
 
-  // Cerrar sidebar al navegar en móvil
   document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
-    item.addEventListener('click', () => {
-      if (window.innerWidth <= 768) closeSidebar();
-    });
+    item.addEventListener('click', () => { if (window.innerWidth <= 768) closeSidebar(); });
   });
-
 
 </script>
 </body>
