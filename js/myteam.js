@@ -18,17 +18,20 @@ async function mostrarDesgloseMyTeam(jugadorId, nombre, posicion, jornada) {
 async function loadMyTeam() {
   if (!currentUser) return;
   const selectMyTeam = document.getElementById('myteam-jornada-select');
+  const deadlinePasado = jornadadCerrada();
+  const jornadaMax = deadlinePasado ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+
   if (selectMyTeam) {
     selectMyTeam.innerHTML = '';
-    for (let i = JORNADA_VISIBLE; i >= 1; i--) {
+    for (let i = jornadaMax; i >= 1; i--) {
       const opt = document.createElement('option');
-      opt.value = i; opt.textContent = i === JORNADA_VISIBLE ? 'J' + i + ' · Actual' : 'J' + i;
+      opt.value = i; opt.textContent = i === jornadaMax ? 'J' + i + ' · Actual' : 'J' + i;
       selectMyTeam.appendChild(opt);
     }
-    selectMyTeam.value = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+    selectMyTeam.value = jornadaMax;
     selectMyTeam.onchange = e => cargarMyTeam(parseInt(e.target.value));
   }
-  await cargarMyTeam(jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE);
+  await cargarMyTeam(jornadaMax);
 }
 
 async function cargarMyTeam(jornada) {
