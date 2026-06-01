@@ -565,7 +565,97 @@ async function mostrarPartido(localAbrev, visitanteAbrev, localNombre, visitante
         renderEquipo(visitanteJugadores, 'right') +
       '</div>' +
     '</div>';
+    // Guardar datos para compartir
+      window._partidoData = {
+        localAbrev, visitanteAbrev, localNombre, visitanteNombre,
+        jornada, marcador,
+        localJugadores, visitanteJugadores, tl, tv,
+        escudoLocal: localJugadores[0]?.escudo_url || null,
+        escudoVisitante: visitanteJugadores[0]?.escudo_url || null
+      };
+
+      // Botón compartir
+      const btnCompartir = document.createElement('button');
+      btnCompartir.innerHTML = '<i class="ti ti-share"></i> Compartir puntuaciones';
+      btnCompartir.style.cssText = 'width:100%;margin-top:14px;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px';
+      btnCompartir.onclick = compartirPartido;
+      document.getElementById('partido-content').appendChild(btnCompartir);
 }
 
 document.getElementById('partido-close')?.addEventListener('click', () => document.getElementById('modal-partido').classList.remove('open'));
 document.getElementById('modal-partido')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+async function compartirPartido() {
+  const { localAbrev, visitanteAbrev, localNombre, visitanteNombre, jornada, marcador,
+    localJugadores, visitanteJugadores, tl, tv, escudoLocal, escudoVisitante } = window._partidoData;
+
+  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+  const ordenPos = ['POR','DEF','MED','DEL'];
+
+  const renderJugadores = (jugadores) =>
+    [...jugadores]
+      .sort((a,b) => {
+        const ordenRol = { titular: 0, suplente: 1 };
+        if (ordenRol[a.rol] !== ordenRol[b.rol]) return ordenRol[a.rol] - ordenRol[b.rol];
+        if (a.posicion === 'ENT') return 1;
+        if (b.posicion === 'ENT') return -1;
+        return ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion);
+      })
+      .map(j =>
+        '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+          '<div style="width:6px;height:6px;border-radius:50%;background:' + (posColor[j.posicion]||'#fff') + ';flex-shrink:0"></div>' +
+          '<span style="font-size:11px;color:' + (j.rol === 'suplente' ? 'rgba(255,255,255,0.5)' : 'white') + ';flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + '</span>' +
+          '<span style="font-size:12px;font-weight:700;color:#4cd97b;flex-shrink:0">' + (j.total_jornada||0) + '</span>' +
+        '</div>'
+      ).join('');
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
+
+  tarjeta.innerHTML =
+    // Header
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
+      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
+      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
+      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.5)">J' + jornada + '</span>' +
+    '</div>' +
+    // Resultado
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;background:#1a2420;border-radius:10px;padding:12px">' +
+      '<div style="text-align:center;flex:1">' +
+        (escudoLocal ? '<img src="' + escudoLocal + '" width="32" height="32" style="object-fit:contain;margin-bottom:4px">' : '') +
+        '<div style="font-size:11px;font-weight:700;color:white">' + localNombre + '</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#4cd97b;margin-top:4px">' + tl + ' pts</div>' +
+      '</div>' +
+      '<div style="font-size:20px;font-weight:900;color:rgba(255,255,255,0.3);padding:0 8px">' + (marcador.trim() || 'vs') + '</div>' +
+      '<div style="text-align:center;flex:1">' +
+        (escudoVisitante ? '<img src="' + escudoVisitante + '" width="32" height="32" style="object-fit:contain;margin-bottom:4px">' : '') +
+        '<div style="font-size:11px;font-weight:700;color:white">' + visitanteNombre + '</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#4cd97b;margin-top:4px">' + tv + ' pts</div>' +
+      '</div>' +
+    '</div>' +
+    // Jugadores
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+      '<div>' + renderJugadores(localJugadores) + '</div>' +
+      '<div>' + renderJugadores(visitanteJugadores) + '</div>' +
+    '</div>' +
+    '<div style="margin-top:14px;text-align:center;font-size:10px;color:#4a5e58">asturfantasy.com</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], localAbrev + '_vs_' + visitanteAbrev + '_J' + jornada + '.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: localNombre + ' vs ' + visitanteNombre + ' · J' + jornada + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = localAbrev + '_vs_' + visitanteAbrev + '_J' + jornada + '.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al compartir');
+  }
+}
