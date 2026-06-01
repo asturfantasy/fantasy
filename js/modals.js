@@ -188,7 +188,7 @@ function desgloseFn(j) {
   items.push({ label: 'Amarillas (' + (j.amarilla || 0) + ')', pts: (j.amarilla || 0) * -1 });
   items.push({ label: 'Doble amarilla (' + (j.doble_amarilla || 0) + ')', pts: (j.doble_amarilla || 0) * -3 });
   items.push({ label: 'Roja directa (' + (j.roja || 0) + ')', pts: (j.roja || 0) * -5 });
-  if (j.posicion === 'POR' || j.posicion === 'DEF') items.push({ label: 'Goles encajados (' + (j.goles_encajados || 0) + ')', pts: -Math.floor((j.goles_encajados || 0) / 2) });
+  if (['POR', 'DEF', 'MED'].includes(j.posicion)) items.push({ label: 'Goles encajados (' + (j.goles_encajados || 0) + ')', pts: (j.posicion === 'POR' || j.posicion === 'DEF') ? -Math.floor((j.goles_encajados || 0) / 2) : 0 });
   return items;
 }
 
