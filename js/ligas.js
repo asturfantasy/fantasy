@@ -39,12 +39,12 @@ async function loadLigas() {
 
 function ligaCardHtml(l) {
   return '<div class="liga-card" id="liga-card-' + l.id + '" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">' +
-    // Header de la card
     '<div onclick="toggleLigaCard(\'' + l.id + '\')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer">' +
       '<div>' +
         '<div style="font-size:14px;font-weight:700;color:var(--text)">' + l.nombre + '</div>' +
         '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px">' +
           'Código: <strong style="color:var(--neon);letter-spacing:2px">' + l.codigo + '</strong>' +
+          ' · <span id="liga-info-' + l.id + '" style="color:var(--text-muted)">cargando...</span>' +
         '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
@@ -52,10 +52,8 @@ function ligaCardHtml(l) {
         '<i class="ti ti-chevron-down" id="chevron-liga-' + l.id + '" style="font-size:18px;color:var(--text-muted);transition:transform 0.2s"></i>' +
       '</div>' +
     '</div>' +
-    // Contenido expandible
     '<div id="liga-detail-' + l.id + '" style="display:none;border-top:1px solid var(--border)">' +
       '<div id="tabla-liga-' + l.id + '" style="max-height:320px;overflow-y:auto"></div>' +
-      // Botones de acción
       '<div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">' +
         '<button onclick="compartirClasificacion(null, null, null, \'liga\', null, \'' + l.id + '\', \'' + l.nombre + '\')" style="flex:1;padding:8px;background:var(--green-brand);color:white;border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-share"></i> Compartir</button>' +
         (l.creador_id === currentUser?.id
@@ -81,11 +79,19 @@ async function cargarClasificacionLiga(ligaId) {
 
   const { data: miembros } = await db.from('liga_miembros').select('user_id').eq('liga_id', ligaId);
   const userIds = (miembros || []).map(m => m.user_id);
+  const total = userIds.length;
 
-  if (!userIds.length) { container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:12px">Sin miembros</div>'; return; }
+  if (!total) { container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:12px">Sin miembros</div>'; return; }
 
   const { data: general } = await db.from('clasificacion_general_auto').select('*').in('user_id', userIds);
   const sorted = (general || []).sort((a, b) => b.puntos_total - a.puntos_total);
+  const miPos = sorted.findIndex(r => r.user_id === currentUser.id) + 1;
+
+  // Actualizar header de la card con miembros y posición
+  const headerInfo = document.getElementById('liga-info-' + ligaId);
+  if (headerInfo) {
+    headerInfo.textContent = miPos + 'º / ' + total + ' participantes';
+  }
 
   const medalColor = (i) => i === 0 ? '#e3b341' : i === 1 ? '#8b949e' : i === 2 ? '#cd7f32' : 'var(--text-muted)';
 
@@ -138,6 +144,7 @@ function mostrarUnirLiga() {
 async function crearLiga() {
   const nombre = document.getElementById('nueva-liga-nombre')?.value.trim();
   if (!nombre) { showToast('Escribe un nombre para la liga', true); return; }
+  if (nombre.includes("'") || nombre.includes('"')) { showToast('El nombre no puede contener comillas', true); return; }
 
   const { data: misLigas } = await db.from('liga_miembros').select('liga_id').eq('user_id', currentUser.id);
   if ((misLigas || []).length >= MAX_LIGAS) { showToast('Máximo ' + MAX_LIGAS + ' ligas por usuario', true); return; }
