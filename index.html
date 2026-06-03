@@ -316,6 +316,7 @@
             <button class="ranking-subtab active" data-subtab="general" onclick="cambiarSubtab('general')">General</button>
             <button class="ranking-subtab" data-subtab="semanal" onclick="cambiarSubtab('semanal')">Jornada</button>
             <button class="ranking-subtab" data-subtab="pena" onclick="cambiarSubtab('pena')">Tu club</button>
+            <button class="ranking-subtab" data-subtab="ligas" onclick="cambiarSubtab('ligas')">Ligas</button>
         </div>
         <div id="subtab-general">
             <table class="ranking-table">
@@ -341,6 +342,9 @@
                 <thead><tr><th>#</th><th>Equipo</th><th style="text-align:right">Total</th></tr></thead>
                 <tbody id="ranking-pena-body"></tbody>
             </table>
+        </div>
+        <div id="subtab-ligas" style="display:none">
+            <div id="rtab-ligas"></div>
         </div>
     </main>
 </div>
@@ -640,6 +644,7 @@
 <script src="js/lineup.js"></script>
 <script src="js/myteam.js"></script>
 <script src="js/ranking.js"></script>
+<script src="js/ligas.js"></script>
 <script src="js/comparador.js"></script>
 <script src="js/auth.js"></script>
 <script>

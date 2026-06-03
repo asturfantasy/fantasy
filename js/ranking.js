@@ -12,7 +12,7 @@ function toggleRankingCard(id) {
 }
 
 function cambiarSubtab(tab) {
-  ['general','semanal','pena'].forEach(t => {
+  ['general','semanal','pena','ligas'].forEach(t => {
     const el = document.getElementById('subtab-' + t);
     if (el) el.style.display = t === tab ? 'block' : 'none';
   });
@@ -134,6 +134,7 @@ async function loadRankingClasificacion() {
           }).join('');
     }
   }
+  loadLigas();
 }
 
 async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
@@ -387,19 +388,101 @@ async function exportarMVP() {
   }
 }
 
-async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club) {
-  const emoji = posicion === 1 ? '🥇' : posicion === 2 ? '🥈' : posicion === 3 ? '🥉' : '⚽';
-  let texto;
+async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club, ligaId, ligaNombre) {
+  // Obtener datos completos según el tipo
+  let tabla = [];
+  let titulo = '';
+  let subtitulo = '';
+
   if (tipo === 'jornada') {
-    texto = emoji + ' ¡He quedado ' + posicion + 'º esta jornada en AsturFantasy con ' + puntos + ' puntos!\n🏆 Equipo: ' + nombreEquipo + '\nasturfantasy.com';
+    const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+    const { data } = await db.from('clasificacion_automatica').select('nombre_equipo, puntos, user_id').eq('jornada', jornadaRanking).order('puntos', { ascending: false });
+    tabla = (data || []).map((r, i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos, esYo: r.user_id === currentUser?.id }));
+    titulo = 'Jornada ' + jornadaRanking;
+    subtitulo = 'Clasificación semanal';
   } else if (tipo === 'pena') {
+    const { data: penaAll } = await db.from('clasificacion_general_auto').select('*');
+    const { data: equiposFav } = await db.from('equipos').select('user_id').eq('equipo_favorito', club);
+    const userIdsFav = new Set((equiposFav || []).map(e => e.user_id));
+    const filtrada = (penaAll || []).filter(r => userIdsFav.has(r.user_id));
+    tabla = filtrada.map((r, i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos_total, esYo: r.user_id === currentUser?.id }));
     const nombreClub = CLUBES_INFO[club]?.nombre || club || 'tu club';
-    texto = emoji + ' ¡Voy ' + posicion + 'º en la liga de fans del ' + nombreClub + ' en AsturFantasy!\n🏆 Equipo: ' + nombreEquipo + ' · ' + puntos + ' pts\nasturfantasy.com';
+    titulo = nombreClub;
+    subtitulo = 'Liga de peña';
   } else {
-    texto = emoji + ' ¡Voy ' + posicion + 'º en la clasificación general de AsturFantasy con ' + puntos + ' puntos!\n🏆 Equipo: ' + nombreEquipo + '\nasturfantasy.com';
+    const { data } = await db.from('clasificacion_general_auto').select('*');
+    tabla = (data || []).map((r, i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos_total, esYo: r.user_id === currentUser?.id }));
+    titulo = 'Clasificación general';
+    subtitulo = 'AsturFantasy';
   }
-  if (navigator.share) await navigator.share({ text: texto });
-  else { await navigator.clipboard.writeText(texto); showToast('Copiado al portapapeles'); }
+  if (tipo === 'liga') {
+    const ligaId = arguments[5];
+    const ligaNombre = arguments[6];
+    const { data: miembros } = await db.from('liga_miembros').select('user_id').eq('liga_id', ligaId);
+    const userIds = (miembros || []).map(m => m.user_id);
+    const { data } = await db.from('clasificacion_general_auto').select('*').in('user_id', userIds);
+    tabla = (data || []).sort((a,b) => b.puntos_total - a.puntos_total).map((r,i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos_total, esYo: r.user_id === currentUser?.id }));
+    titulo = ligaNombre;
+    subtitulo = 'Liga privada';
+  }
+
+  const top10 = tabla.slice(0, 10);
+  const yo = tabla.find(r => r.esYo);
+  const yoEnTop10 = yo && yo.pos <= 10;
+
+  const medalColor = (pos) => pos === 1 ? '#e3b341' : pos === 2 ? '#8b949e' : pos === 3 ? '#cd7f32' : 'rgba(255,255,255,0.3)';
+
+  const filaHtml = (r, destacado = false) =>
+    '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;' + (destacado ? 'background:rgba(0,217,126,0.12);border-radius:6px;' : '') + '">' +
+      '<div style="width:20px;font-family:monospace;font-size:11px;font-weight:700;color:' + medalColor(r.pos) + ';flex-shrink:0;text-align:right">' + r.pos + '</div>' +
+      '<div style="flex:1;font-size:11px;color:' + (destacado ? '#4cd97b' : 'white') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.nombre + '</div>' +
+      '<div style="font-size:12px;font-weight:700;color:' + (destacado ? '#4cd97b' : 'white') + ';flex-shrink:0">' + r.pts + '</div>' +
+    '</div>';
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
+
+  tarjeta.innerHTML =
+    // Header
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
+      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="22" height="22" style="border-radius:6px">' +
+      '<span style="color:white;font-weight:700;font-size:12px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
+      '<span style="margin-left:auto;font-size:10px;color:rgba(255,255,255,0.4)">' + subtitulo + '</span>' +
+    '</div>' +
+    // Título
+    '<div style="font-size:15px;font-weight:800;color:white;margin-bottom:12px">' + titulo + '</div>' +
+    // Top 10
+    '<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:' + (!yoEnTop10 && yo ? '8px' : '14px') + '">' +
+      top10.map(r => filaHtml(r, r.esYo)).join('') +
+    '</div>' +
+    // Mi posición si no estoy en top 10
+    (!yoEnTop10 && yo
+      ? '<div style="border-top:1px dashed rgba(255,255,255,0.1);padding-top:8px;margin-bottom:14px">' +
+          '<div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1px;margin-bottom:4px;padding-left:12px">TU POSICIÓN</div>' +
+          filaHtml(yo, true) +
+        '</div>'
+      : '') +
+    // Footer
+    '<div style="text-align:center;font-size:9px;color:#4a5e58">asturfantasy.com</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], 'clasificacion_' + (tipo || 'general') + '.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: titulo + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'clasificacion.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al compartir');
+  }
 }
 
 async function loadRankingJugadores() {
