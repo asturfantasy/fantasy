@@ -12,7 +12,7 @@ function toggleRankingCard(id) {
 }
 
 function cambiarSubtab(tab) {
-  ['general','semanal','pena'].forEach(t => {
+  ['general','semanal','pena','ligas'].forEach(t => {
     const el = document.getElementById('subtab-' + t);
     if (el) el.style.display = t === tab ? 'block' : 'none';
   });
@@ -134,6 +134,7 @@ async function loadRankingClasificacion() {
           }).join('');
     }
   }
+  loadLigas();
 }
 
 async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
