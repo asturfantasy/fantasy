@@ -12,7 +12,7 @@ function toggleRankingCard(id) {
 }
 
 function cambiarSubtab(tab) {
-  ['general','semanal','pena','ligas'].forEach(t => {
+  ['general','semanal','pena'].forEach(t => {
     const el = document.getElementById('subtab-' + t);
     if (el) el.style.display = t === tab ? 'block' : 'none';
   });
@@ -134,7 +134,6 @@ async function loadRankingClasificacion() {
           }).join('');
     }
   }
-  loadLigas();
 }
 
 async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
@@ -167,6 +166,7 @@ async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
   const orden = ['POR','DEF','MED','DEL','ENT'];
   const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion));
   const totalPuntos = sorted.reduce((acc, j) => acc + (j.jugador_id === capitanId ? (j.puntos||0) * 2 : (j.puntos||0)), 0);
+  const totalValor = sorted.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0).toFixed(1);
   const formacion = data[0]?.formacion || '—';
 
   const posColor = { POR:'var(--pos-gk)', DEF:'var(--pos-def)', MED:'var(--pos-mid)', DEL:'var(--pos-fwd)', ENT:'var(--pos-ent)' };
@@ -180,6 +180,7 @@ async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
       '<div style="text-align:right">' +
         '<div style="font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--neon);line-height:1">' + totalPuntos + '</div>' +
         '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px">PTS</div>' +
+        '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:4px">Valor: <strong style="color:var(--amber)">' + totalValor + 'M</strong></div>' +
       '</div>' +
     '</div>' +
     sorted.map(j => {
@@ -194,7 +195,7 @@ async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
         '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--text)">' + j.nombre + (esC ? ' ⭐' : '') + '</div>' +
-          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + (esC ? ' · Cap.' : '') + '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + (esC ? ' · Cap.' : '') + ' · <span style="color:var(--amber)">' + (parseFloat(j.valor) || 0) + 'M</span></div>' +
         '</div>' +
         '<div style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--neon)">' + pts + '</div>' +
       '</div>';
