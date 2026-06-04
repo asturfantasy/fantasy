@@ -239,6 +239,18 @@
             </div>
         </div>
 
+        <!-- TARJETA: LIGAS PRIVADAS -->
+        <div class="ranking-card" id="ranking-card-ligas">
+            <div class="ranking-card-header" onclick="goTo('ranking-ligas')">
+                <div class="ranking-card-icon"><i class="ti ti-lock" style="color:var(--green-light)"></i></div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Ligas privadas</div>
+                    <div class="ranking-card-sub">Compite con amigos en tu propia liga</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
         <!-- TARJETA 2: RANKING DE JUGADORES -->
         <div class="ranking-card" id="ranking-card-jugadores">
             <div class="ranking-card-header" onclick="goTo('ranking-jugadores')">
@@ -316,7 +328,6 @@
             <button class="ranking-subtab active" data-subtab="general" onclick="cambiarSubtab('general')">General</button>
             <button class="ranking-subtab" data-subtab="semanal" onclick="cambiarSubtab('semanal')">Jornada</button>
             <button class="ranking-subtab" data-subtab="pena" onclick="cambiarSubtab('pena')">Tu club</button>
-            <button class="ranking-subtab" data-subtab="ligas" onclick="cambiarSubtab('ligas')">Ligas</button>
         </div>
         <div id="subtab-general">
             <table class="ranking-table">
@@ -343,9 +354,20 @@
                 <tbody id="ranking-pena-body"></tbody>
             </table>
         </div>
-        <div id="subtab-ligas" style="display:none">
-            <div id="rtab-ligas"></div>
-        </div>
+    </main>
+</div>
+
+<!--LIGAS PRIVADAS -->
+<div id="screen-ranking-ligas" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Ligas privadas</span>
+    </div>
+    <main class="page-body">
+        <div id="rtab-ligas"></div>
     </main>
 </div>
 

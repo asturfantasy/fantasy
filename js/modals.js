@@ -233,7 +233,7 @@ async function mostrarHistorial(nombre, club, posicion) {
   });
 
   const { data, error } = await db.from('jugadores')
-    .select('jornada, total_jornada, escudo_url, foto_url, rival, es_local, gol, penalti_marcado, penalti_fallado, gol_pp, asistencia, amarilla, doble_amarilla, roja, puerta_cero, minutos, rol, goles_encajados, puntos_entrenador')
+    .select('jornada, total_jornada, valor, escudo_url, foto_url, rival, es_local, gol, penalti_marcado, penalti_fallado, gol_pp, asistencia, amarilla, doble_amarilla, roja, puerta_cero, minutos, rol, goles_encajados, puntos_entrenador')
     .eq('nombre', nombre).eq('club', club)
     .in('jornada', jornadasPublicadas)
     .order('jornada', { ascending: true });
@@ -374,6 +374,36 @@ async function mostrarHistorial(nombre, club, posicion) {
 
   modal._historialData = { nombre, club, posicion, foto, escudo, total, maxPts, data };
 
+  // Preparar datos para la gráfica SVG
+  const valoresData = data.filter(d => d.valor != null);
+  const graficaValorHtml = () => {
+    if (valoresData.length < 2) return '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:12px">No hay suficientes datos</div>';
+    const W = 280, H = 80, PAD = 10;
+    const valores = valoresData.map(d => parseFloat(d.valor));
+    const minV = Math.min(...valores) - 0.2;
+    const maxV = Math.max(...valores) + 0.2;
+    const xStep = (W - PAD * 2) / (valoresData.length - 1);
+    const yScale = (v) => H - PAD - ((v - minV) / (maxV - minV)) * (H - PAD * 2);
+    const points = valoresData.map((d, i) => `${PAD + i * xStep},${yScale(parseFloat(d.valor))}`).join(' ');
+    const areaPoints = `${PAD},${H} ` + valoresData.map((d, i) => `${PAD + i * xStep},${yScale(parseFloat(d.valor))}`).join(' ') + ` ${PAD + (valoresData.length - 1) * xStep},${H}`;
+    const lastVal = valores[valores.length - 1];
+    const firstVal = valores[0];
+    const trend = lastVal >= firstVal ? '#e3b341' : '#f05e5e';
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:80px">
+      <defs>
+        <linearGradient id="gradValor" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${trend}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="${trend}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${areaPoints}" fill="url(#gradValor)"/>
+      <polyline points="${points}" fill="none" stroke="${trend}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${valoresData.map((d, i) => `<circle cx="${PAD + i * xStep}" cy="${yScale(parseFloat(d.valor))}" r="3" fill="${trend}"/>
+        <text x="${PAD + i * xStep}" y="${H - 1}" text-anchor="middle" font-size="7" fill="#7a9088">J${d.jornada}</text>`).join('')}
+      <text x="${PAD + (valoresData.length - 1) * xStep}" y="${yScale(lastVal) - 6}" text-anchor="end" font-size="9" font-weight="bold" fill="${trend}">${lastVal}M</text>
+    </svg>`;
+  };
+
   content.innerHTML =
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">' +
       '<div style="width:56px;height:56px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px;color:var(--text-muted);flex-shrink:0;position:relative">' +
@@ -388,8 +418,17 @@ async function mostrarHistorial(nombre, club, posicion) {
     statsCards +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
       '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:1px">TOTAL: <strong style="color:var(--neon)">' + total + ' pts</strong></span>' +
-      '<button onclick="compartirHistorial()" style="background:var(--green-brand);color:white;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-share" style="font-size:15px"></i> Compartir</button>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button id="btn-toggle-valor" onclick="toggleGraficaValor()" style="background:var(--surface2);color:var(--amber);border:1px solid rgba(227,179,65,0.3);border-radius:8px;padding:8px 12px;font-family:var(--font-display);font-weight:700;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="ti ti-trending-up" style="font-size:14px"></i> Valor</button>' +
+        '<button onclick="compartirHistorial()" style="background:var(--green-brand);color:white;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-share" style="font-size:15px"></i> Compartir</button>' +
+      '</div>' +
     '</div>' +
+    // Gráfica de valor (oculta por defecto)
+    '<div id="grafica-valor" style="display:none;background:var(--bg2);border:1px solid rgba(227,179,65,0.2);border-radius:10px;padding:12px;margin-bottom:14px">' +
+      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);letter-spacing:1px;margin-bottom:8px">EVOLUCIÓN DE VALOR</div>' +
+      graficaValorHtml() +
+    '</div>' +
+    // Barras de puntos
     data.map(d => {
       const marcador = getMarcador(d);
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
@@ -407,6 +446,17 @@ async function mostrarHistorial(nombre, club, posicion) {
         iconos(d) +
       '</div>';
     }).join('');
+}
+
+function toggleGraficaValor() {
+  const grafica = document.getElementById('grafica-valor');
+  const btn = document.getElementById('btn-toggle-valor');
+  if (!grafica) return;
+  const visible = grafica.style.display !== 'none';
+  grafica.style.display = visible ? 'none' : 'block';
+  btn.innerHTML = visible
+    ? '<i class="ti ti-trending-up" style="font-size:14px"></i> Valor'
+    : '<i class="ti ti-trending-up" style="font-size:14px"></i> Ocultar';
 }
 
 document.getElementById('historial-close')?.addEventListener('click', () => document.getElementById('modal-historial').classList.remove('open'));
