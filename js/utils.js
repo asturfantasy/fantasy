@@ -13,10 +13,10 @@ let equipoFavoritoSeleccionado = null;
 let toastTimeout = null;
 
 const CLUBES_INFO = {
-  CAU: { nombre: 'Caudal Deportivo',  escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/caudal_deportivo.png' },
-  COV: { nombre: 'Covadonga',         escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/covadonga.png' },
-  MOS: { nombre: 'Mosconia',          escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/mosconia.png' },
-  SPO: { nombre: 'Sporting Atlético', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/sporting_atletico.png' },
+  CAU: { nombre: 'Caudal Deportivo',  escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CAU.png' },
+  COV: { nombre: 'Covadonga',         escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COV.png' },
+  MOS: { nombre: 'Mosconia',          escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/MOS.png' },
+  SPO: { nombre: 'Sporting Atlético', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SPO.png' },
 };
 
 // Variables de alineación compartidas
