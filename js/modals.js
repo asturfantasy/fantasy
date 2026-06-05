@@ -175,7 +175,7 @@ function desgloseFn(j) {
   const lnePts = j.lne === 1 ? 1 : j.lne === 2 ? 2 : j.lne === 3 ? 4 : 0;
   items.push({ label: 'Minutos (' + (j.minutos || 0) + ')', pts: (j.minutos || 0) >= 60 ? 2 : (j.minutos || 0) > 0 ? 1 : 0 });
   if (pcPts > 0) items.push({ label: 'Portería a cero', pts: (j.puerta_cero && (j.minutos || 0) >= 60) ? pcPts : 0 });
-  items.push({ label: 'Nota LNE (' + (j.lne || 0) + ')', pts: lnePts });
+  items.push({ label: 'Nota La Mina del Fútbol (' + (j.lne || 0) + ')', pts: lnePts });
   items.push({ label: 'Goles (' + (j.gol || 0) + ')', pts: (j.gol || 0) * golPts });
   items.push({ label: 'Gol de penalti (' + (j.penalti_marcado || 0) + ')', pts: (j.penalti_marcado || 0) * 3 });
   if (j.posicion === 'POR') {
