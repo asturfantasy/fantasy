@@ -69,24 +69,136 @@ async function loadLineup() {
   jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
   (data || []).forEach(j => { if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j); });
   Object.keys(jugadoresPorPos).forEach(pos => { jugadoresPorPos[pos].sort((a, b) => (b.puntos_total ?? 0) - (a.puntos_total ?? 0)); });
-  if (currentUser) {
-    const { data: eg } = await db.from('mi_equipo').select('jugador_id, formacion, capitan').eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
-    if (eg?.length) {
-      document.getElementById('formation-select').value = eg[0].formacion;
-      const contadores = { POR:0, DEF:0, MED:0, DEL:0, ENT:0 };
-      const idsG = eg.map(e => e.jugador_id);
-      const jg = data.filter(j => idsG.includes(j.id));
-      const ordenPos = ['POR','DEF','MED','DEL','ENT'];
-      jg.sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion))
-        .forEach(j => { const slotId = j.posicion + '-' + contadores[j.posicion]; seleccionados[slotId] = j; contadores[j.posicion]++; });
-      const capG = eg.find(e => e.capitan === true || e.capitan === 1);
-      const capId = capG ? capG.jugador_id : null;
-      actualizarSelectCapitan();
-      if (capId) document.getElementById('capitan-select').value = capId;
-      capitan = capId;
+
+    if (currentUser) {
+      const { data: eg } = await db.from('mi_equipo').select('jugador_id, formacion, capitan').eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
+
+      if (eg?.length) {
+        // Ya tiene equipo guardado para esta jornada — cargarlo normalmente
+        document.getElementById('formation-select').value = eg[0].formacion;
+        const contadores = { POR:0, DEF:0, MED:0, DEL:0, ENT:0 };
+        const idsG = eg.map(e => e.jugador_id);
+        const jg = data.filter(j => idsG.includes(j.id));
+        const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+        jg.sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion))
+          .forEach(j => { const slotId = j.posicion + '-' + contadores[j.posicion]; seleccionados[slotId] = j; contadores[j.posicion]++; });
+        const capG = eg.find(e => e.capitan === true || e.capitan === 1);
+        const capId = capG ? capG.jugador_id : null;
+        actualizarSelectCapitan();
+        if (capId) document.getElementById('capitan-select').value = capId;
+        capitan = capId;
+
+      } else {
+        // No tiene equipo — intentar copiar el de la jornada anterior
+        const { data: egAnterior } = await db.from('mi_equipo')
+          .select('jugador_id, formacion, capitan')
+          .eq('user_id', currentUser.id)
+          .eq('jornada', JORNADA_ACTIVA - 1);
+
+        let equipoGenerado = false;
+
+        if (egAnterior?.length) {
+          // Buscar los jugadores del equipo anterior en la jornada actual
+          const idsAnt = egAnterior.map(e => e.jugador_id);
+          const jugadoresAnt = data.filter(j => idsAnt.includes(j.id));
+
+          // Comprobar que todos los jugadores existen en la jornada actual y caben en presupuesto
+          const todosExisten = idsAnt.every(id => jugadoresAnt.some(j => j.id === id));
+          const costeTotal = jugadoresAnt.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0);
+
+          if (todosExisten && costeTotal <= PRESUPUESTO) {
+            // Copiar equipo anterior
+            const formacion = egAnterior[0].formacion;
+            document.getElementById('formation-select').value = formacion;
+            const contadores = { POR:0, DEF:0, MED:0, DEL:0, ENT:0 };
+            const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+            jugadoresAnt.sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion))
+              .forEach(j => { const slotId = j.posicion + '-' + contadores[j.posicion]; seleccionados[slotId] = j; contadores[j.posicion]++; });
+            const capAnt = egAnterior.find(e => e.capitan === true || e.capitan === 1);
+            const capId = capAnt ? capAnt.jugador_id : null;
+            actualizarSelectCapitan();
+            if (capId) document.getElementById('capitan-select').value = capId;
+            capitan = capId;
+
+            // Guardar automáticamente en BD
+            await db.from('mi_equipo').insert(
+              jugadoresAnt.map(j => ({
+                user_id: currentUser.id,
+                jugador_id: j.id,
+                jornada: JORNADA_ACTIVA,
+                formacion,
+                capitan: capitan === j.id
+              }))
+            );
+            equipoGenerado = true;
+            showToast('Equipo de la jornada anterior cargado automáticamente');
+          }
+        }
+
+        if (!equipoGenerado) {
+          // Generar once automático entre 40-85% del presupuesto
+          const presupuestoMin = PRESUPUESTO * 0.40;
+          const presupuestoMax = PRESUPUESTO * 0.85;
+          const formacion = '4-3-3';
+          document.getElementById('formation-select').value = formacion;
+          const necesarios = { POR:1, DEF:4, MED:3, DEL:3, ENT:1 };
+          const selAuto = {};
+          const usadosAuto = new Set();
+          let costeAuto = 0;
+
+          const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+          let exito = true;
+
+          for (const pos of ordenPos) {
+            const cantidad = necesarios[pos];
+            const candidatos = (jugadoresPorPos[pos] || [])
+              .filter(j => !usadosAuto.has(j.id) && j.activo !== 0 && j.activo !== '0')
+              .sort((a, b) => (parseFloat(a.valor) || 0) - (parseFloat(b.valor) || 0));
+
+            let selPos = [];
+            let costePos = 0;
+            for (const j of candidatos) {
+              if (selPos.length >= cantidad) break;
+              if (costeAuto + costePos + (parseFloat(j.valor) || 0) <= presupuestoMax) {
+                selPos.push(j);
+                costePos += parseFloat(j.valor) || 0;
+              }
+            }
+
+            if (selPos.length < cantidad) { exito = false; break; }
+
+            selPos.forEach((j, i) => {
+              selAuto[pos + '-' + i] = j;
+              usadosAuto.add(j.id);
+              costeAuto += parseFloat(j.valor) || 0;
+            });
+          }
+
+          if (exito && costeAuto >= presupuestoMin) {
+            seleccionados = selAuto;
+            // Elegir capitán: el DEL con más puntos históricos
+            const delanteros = Object.values(selAuto).filter(j => j.posicion === 'DEL');
+            const capAuto = delanteros.sort((a,b) => (b.puntos_total||0) - (a.puntos_total||0))[0];
+            capitan = capAuto?.id || null;
+            actualizarSelectCapitan();
+            if (capitan) document.getElementById('capitan-select').value = capitan;
+
+            // Guardar automáticamente en BD
+            await db.from('mi_equipo').insert(
+              Object.values(selAuto).map(j => ({
+                user_id: currentUser.id,
+                jugador_id: j.id,
+                jornada: JORNADA_ACTIVA,
+                formacion,
+                capitan: capitan === j.id
+              }))
+            );
+            showToast('Equipo generado automáticamente — ¡puedes modificarlo!');
+          }
+        }
+      }
     }
-  }
-  setTimeout(() => { renderPitch(); actualizarPresupuesto(); }, 100);
+    setTimeout(() => { renderPitch(); actualizarPresupuesto(); }, 100);
 }
 
 async function exportarAlineacion() {
