@@ -135,44 +135,44 @@ async function loadLineup() {
           }
         }
 
-        if (!equipoGenerado) {
-          // Generar once automático entre 40-85% del presupuesto
-          const presupuestoMin = PRESUPUESTO * 0.40;
-          const presupuestoMax = PRESUPUESTO * 0.85;
-          const formacion = '4-3-3';
-          document.getElementById('formation-select').value = formacion;
-          const necesarios = { POR:1, DEF:4, MED:3, DEL:3, ENT:1 };
-          const selAuto = {};
-          const usadosAuto = new Set();
-          let costeAuto = 0;
+       if (!equipoGenerado) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+         const presupuestoMin = PRESUPUESTO * 0.40;
+         const presupuestoMax = PRESUPUESTO * 0.85;
+         const formacion = '4-3-3';
+         document.getElementById('formation-select').value = formacion;
+         const necesarios = { POR:1, DEF:4, MED:3, DEL:3, ENT:1 };
+         const selAuto = {};
+         const usadosAuto = new Set();
+         let costeAuto = 0;
 
-          const ordenPos = ['POR','DEF','MED','DEL','ENT'];
-          let exito = true;
+         const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+         let exito = true;
 
-          for (const pos of ordenPos) {
-            const cantidad = necesarios[pos];
-            const candidatos = (jugadoresPorPos[pos] || [])
-              .filter(j => !usadosAuto.has(j.id) && j.activo !== 0 && j.activo !== '0')
-              .sort((a, b) => (parseFloat(a.valor) || 0) - (parseFloat(b.valor) || 0));
+         for (const pos of ordenPos) {
+           const cantidad = necesarios[pos];
+           const candidatos = (jugadoresPorPos[pos] || [])
+             .filter(j => !usadosAuto.has(j.id) && j.activo !== 0 && j.activo !== '0')
+             .sort(() => Math.random() - 0.5);
 
-            let selPos = [];
-            let costePos = 0;
-            for (const j of candidatos) {
-              if (selPos.length >= cantidad) break;
-              if (costeAuto + costePos + (parseFloat(j.valor) || 0) <= presupuestoMax) {
-                selPos.push(j);
-                costePos += parseFloat(j.valor) || 0;
-              }
-            }
+           let selPos = [];
+           let costePos = 0;
+           for (const j of candidatos) {
+             if (selPos.length >= cantidad) break;
+             if (costeAuto + costePos + (parseFloat(j.valor) || 0) <= presupuestoMax) {
+               selPos.push(j);
+               costePos += parseFloat(j.valor) || 0;
+             }
+           }
 
-            if (selPos.length < cantidad) { exito = false; break; }
+           if (selPos.length < cantidad) { exito = false; break; }
 
-            selPos.forEach((j, i) => {
-              selAuto[pos + '-' + i] = j;
-              usadosAuto.add(j.id);
-              costeAuto += parseFloat(j.valor) || 0;
-            });
-          }
+           selPos.forEach((j, i) => {
+             selAuto[pos + '-' + i] = j;
+             usadosAuto.add(j.id);
+             costeAuto += parseFloat(j.valor) || 0;
+           });
+         }
 
           if (exito && costeAuto >= presupuestoMin) {
             seleccionados = selAuto;

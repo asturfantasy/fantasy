@@ -304,6 +304,9 @@
             <div style="display:flex;gap:8px;margin-top:16px">
               <button class="btn btn-primary" id="btn-publicar-todos"><i class="ti ti-eye"></i> Publicar todos los partidos de la jornada</button>
               <button class="btn btn-danger" id="btn-despublicar-todos"><i class="ti ti-eye-off"></i> Despublicar todos</button>
+              <button id="btn-generar-equipos" class="btn" onclick="generarEquipos(parseInt(document.getElementById('select-jornada-publicar').value))">
+                <i class="ti ti-users"></i> Generar equipos automáticos
+              </button>
             </div>
           </div>
         </div>
@@ -874,6 +877,27 @@
     if (error) showToast('Error: ' + error.message, true);
     else { showToast(valor ? 'Jornada publicada' : 'Jornada ocultada'); cargarListaPublicar(jornada); }
   }
+
+async function generarEquipos(jornada) {
+  const jornadaSiguiente = jornada + 1;
+  if (!confirm('¿Generar equipos automáticos para la jornada ' + jornadaSiguiente + '?')) return;
+  const password = prompt('Contraseña API:');
+  if (!password) return;
+  const btn = document.getElementById('btn-generar-equipos');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Generando...';
+  const fd = new FormData();
+  fd.append('password', password);
+  fd.append('jornada', String(jornadaSiguiente));
+  try {
+    const r = await fetch(API_URL + '/generar-equipos', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (data.ok) showToast('✓ Equipos J' + jornadaSiguiente + ' generados');
+    else showToast('Error: ' + (data.stderr || data.error), true);
+  } catch(e) {
+    showToast('Error de conexión', true);
+  }
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-users"></i> Generar equipos J' + jornadaSiguiente;
+}
 
   /* ── CLASIFICACIÓN ── */
   async function cargarClasificacion() {
