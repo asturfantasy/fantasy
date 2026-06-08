@@ -172,7 +172,7 @@ function desgloseFn(j) {
   if (j.posicion === 'ENT') { items.push({ label: 'Puntos entrenador', pts: j.puntos_entrenador || 0 }); return items; }
   const pcPts = j.posicion === 'POR' || j.posicion === 'DEF' ? 4 : j.posicion === 'MED' ? 2 : 0;
   const golPts = j.posicion === 'POR' ? 6 : j.posicion === 'DEF' ? 5 : j.posicion === 'MED' ? 4 : 3;
-  const lnePts = j.lne === 1 ? 1 : j.lne === 2 ? 2 : j.lne === 3 ? 4 : 0;
+  const lnePts = j.lne === 1 ? 1 : j.lne === 2 ? 2 : j.lne === 3 ? 4 : j.lne === 4 ? 6 : 0;
   items.push({ label: 'Minutos (' + (j.minutos || 0) + ')', pts: (j.minutos || 0) >= 60 ? 2 : (j.minutos || 0) > 0 ? 1 : 0 });
   if (pcPts > 0) items.push({ label: 'Portería a cero', pts: (j.puerta_cero && (j.minutos || 0) >= 60) ? pcPts : 0 });
   items.push({ label: 'Nota La Mina del Fútbol (' + (j.lne || 0) + ')', pts: lnePts });

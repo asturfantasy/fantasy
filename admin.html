@@ -1103,7 +1103,7 @@ async function generarEquipos(jornada) {
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">POS</div>' +
           '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">MIN</div>' +
-          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">NOTA LNE</div>' +
+          '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">NOTA LA MINA</div>' +
         '</div>' +
         sorted.map(j => {
           const valorado = j.lne && j.lne > 0;
@@ -1122,6 +1122,7 @@ async function generarEquipos(jornada) {
                 '<option value="1"' + (j.lne===1 ? ' selected' : '') + '>1</option>' +
                 '<option value="2"' + (j.lne===2 ? ' selected' : '') + '>2</option>' +
                 '<option value="3"' + (j.lne===3 ? ' selected' : '') + '>3</option>' +
+                '<option value="4"' + (j.lne===4 ? ' selected' : '') + '>4</option>' +
               '</select>' +
             '</div>' +
           '</div>';
