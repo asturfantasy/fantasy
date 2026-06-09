@@ -166,8 +166,13 @@ async function loadLineup() {
 
         for (const pos of ordenPos) {
           const cantidad = necesarios[pos];
+
+          const clubsEnSel = {};
+          Object.values(selAuto).forEach(j => { clubsEnSel[j.club] = (clubsEnSel[j.club] || 0) + 1; });
+
           const candidatos = (jugadoresPorPos[pos] || [])
-            .filter(j => !usadosAuto.has(j.id) && j.activo !== 0 && j.activo !== '0')
+            .filter(j => !usadosAuto.has(j.id) && j.activo !== 0 && j.activo !== '0'
+              && (clubsEnSel[j.club] || 0) < 2)
             .sort(() => Math.random() - 0.5);
 
           let selPos = [];
@@ -329,6 +334,13 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   const { def, mid, fwd } = FORMACIONES[formacion];
   if (Object.keys(seleccionados).length < 1 + def + mid + fwd + 1) { showToast('¡Faltan jugadores por seleccionar!', true); return; }
   if (Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0) > PRESUPUESTO) { showToast('Has superado el presupuesto', true); return; }
+
+  // Comprobar máximo 2 jugadores por club
+  const clubCount = {};
+  Object.values(seleccionados).forEach(j => { clubCount[j.club] = (clubCount[j.club] || 0) + 1; });
+  const clubExcedido = Object.entries(clubCount).find(([club, count]) => count > 2);
+  if (clubExcedido) { showToast('Máximo 2 jugadores del mismo club (' + clubExcedido[0] + ')', true); return; }
+
   const btn = document.getElementById('btn-save-lineup');
   btn.disabled = true; btn.textContent = 'GUARDANDO...';
   await db.from('mi_equipo').delete().eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);

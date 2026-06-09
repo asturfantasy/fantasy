@@ -13,10 +13,24 @@ let equipoFavoritoSeleccionado = null;
 let toastTimeout = null;
 
 const CLUBES_INFO = {
-  CAU: { nombre: 'Caudal Deportivo',  escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CAU.png' },
-  COV: { nombre: 'Covadonga',         escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COV.png' },
-  MOS: { nombre: 'Mosconia',          escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/MOS.png' },
-  SPO: { nombre: 'Sporting Atlético', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SPO.png' },
+  COV: { nombre: 'CD Covadonga',         escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COV.png' },
+  MOS: { nombre: 'CD Mosconia',          escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/MOS.png' },
+  EIS: { nombre: 'Sporting Atlético', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SPO.png' },
+  EIS: { nombre: 'EI San Martín', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/EIS.png' },
+  LEA: { nombre: 'CD Lealtad', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LEA.png' },
+  UPL: { nombre: 'UP Langreo', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/UPL.png' },
+  LEN: { nombre: 'LEntregu CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LEN.png' },
+  UCC: { nombre: 'UC Ceares', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/UCC.png' },
+  PRA: { nombre: 'CD Praviano', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/PRA.png' },
+  SIE: { nombre: 'Club Siero', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SIE.png' },
+  COL: { nombre: 'CD Colunga', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COL.png' },
+  LLA: { nombre: 'CD Llanes', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LLA.png' },
+  STA: { nombre: 'Avilés Stadium CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/STA.png' },
+  IND: { nombre: 'UD Gijón Industrial', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/IND.png' },
+  SDL: { nombre: 'SD Lenense', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SDL.png' },
+  RIB: { nombre: 'Ribadesella CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/RIB.png' },
+  AND: { nombre: 'Andés CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/AND.png' },
+  CON: { nombre: 'Condal CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CON.png' },
 };
 
 // Variables de alineación compartidas
