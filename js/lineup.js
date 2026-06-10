@@ -276,6 +276,8 @@ function openModal(slotId, posicion, cls) {
   const labels = { POR:'Portero', DEF:'Defensa', MED:'Mediocampista', DEL:'Delantero', ENT:'Entrenador' };
   document.getElementById('modal-title').textContent = 'Seleccionar ' + labels[posicion];
   const usados = new Set(Object.values(seleccionados).map(j => j.id));
+  const clubsCount = {};
+  Object.values(seleccionados).forEach(j => { clubsCount[j.club] = (clubsCount[j.club] || 0) + 1; });
   const list = document.getElementById('modal-list');
   const colores = { gk:'var(--pos-gk)', def:'var(--pos-def)', mid:'var(--pos-mid)', fwd:'var(--pos-fwd)', ent:'var(--pos-ent)' };
   const textoCols = { gk:'#0d1117', def:'white', mid:'#0d1117', fwd:'white', ent:'white' };
@@ -297,10 +299,11 @@ function openModal(slotId, posicion, cls) {
     const filtrados = jugadoresPorPos[posicion].filter(j => (j.nombre.toLowerCase().includes(filtro.toLowerCase()) || j.club.toLowerCase().includes(filtro.toLowerCase())) && (!soloDisp || (j.valor || 0) <= disponible));
     document.getElementById('modal-players').innerHTML = filtrados.map(j => {
       const usado = usados.has(j.id);
+      const clubLleno = !usado && (clubsCount[j.club] || 0) >= 2;
       const noD = j.activo === 0 || j.activo === '0';
       const bR = noD ? '3px solid rgba(220,38,38,0.9)' : '1px solid var(--border)';
       const esc = '<div style="position:relative;width:36px;height:36px;flex-shrink:0">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="36" height="36" style="object-fit:cover;border-radius:50%;border:' + bR + '" onerror="this.style.display=\'none\'">' : '<div style="width:36px;height:36px;border-radius:50%;background:' + colores[cls] + ';color:' + textoCols[cls] + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;border:' + bR + '">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="13" height="13" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + '</div>';
-      return '<div class="modal-player" data-id="' + j.id + '" data-slot="' + slotId + '" style="opacity:' + (usado ? '0.3' : '1') + ';pointer-events:' + (usado ? 'none' : 'auto') + '">' + esc + '<div><div class="modal-player-name">' + j.nombre + '</div><div class="modal-player-meta">' + j.club + ' · ' + j.posicion + (j.rival ? ' · vs ' + j.rival + ' (' + (j.es_local ? '🏠' : '✈️') + ')' : '') + '</div></div><div style="text-align:right"><div class="modal-player-pts">' + (j.puntos_total || 0) + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">' + (j.valor || 0) + 'M</div></div></div>';
+      return '<div class="modal-player" data-id="' + j.id + '" data-slot="' + slotId + '" style="opacity:' + (usado || clubLleno ? '0.3' : '1') + ';pointer-events:' + (usado || clubLleno ? 'none' : 'auto') + '">' + esc + '<div><div class="modal-player-name">' + j.nombre + '</div><div class="modal-player-meta">' + j.club + ' · ' + j.posicion + (j.rival ? ' · vs ' + j.rival + ' (' + (j.es_local ? '🏠' : '✈️') + ')' : '') + '</div></div><div style="text-align:right"><div class="modal-player-pts">' + (j.puntos_total || 0) + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">' + (j.valor || 0) + 'M</div></div></div>';
     }).join('');
     document.querySelectorAll('.modal-player').forEach(el => {
       el.addEventListener('click', () => { seleccionados[slotId] = jugadoresPorPos[posicion].find(j => j.id === el.dataset.id); cambiosSinGuardar = true; closeModal(); renderPitch(); actualizarSelectCapitan(); actualizarPresupuesto(); });
