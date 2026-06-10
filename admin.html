@@ -160,6 +160,7 @@
       <div class="nav-section">
         <div class="nav-section-label">Jornada</div>
         <div class="nav-item active" data-panel="jornada"><i class="ti ti-layout-dashboard"></i> Jornada activa</div>
+        <div class="nav-item" data-panel="jornadas"><i class="ti ti-calendar"></i> Deadlines</div>
         <div class="nav-item" data-panel="partidos"><i class="ti ti-ball-football"></i> Partidos</div>
         <div class="nav-item" data-panel="procesado"><i class="ti ti-cpu"></i> Procesar datos</div>
         <div class="nav-item" data-panel="publicar"><i class="ti ti-eye"></i> Publicar jornada</div>
@@ -204,21 +205,38 @@
           </div>
           <div class="section-body">
             <div class="form-grid" style="margin-bottom:14px">
-              <div class="form-group"><div class="form-label">Jornada activa</div><input class="form-input" id="cfg-jornada-activa" type="number" /></div>
-              <div class="form-group"><div class="form-label">Jornada visible</div><input class="form-input" id="cfg-jornada-visible" type="number" /></div>
-            </div>
-            <div class="form-grid" style="margin-bottom:14px">
-              <div class="form-group"><div class="form-label">Deadline</div><input class="form-input" id="cfg-deadline" type="datetime-local" /></div>
               <div class="form-group"><div class="form-label">Presupuesto (M)</div><input class="form-input" id="cfg-presupuesto" type="number" step="0.5" /></div>
+              <div class="form-group"><div class="form-label">Título jornada</div><input class="form-input" id="cfg-titulo" type="text" placeholder="Ej: Jornada 36 · Playoffs" /></div>
             </div>
             <div class="form-grid" style="margin-bottom:14px">
-              <div class="form-group"><div class="form-label">Título jornada</div><input class="form-input" id="cfg-titulo" type="text" placeholder="Ej: Jornada 36 · Playoffs" /></div>
               <div class="form-group"><div class="form-label">Mensaje aviso (opcional)</div><input class="form-input" id="cfg-mensaje" type="text" placeholder="Aviso visible en el home..." /></div>
-            </div>
-            <div class="form-grid">
               <div class="form-group"><div class="form-label">Fecha fin jornada</div><input class="form-input" id="cfg-fecha-fin" type="datetime-local" /></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- DEADLINES -->
+      <div class="panel" id="panel-jornadas">
+        <div class="page-header"><div class="page-title">Deadlines de jornadas</div></div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Añadir jornada</div>
+          </div>
+          <div class="section-body">
+            <div class="form-grid" style="margin-bottom:12px">
+              <div class="form-group"><div class="form-label">Nº Jornada</div><input class="form-input" id="nueva-jornada-num" type="number" placeholder="1" /></div>
+              <div class="form-group"><div class="form-label">Deadline</div><input class="form-input" id="nueva-jornada-deadline" type="datetime-local" /></div>
+            </div>
+            <button class="btn btn-primary" onclick="añadirJornada()"><i class="ti ti-plus"></i> Añadir</button>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">Jornadas configuradas</div></div>
+          <table class="admin-table">
+            <thead><tr><th>Jornada</th><th>Deadline</th><th></th></tr></thead>
+            <tbody id="tabla-jornadas"></tbody>
+          </table>
         </div>
       </div>
 
@@ -513,6 +531,7 @@
       item.classList.add('active');
       document.getElementById('panel-' + item.dataset.panel).classList.add('active');
       if (item.dataset.panel === 'partidos') cargarPartidos();
+      if (item.dataset.panel === 'jornadas') cargarJornadas();
       if (item.dataset.panel === 'procesado') comprobarAPI();
       if (item.dataset.panel === 'publicar') cargarPublicar();
       if (item.dataset.panel === 'config') cargarAdmins();
@@ -563,35 +582,44 @@
 
   /* ── DASHBOARD ── */
   async function cargarDashboard() {
-    const { data: config } = await db.from('config_jornada').select('*').eq('id', 1).single();
-    if (!config) return;
-    const jornadaActiva = config.jornada_activa;
-    const jornadaVisible = config.jornada_visible;
-    const [{ data: equipos }, { data: alineaciones }, { data: clasificacion }] = await Promise.all([
-      db.from('equipos').select('user_id'),
-      db.from('mi_equipo').select('user_id').eq('jornada', jornadaActiva),
-      db.from('clasificacion_automatica').select('puntos').eq('jornada', jornadaVisible)
-    ]);
-    document.getElementById('titulo-jornada').textContent = jornadaActiva;
-    document.getElementById('stat-j-label').textContent = jornadaActiva;
-    document.getElementById('stat-participantes').textContent = equipos?.length || 0;
-    const alineacionesUnicas = [...new Set((alineaciones || []).map(a => a.user_id))].length;
-    document.getElementById('stat-alineaciones').textContent = alineacionesUnicas + ' / ' + (equipos?.length || 0);
-    const media = clasificacion?.length ? Math.round(clasificacion.reduce((acc, r) => acc + r.puntos, 0) / clasificacion.length) : 0;
-    document.getElementById('stat-media').textContent = media || '—';
-    const deadline = new Date(config.deadline);
-    const ahora = new Date();
+  const { data: config } = await db.from('config_jornada').select('*').eq('id', 1).single();
+  if (!config) return;
+
+  // Calcular jornada activa y visible desde tabla jornadas
+  const ahora = new Date();
+  const { data: jornadas } = await db.from('jornadas').select('*').order('jornada', { ascending: true });
+  let jornadaActiva, jornadaVisible, deadline;
+
+  if (jornadas?.length) {
+    const pasadas = jornadas.filter(j => new Date(j.deadline) < ahora);
+    const proxima = jornadas.find(j => new Date(j.deadline) >= ahora);
+    jornadaVisible = pasadas.length ? pasadas[pasadas.length - 1].jornada : 0;
+    jornadaActiva = proxima ? proxima.jornada : jornadaVisible;
+    deadline = proxima ? new Date(proxima.deadline) : null;
+  } else {
+    jornadaActiva = config.jornada_activa;
+    jornadaVisible = config.jornada_visible;
+    deadline = new Date(config.deadline);
+  }
+
+  const [{ data: equipos }, { data: alineaciones }, { data: clasificacion }] = await Promise.all([
+    db.from('equipos').select('user_id'),
+    db.from('mi_equipo').select('user_id').eq('jornada', jornadaActiva),
+    db.from('clasificacion_automatica').select('puntos').eq('jornada', jornadaVisible)
+  ]);
+
+  document.getElementById('titulo-jornada').textContent = jornadaActiva;
+  document.getElementById('stat-j-label').textContent = jornadaActiva;
+  document.getElementById('stat-participantes').textContent = equipos?.length || 0;
+  const alineacionesUnicas = [...new Set((alineaciones || []).map(a => a.user_id))].length;
+  document.getElementById('stat-alineaciones').textContent = alineacionesUnicas + ' / ' + (equipos?.length || 0);
+  const media = clasificacion?.length ? Math.round(clasificacion.reduce((acc, r) => acc + r.puntos, 0) / clasificacion.length) : 0;
+  document.getElementById('stat-media').textContent = media || '—';
+
+  if (deadline) {
     const abierta = ahora < deadline;
     document.getElementById('badge-estado').textContent = abierta ? 'Abierta · cierra ' + deadline.toLocaleDateString('es-ES', { weekday:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Cerrada';
     document.getElementById('badge-estado').className = 'badge-estado ' + (abierta ? 'badge-abierta' : 'badge-cerrada');
-    document.getElementById('cfg-jornada-activa').value = jornadaActiva;
-    document.getElementById('cfg-jornada-visible').value = jornadaVisible;
-    const offset = deadline.getTimezoneOffset() * 60000;
-    document.getElementById('cfg-deadline').value = new Date(deadline - offset).toISOString().slice(0, 16);
-    document.getElementById('cfg-presupuesto').value = config.presupuesto;
-    document.getElementById('cfg-titulo').value = config.titulo_jornada || '';
-    document.getElementById('cfg-mensaje').value = config.mensaje_aviso || '';
-    document.getElementById('cfg-fecha-fin').value = config.fecha_fin ? new Date(config.fecha_fin).toISOString().slice(0, 16) : '';
     const diff = deadline - ahora;
     if (diff > 0) {
       const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000);
@@ -601,25 +629,74 @@
       document.getElementById('stat-deadline').textContent = 'Cerrada';
       document.getElementById('stat-deadline-sub').textContent = 'La jornada ya comenzó';
     }
-    document.getElementById('proc-jornada').value = jornadaActiva;
   }
 
+  document.getElementById('cfg-presupuesto').value = config.presupuesto;
+  document.getElementById('cfg-titulo').value = config.titulo_jornada || '';
+  document.getElementById('cfg-mensaje').value = config.mensaje_aviso || '';
+  document.getElementById('cfg-fecha-fin').value = config.fecha_fin ? new Date(config.fecha_fin).toISOString().slice(0, 16) : '';
+  document.getElementById('proc-jornada').value = jornadaActiva;
+}
+
   document.getElementById('btn-guardar-config').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-guardar-config');
-    btn.disabled = true; btn.textContent = 'Guardando...';
-    const { error } = await db.from('config_jornada').update({
-      jornada_activa: parseInt(document.getElementById('cfg-jornada-activa').value),
-      jornada_visible: parseInt(document.getElementById('cfg-jornada-visible').value),
-      deadline: new Date(document.getElementById('cfg-deadline').value).toISOString(),
-      presupuesto: parseFloat(document.getElementById('cfg-presupuesto').value),
-      titulo_jornada: document.getElementById('cfg-titulo').value,
-      mensaje_aviso: document.getElementById('cfg-mensaje').value || null,
-      fecha_fin: document.getElementById('cfg-fecha-fin').value ? new Date(document.getElementById('cfg-fecha-fin').value).toISOString() : null
-    }).eq('id', 1);
-    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar cambios';
-    if (error) showToast('Error: ' + error.message, true);
-    else { showToast('Configuración guardada'); cargarDashboard(); }
-  });
+  const btn = document.getElementById('btn-guardar-config');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const { error } = await db.from('config_jornada').update({
+    presupuesto: parseFloat(document.getElementById('cfg-presupuesto').value),
+    titulo_jornada: document.getElementById('cfg-titulo').value,
+    mensaje_aviso: document.getElementById('cfg-mensaje').value || null,
+    fecha_fin: document.getElementById('cfg-fecha-fin').value ? new Date(document.getElementById('cfg-fecha-fin').value).toISOString() : null
+  }).eq('id', 1);
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar cambios';
+  if (error) showToast('Error: ' + error.message, true);
+  else { showToast('Configuración guardada'); cargarDashboard(); }
+});
+
+async function cargarJornadas() {
+  const { data: jornadas } = await db.from('jornadas').select('*').order('jornada', { ascending: true });
+  const tbody = document.getElementById('tabla-jornadas');
+  if (!tbody) return;
+  if (!jornadas?.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted)">Sin jornadas</td></tr>'; return; }
+  const ahora = new Date();
+  tbody.innerHTML = jornadas.map(j => {
+    const dl = new Date(j.deadline);
+    const pasada = dl < ahora;
+    const offset = dl.getTimezoneOffset() * 60000;
+    const dlLocal = new Date(dl - offset).toISOString().slice(0, 16);
+    return '<tr>' +
+      '<td><strong>J' + j.jornada + '</strong></td>' +
+      '<td><input class="form-input" type="datetime-local" id="dl-' + j.jornada + '" value="' + dlLocal + '" style="width:100%" /></td>' +
+      '<td><span class="pill ' + (pasada ? 'pill-red' : 'pill-green') + '">' + (pasada ? 'Cerrada' : 'Abierta') + '</span>' +
+      ' <button class="btn btn-sm btn-primary" onclick="guardarDeadline(' + j.jornada + ')"><i class="ti ti-device-floppy"></i></button>' +
+      ' <button class="btn btn-sm btn-danger" onclick="eliminarJornada(' + j.jornada + ')"><i class="ti ti-trash"></i></button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function guardarDeadline(jornada) {
+  const val = document.getElementById('dl-' + jornada).value;
+  if (!val) { showToast('Introduce una fecha válida', true); return; }
+  const { error } = await db.from('jornadas').update({ deadline: new Date(val).toISOString() }).eq('jornada', jornada);
+  if (error) showToast('Error: ' + error.message, true);
+  else { showToast('Deadline J' + jornada + ' guardado'); cargarJornadas(); cargarDashboard(); }
+}
+
+async function añadirJornada() {
+  const jornada = parseInt(document.getElementById('nueva-jornada-num').value);
+  const deadline = document.getElementById('nueva-jornada-deadline').value;
+  if (!jornada || !deadline) { showToast('Rellena todos los campos', true); return; }
+  const { error } = await db.from('jornadas').insert({ jornada, deadline: new Date(deadline).toISOString() });
+  if (error) showToast('Error: ' + error.message, true);
+  else { showToast('Jornada añadida'); cargarJornadas(); }
+}
+
+async function eliminarJornada(jornada) {
+  if (!confirm('¿Eliminar el deadline de la J' + jornada + '?')) return;
+  const { error } = await db.from('jornadas').delete().eq('jornada', jornada);
+  if (error) showToast('Error: ' + error.message, true);
+  else { showToast('Jornada eliminada'); cargarJornadas(); }
+}
 
   /* ── PARTIDOS ── */
   async function cargarPartidos() {
