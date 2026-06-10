@@ -6,7 +6,7 @@ function actualizarSelectCapitan() {
   const sel = document.getElementById('capitan-select');
   if (!sel) return;
   const valorActual = sel.value;
-  sel.innerHTML = '<option value="">Elige un capitán</option>';
+  sel.innerHTML = '<option value="">¡Escógelo bien!</option>';
   Object.values(seleccionados).forEach(j => {
     if (j.posicion === 'ENT') return;
     const opt = document.createElement('option');
@@ -27,7 +27,7 @@ async function loadLineup() {
     if (jornadadCerrada()) {
       deadlineEl.innerHTML = '<span class="deadline-cerrado">La jornada comenzó el ' + fechaFormateada + '</span>';
     } else {
-      deadlineEl.innerHTML = '<span class="deadline-abierto">Podrás hacer tu once hasta el ' + fechaFormateada + 'h</span><span class="deadline-abierto-card" style="margin-top:6px;margin-bottom:8px" id="countdown-box"><span id="countdown-timer">Calculando...</span></span>';
+      deadlineEl.innerHTML = '<span class="deadline-abierto">CIERRE JORNADA: ' + fechaFormateada + 'h</span><span class="deadline-abierto-card" style="margin-top:6px;margin-bottom:8px" id="countdown-box"><span id="countdown-timer">Calculando...</span></span>';
       const actualizarCuenta = () => {
         const diff = new Date(DEADLINE_JORNADA) - new Date();
         if (diff <= 0) { document.getElementById('countdown-timer').textContent = '¡Plazo cerrado!'; clearInterval(window._countdownIntervalo); return; }
@@ -38,7 +38,7 @@ async function loadLineup() {
         if (horas > 0) partes.push(horas + 'h');
         if (minutos > 0) partes.push(minutos + 'm');
         partes.push(segundos + 's');
-        document.getElementById('countdown-timer').textContent = 'Quedan ' + partes.join(' ');
+        document.getElementById('countdown-timer').textContent = 'Quedan ' + partes.join(' ') + ' para el cierre de jornada';
       };
       actualizarCuenta();
       if (window._countdownIntervalo) clearInterval(window._countdownIntervalo);
@@ -222,22 +222,67 @@ async function loadLineup() {
 async function exportarAlineacion() {
   const btn = document.getElementById('btn-export-png');
   btn.disabled = true; btn.textContent = 'GENERANDO...';
+
   const { data: ed } = await db.from('equipos').select('nombre_equipo').eq('user_id', currentUser.id).single();
-  document.getElementById('export-nombre-equipo').textContent = ed?.nombre_equipo || 'Mi Equipo';
-  document.getElementById('export-formacion').textContent = document.getElementById('formation-select')?.value || '—';
-  document.getElementById('export-jornada').textContent = JORNADA_ACTIVA;
-  const area = document.getElementById('export-area');
-  const header = document.getElementById('export-header');
-  area.style.display = 'block'; header.style.display = 'flex';
-  const canvas = await html2canvas(area, { useCORS: true, allowTaint: true, scale: 2, backgroundColor: '#0d1117' });
-  area.style.display = ''; header.style.display = 'none';
+  const nombreEquipo = ed?.nombre_equipo || 'Mi Equipo';
+  const formacion = document.getElementById('formation-select')?.value || '—';
+
+  const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+
+  const jugadores = Object.values(seleccionados).sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
+  const costeTotal = jugadores.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0).toFixed(1);
+  const capitanId = capitan;
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
+
+  tarjeta.innerHTML =
+    // Header
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
+      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px" onerror="this.style.display=\'none\'">' +
+      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
+      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4)">J' + JORNADA_ACTIVA + ' · ' + formacion + '</span>' +
+    '</div>' +
+    // Nombre equipo y coste
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
+      '<div style="font-size:15px;font-weight:700;color:white">' + nombreEquipo + '</div>' +
+      '<div style="font-family:monospace;font-size:11px;color:#e3b341">' + costeTotal + 'M</div>' +
+    '</div>' +
+    // Jugadores
+    '<div style="display:flex;flex-direction:column;gap:6px">' +
+      jugadores.map(j => {
+        const esC = String(capitanId) === String(j.id);
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#1a2420;border-radius:8px' + (esC ? ';border:1px solid rgba(227,179,65,0.4)' : '') + '">' +
+          '<div style="width:8px;height:8px;border-radius:50%;background:' + (posColor[j.posicion]||'#fff') + ';flex-shrink:0"></div>' +
+          (j.foto_url ? '<img src="' + j.foto_url + '" width="26" height="26" style="object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display=\'none\'">' : '') +
+          '<span style="font-size:12px;color:white;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + (esC ? ' ⭐' : '') + '</span>' +
+          '<span style="font-size:10px;color:rgba(255,255,255,0.4);flex-shrink:0">' + j.club + '</span>' +
+          '<span style="font-size:11px;font-weight:700;color:#e3b341;flex-shrink:0">' + (j.valor || 0) + 'M</span>' +
+        '</div>';
+      }).join('') +
+    '</div>' +
+    '<div style="margin-top:14px;text-align:center;font-size:9px;color:#4a5e58">asturfantasy.com</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], nombreEquipo + '_J' + JORNADA_ACTIVA + '.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: nombreEquipo + ' · J' + JORNADA_ACTIVA + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = nombreEquipo + '_J' + JORNADA_ACTIVA + '.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al exportar');
+  }
   btn.disabled = false; btn.textContent = 'EXPORTAR ALINEACIÓN';
-  if (canvas.width === 0 || canvas.height === 0) { showToast('Error al generar la imagen', true); return; }
-  const link = document.createElement('a');
-  link.download = 'asturfantasy-j' + JORNADA_ACTIVA + '.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-  showToast('Alineación exportada');
 }
 
 function renderPitch() {

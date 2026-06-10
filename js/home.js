@@ -47,12 +47,29 @@ async function loadHome() {
 
   const container = document.getElementById('matches-container');
   if (!PARTIDOS.length) { container.innerHTML = '<div style="text-align:center;padding:32px 20px;font-family:var(--font-display);font-size:15px;color:var(--text-muted);letter-spacing:1px">Próxima jornada por confirmar</div>'; return; }
-  container.innerHTML = PARTIDOS.map(p => {
+
+  const renderPartido = (p) => {
     const localImg = p.local.escudo_url ? '<img loading="lazy" src="' + p.local.escudo_url + '" alt="' + p.local.abrev + '" width="44" height="44" style="object-fit:contain">' : p.local.abrev;
     const visitanteImg = p.visitante.escudo_url ? '<img loading="lazy" src="' + p.visitante.escudo_url + '" alt="' + p.visitante.abrev + '" width="44" height="44" style="object-fit:contain">' : p.visitante.abrev;
     const centro = p.resultado?.finalizado
-      ? '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:2px">' + p.resultado.local + ' - ' + p.resultado.visitante + '</div><div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--neon);text-transform:uppercase;margin-bottom:2px">Final</div><button onclick="mostrarPartido(\'' + p.local.abrev + '\',\'' + p.visitante.abrev + '\',\'' + p.local.nombre + '\',\'' + p.visitante.nombre + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:4px;width:100%">Ver puntos</button>'
+      ? '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:2px">' + p.resultado.local + ' - ' + p.resultado.visitante + '</div><div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--neon);text-transform:uppercase;margin-bottom:2px">Final</div><button onclick="mostrarPartido(\'' + p.local.abrev + '\',\'' + p.visitante.abrev + '\',\'' + p.local.nombre + '\',\'' + p.visitante.nombre + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:4px;width:100%">Puntos</button>'
       : '<div class="match-vs">' + p.estadio + '</div><div class="match-date">' + p.fecha + '</div>';
     return '<div class="match-card"><div class="match-team"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + localImg + '</div><div><div class="team-name">' + p.local.nombre + '</div></div></div><div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 8px;min-width:90px;max-width:110px">' + centro + '</div><div class="match-team right"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + visitanteImg + '</div><div style="text-align:right"><div class="team-name">' + p.visitante.nombre + '</div></div></div></div>';
-  }).join('');
+  };
+
+  const INICIAL = 4;
+  let mostrados = INICIAL;
+
+  const renderTodos = () => {
+    container.innerHTML = PARTIDOS.slice(0, mostrados).map(renderPartido).join('');
+    if (mostrados < PARTIDOS.length) {
+      const btnVerMas = document.createElement('button');
+      btnVerMas.textContent = 'Ver más (' + (PARTIDOS.length - mostrados) + ')';
+      btnVerMas.style.cssText = 'width:100%;margin-top:10px;padding:10px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:var(--font-display);font-weight:600;font-size:13px;cursor:pointer';
+      btnVerMas.onclick = () => { mostrados = PARTIDOS.length; renderTodos(); };
+      container.appendChild(btnVerMas);
+    }
+  };
+
+  renderTodos();
 }
