@@ -609,6 +609,228 @@ function cambiarSubtabDetalle(subtab) {
     '</table>';
 }
 
+async function loadPerfil() {
+  if (!currentUser) return;
+
+  // Datos del equipo
+  const { data: equipo } = await db.from('equipos').select('nombre_equipo, equipo_favorito').eq('user_id', currentUser.id).single();
+  const nombreEquipo = equipo?.nombre_equipo || '—';
+  const clubFav = equipo?.equipo_favorito || null;
+  const clubInfo = clubFav ? CLUBES_INFO[clubFav] : null;
+
+  // Avatar
+  const avatar = document.getElementById('perfil-avatar');
+  avatar.textContent = nombreEquipo.substring(0, 2).toUpperCase();
+  document.getElementById('perfil-nombre-equipo').textContent = nombreEquipo;
+  document.getElementById('perfil-club-fav').textContent = clubInfo ? clubInfo.nombre : '—';
+
+  // Clasificación semanal del usuario
+  const { data: clasificacion } = await db.from('clasificacion_automatica')
+    .select('jornada, puntos')
+    .eq('user_id', currentUser.id)
+    .order('jornada', { ascending: true });
+
+  // Clasificación general de todas las jornadas para el ranking semanal
+  const { data: todasClasificaciones } = await db.from('clasificacion_automatica')
+    .select('user_id, jornada, puntos')
+    .order('jornada', { ascending: true });
+
+  const misJornadas = clasificacion || [];
+  const todas = todasClasificaciones || [];
+
+  // Calcular estadísticas
+  const puntosPorJornada = misJornadas.map(j => j.puntos);
+  const mejorJornada = puntosPorJornada.length ? Math.max(...puntosPorJornada) : 0;
+  const peorJornada = puntosPorJornada.length ? Math.min(...puntosPorJornada) : 0;
+  const media = puntosPorJornada.length ? (puntosPorJornada.reduce((a,b) => a+b, 0) / puntosPorJornada.length).toFixed(1) : 0;
+  const mejorJornadaNum = misJornadas.find(j => j.puntos === mejorJornada)?.jornada || '—';
+
+  // Jornadas consecutivas en top 10
+  const jornadasUnicas = [...new Set(todas.map(j => j.jornada))].sort((a,b) => a-b);
+  let rachaActual = 0, rachaMax = 0, rachaTemp = 0;
+  jornadasUnicas.forEach(jornada => {
+    const ranking = todas.filter(j => j.jornada === jornada).sort((a,b) => b.puntos - a.puntos);
+    const pos = ranking.findIndex(j => j.user_id === currentUser.id) + 1;
+    if (pos > 0 && pos <= 10) {
+      rachaTemp++;
+      rachaMax = Math.max(rachaMax, rachaTemp);
+    } else {
+      rachaTemp = 0;
+    }
+  });
+  // Racha actual (desde el final)
+  for (let i = jornadasUnicas.length - 1; i >= 0; i--) {
+    const jornada = jornadasUnicas[i];
+    const ranking = todas.filter(j => j.jornada === jornada).sort((a,b) => b.puntos - a.puntos);
+    const pos = ranking.findIndex(j => j.user_id === currentUser.id) + 1;
+    if (pos > 0 && pos <= 10) rachaActual++;
+    else break;
+  }
+
+  // Jugador más usado
+  const { data: misEquipos } = await db.from('mi_equipo').select('jugador_id, jornada').eq('user_id', currentUser.id);
+  const { data: jugadoresInfo } = await db.from('jugadores').select('id, nombre, club, jornada, puntos, total_jornada').order('jornada', { ascending: false });
+  const contadorJugadores = {};
+  (misEquipos || []).forEach(e => {
+    contadorJugadores[e.jugador_id] = (contadorJugadores[e.jugador_id] || 0) + 1;
+  });
+  const masUsadoId = Object.entries(contadorJugadores).sort((a,b) => b[1] - a[1])[0];
+  let masUsadoNombre = '—', masUsadoVeces = 0;
+  if (masUsadoId) {
+    masUsadoVeces = masUsadoId[1];
+    const jugMasUsado = (jugadoresInfo || []).find(j => j.id === masUsadoId[0]);
+    masUsadoNombre = jugMasUsado?.nombre || '—';
+  }
+
+  // Jugador agradecido (mejor media pts / veces alineado)
+  const jugadorPuntos = {};
+  for (const e of (misEquipos || [])) {
+    const jug = (jugadoresInfo || []).find(j => j.id === e.jugador_id);
+    if (!jug) continue;
+    const clave = jug.nombre + '|' + jug.club;
+    const jugJornada = (jugadoresInfo || []).find(j => j.nombre === jug.nombre && j.club === jug.club && j.jornada === e.jornada);
+    if (!jugJornada) continue;
+    if (!jugadorPuntos[clave]) jugadorPuntos[clave] = { pts: 0, veces: 0, nombre: jug.nombre };
+    jugadorPuntos[clave].pts += jugJornada.total_jornada || 0;
+    jugadorPuntos[clave].veces++;
+  }
+  const agradecido = Object.values(jugadorPuntos)
+    .filter(j => j.veces >= 1)
+    .sort((a,b) => (b.pts/b.veces) - (a.pts/a.veces))[0];
+
+    console.log('misEquipos:', misEquipos?.length);
+    console.log('jugadoresInfo:', jugadoresInfo?.length);
+    console.log('jugadorPuntos:', jugadorPuntos);
+    console.log('agradecido:', agradecido);
+    console.log('todos jugadorPuntos:', Object.values(jugadorPuntos).map(j => ({nombre: j.nombre, pts: j.pts, veces: j.veces, media: j.pts/j.veces})));
+
+  // Pintar estadísticas
+  const stats = [
+    { label: 'Mejor jornada', value: mejorJornada + ' pts', sub: 'J' + mejorJornadaNum, color: 'var(--neon)' },
+    { label: 'Peor jornada', value: peorJornada + ' pts', sub: misJornadas.find(j => j.puntos === peorJornada)?.jornada ? 'J' + misJornadas.find(j => j.puntos === peorJornada)?.jornada : '—', color: 'var(--red)' },
+    { label: 'Media por jornada', value: media + ' pts', sub: puntosPorJornada.length + ' jornadas', color: 'var(--amber)' },
+    { label: 'Racha top 10', value: rachaActual + ' jornadas', sub: 'Máx. ' + rachaMax, color: 'var(--amber)' },
+    { label: 'Jugador más usado', value: masUsadoNombre, sub: masUsadoVeces + ' jornadas', color: 'white' },
+    { label: 'Jugador agradecido', value: agradecido?.nombre || '—', sub: agradecido ? (agradecido.pts/agradecido.veces).toFixed(1) + ' pts/jornada' : '—', color: 'white' },
+  ];
+
+  document.getElementById('perfil-stats').innerHTML = stats.map(s =>
+    '<div style="background:var(--surface);border-radius:10px;padding:12px">' +
+      '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">' + s.label + '</div>' +
+      '<div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:' + s.color + '">' + s.value + '</div>' +
+      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:2px">' + s.sub + '</div>' +
+    '</div>'
+  ).join('');
+
+  // Logros
+  const victoriaJornada = misJornadas.some(j => {
+    const ranking = todas.filter(t => t.jornada === j.jornada).sort((a,b) => b.puntos - a.puntos);
+    return ranking[0]?.user_id === currentUser.id;
+  });
+
+  const capitanAcertado = false; // TODO: requiere cruzar capitán con MVP
+
+  const logros = [
+    { icono: '🏆', titulo: 'Primera victoria', desc: 'Ganar una jornada', desbloqueado: victoriaJornada },
+    { icono: '🔥', titulo: 'En racha', desc: '3 jornadas seguidas en top 10', desbloqueado: rachaMax >= 3 },
+    { icono: '🎯', titulo: 'Capitán acertado', desc: 'Tu capitán fue el MVP de la jornada', desbloqueado: capitanAcertado },
+  ];
+
+  document.getElementById('perfil-logros').innerHTML = logros.map(l =>
+    '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border-radius:10px;' + (!l.desbloqueado ? 'opacity:0.4;' : 'border:1px solid rgba(76,217,123,0.2);') + '">' +
+      '<div style="font-size:24px;flex-shrink:0">' + l.icono + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:' + (l.desbloqueado ? 'var(--text)' : 'var(--text-muted)') + '">' + l.titulo + '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:2px">' + l.desc + '</div>' +
+      '</div>' +
+      (l.desbloqueado ? '<i class="ti ti-check" style="color:var(--neon);font-size:18px"></i>' : '<i class="ti ti-lock" style="color:var(--text-muted);font-size:16px"></i>') +
+    '</div>'
+  ).join('');
+}
+
+async function compartirPerfil() {
+  const btn = document.getElementById('btn-compartir-perfil');
+  btn.disabled = true; btn.textContent = 'GENERANDO...';
+
+  const nombreEquipo = document.getElementById('perfil-nombre-equipo').textContent;
+  const clubFav = document.getElementById('perfil-club-fav').textContent;
+  const stats = [...document.querySelectorAll('#perfil-stats > div')].map(s => ({
+    label: s.querySelector('[style*="letter-spacing"]').textContent,
+    value: s.querySelector('[style*="font-size:16px"]').textContent,
+    sub: s.querySelectorAll('div')[2]?.textContent || ''
+  }));
+  const logros = [...document.querySelectorAll('#perfil-logros > div')].map(l => ({
+    icono: l.querySelector('div:first-child').textContent,
+    titulo: l.querySelectorAll('div')[1]?.querySelector('div')?.textContent || '',
+    desbloqueado: l.style.opacity !== '0.4'
+  }));
+
+  const tarjeta = document.createElement('div');
+  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#0d1117;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;border:1px solid rgba(76,217,123,0.2)';
+
+  tarjeta.innerHTML =
+    // Header
+    '<div style="padding:16px;background:linear-gradient(135deg,#111816,#0d1f14);border-bottom:1px solid rgba(76,217,123,0.15)">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
+        '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="22" height="22" style="border-radius:6px" onerror="this.style.display=\'none\'">' +
+        '<span style="color:white;font-weight:700;font-size:12px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px">' +
+        '<div style="width:48px;height:48px;border-radius:50%;background:rgba(76,217,123,0.15);border:2px solid rgba(76,217,123,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#4cd97b">' + nombreEquipo.substring(0,2).toUpperCase() + '</div>' +
+        '<div>' +
+          '<div style="font-size:16px;font-weight:700;color:white">' + nombreEquipo + '</div>' +
+          '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">' + clubFav + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    // Stats
+    '<div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+      '<div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Estadísticas</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">' +
+        stats.map(s => '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px">' +
+          '<div style="font-size:8px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">' + s.label + '</div>' +
+          '<div style="font-size:14px;font-weight:700;color:white">' + s.value + '</div>' +
+          '<div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:2px">' + s.sub + '</div>' +
+        '</div>').join('') +
+      '</div>' +
+    '</div>' +
+    // Logros
+    '<div style="padding:14px 16px">' +
+      '<div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Logros</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+        logros.map(l => '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:8px;' + (l.desbloqueado ? 'border:1px solid rgba(76,217,123,0.2);' : 'opacity:0.4;') + '">' +
+          '<span style="font-size:18px">' + l.icono + '</span>' +
+          '<span style="font-size:12px;font-weight:600;color:' + (l.desbloqueado ? 'white' : 'rgba(255,255,255,0.5)') + '">' + l.titulo + '</span>' +
+          (l.desbloqueado ? '<span style="margin-left:auto;color:#4cd97b;font-size:14px">✓</span>' : '<span style="margin-left:auto;color:rgba(255,255,255,0.3);font-size:12px">🔒</span>') +
+        '</div>').join('') +
+      '</div>' +
+    '</div>' +
+    // Footer
+    '<div style="padding:10px 16px;background:rgba(0,0,0,0.3);text-align:center">' +
+      '<span style="font-size:9px;color:rgba(255,255,255,0.3)">asturfantasy.com</span>' +
+    '</div>';
+
+  document.body.appendChild(tarjeta);
+  try {
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#0d1117', scale: 2, useCORS: true });
+    document.body.removeChild(tarjeta);
+    canvas.toBlob(async blob => {
+      const file = new File([blob], nombreEquipo + '_perfil.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: nombreEquipo + ' · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = nombreEquipo + '_perfil.png'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch(e) {
+    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
+    showToast('Error al compartir');
+  }
+  btn.disabled = false; btn.textContent = 'COMPARTIR PERFIL';
+}
+
 async function loadRankingOnce() {
   const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
   const selectOnce = document.getElementById('once-jornada-select');

@@ -158,6 +158,7 @@ function goTo(screenId) {
     'ranking-mvp': 'MVP de la jornada',
     'ranking-comparador': 'Comparador',
     'ranking-detalle': 'Al detalle',
+    'perfil': 'Mi perfil',
   };
   document.title = 'AsturFantasy · ' + (titulos[screenId] || 'AsturFantasy');
   window.scrollTo(0, 0);
@@ -173,6 +174,7 @@ function goTo(screenId) {
     'ranking-mvp': loadMVP,
     'ranking-comparador': loadComparador,
     'ranking-detalle': loadRankingDetalle,
+    'perfil': loadPerfil,
   };
   if (loaders[screenId]) loaders[screenId]();
 }
