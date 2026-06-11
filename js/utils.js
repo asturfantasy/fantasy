@@ -156,7 +156,8 @@ function goTo(screenId) {
     'ranking-once': 'Once ideal',
     'ranking-rentable': 'Once rentable',
     'ranking-mvp': 'MVP de la jornada',
-    'ranking-comparador': 'Comparador'
+    'ranking-comparador': 'Comparador',
+    'ranking-detalle': 'Al detalle',
   };
   document.title = 'AsturFantasy · ' + (titulos[screenId] || 'AsturFantasy');
   window.scrollTo(0, 0);
@@ -170,7 +171,8 @@ function goTo(screenId) {
     'ranking-once': loadRankingOnce,
     'ranking-rentable': loadRankingRentable,
     'ranking-mvp': loadMVP,
-     'ranking-comparador': loadComparador
+    'ranking-comparador': loadComparador,
+    'ranking-detalle': loadRankingDetalle,
   };
   if (loaders[screenId]) loaders[screenId]();
 }

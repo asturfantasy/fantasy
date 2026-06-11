@@ -558,6 +558,57 @@ async function loadRankingJugadores() {
   });
 }
 
+let rankingDetalleData = null;
+
+async function loadRankingDetalle() {
+  if (!rankingDetalleData) {
+    const { data } = await db.from('ranking_jugadores').select('nombre, club, posicion, escudo_url, foto_url, goles, asistencias, porterias_cero, amarillas, rojas');
+    rankingDetalleData = data || [];
+  }
+  cambiarSubtabDetalle('goles');
+}
+
+function cambiarSubtabDetalle(subtab) {
+  document.querySelectorAll('.ranking-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-subtab="' + subtab + '"]')?.classList.add('active');
+
+  const campos = {
+    goles:       { campo: 'goles',         label: 'Goles',          icono: '⚽' },
+    asistencias: { campo: 'asistencias',   label: 'Asistencias',    icono: '👟' },
+    porterias:   { campo: 'porterias_cero', label: 'Port. a cero',  icono: '🔒' },
+    amarillas:   { campo: 'amarillas',     label: 'Amarillas',      icono: '🟨' },
+    rojas:       { campo: 'rojas',         label: 'Rojas',          icono: '🟥' },
+  };
+
+  const { campo, label, icono } = campos[subtab];
+  const container = document.getElementById('detalle-container');
+
+  const filtrados = (rankingDetalleData || [])
+    .filter(j => (j[campo] || 0) > 0)
+    .sort((a, b) => (b[campo] || 0) - (a[campo] || 0))
+    .slice(0, 20);
+
+  if (!filtrados.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:28px;font-family:var(--font-mono);font-size:12px">Sin datos</div>';
+    return;
+  }
+
+  container.innerHTML =
+    '<table class="ranking-table">' +
+      '<thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">' + icono + ' ' + label + '</th></tr></thead>' +
+      '<tbody>' +
+        filtrados.map((j, i) =>
+          '<tr class="' + medalClass(i+1) + '">' +
+            '<td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td>' +
+            '<td><div class="rank-name" style="cursor:pointer;text-decoration:underline" onclick="mostrarHistorial(\'' + j.nombre + '\',\'' + j.club + '\',\'' + j.posicion + '\')">' + j.nombre + '</div><div class="rank-team">' + j.posicion + '</div></td>' +
+            '<td>' + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="22" height="22" style="object-fit:contain;vertical-align:middle;margin-right:4px">' : '') + '<span class="rank-team">' + j.club + '</span></td>' +
+            '<td><div class="rank-pts">' + (j[campo] || 0) + '</div></td>' +
+          '</tr>'
+        ).join('') +
+      '</tbody>' +
+    '</table>';
+}
+
 async function loadRankingOnce() {
   const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
   const selectOnce = document.getElementById('once-jornada-select');

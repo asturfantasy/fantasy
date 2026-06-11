@@ -324,6 +324,18 @@
             </div>
         </div>
 
+        <!-- TARJETA: AL DETALLE -->
+        <div class="ranking-card" id="ranking-card-detalle">
+            <div class="ranking-card-header" onclick="goTo('ranking-detalle')">
+                <div class="ranking-card-icon"><i class="ti ti-chart-bar" style="color:var(--green-light)"></i></div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Al detalle</div>
+                    <div class="ranking-card-sub">Goles · Asistencias · Porterías a cero · Tarjetas</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -395,6 +407,27 @@
     </div>
     <main class="page-body">
         <div id="rtab-jugadores"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: AL DETALLE -->
+<div id="screen-ranking-detalle" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Al detalle</span>
+    </div>
+    <main class="page-body">
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+            <button class="ranking-subtab active" data-subtab="goles" onclick="cambiarSubtabDetalle('goles')">⚽ Goles</button>
+            <button class="ranking-subtab" data-subtab="asistencias" onclick="cambiarSubtabDetalle('asistencias')">👟 Asist.</button>
+            <button class="ranking-subtab" data-subtab="porterias" onclick="cambiarSubtabDetalle('porterias')">🔒 P.Cero</button>
+            <button class="ranking-subtab" data-subtab="amarillas" onclick="cambiarSubtabDetalle('amarillas')">🟨 Amar.</button>
+            <button class="ranking-subtab" data-subtab="rojas" onclick="cambiarSubtabDetalle('rojas')">🟥 Rojas</button>
+        </div>
+        <div id="detalle-container"></div>
     </main>
 </div>
 

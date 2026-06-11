@@ -243,12 +243,11 @@ async function mostrarHistorial(nombre, club, posicion) {
     return;
   }
 
-  const maxPts = Math.max(...data.map(d => d.total_jornada), 1);
+  const maxPts = Math.max(...data.map(d => Math.abs(d.total_jornada)), 1);
   const total  = data.reduce((acc, d) => acc + d.total_jornada, 0);
   const foto   = data[0]?.foto_url || '';
   const escudo = data[0]?.escudo_url || '';
 
-  // Obtener valor de la jornada siguiente a la última publicada
   const ultimaJornada = data[data.length - 1]?.jornada;
   let valoresData = data.filter(d => d.valor != null);
 
@@ -422,7 +421,7 @@ async function mostrarHistorial(nombre, club, posicion) {
 
   content.innerHTML =
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">' +
-      '<div style="width:56px;height:56px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px;color:var(--text-muted);flex-shrink:0;position:relative">' +
+      '<div style="width:56px;height:56px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:justify-content;font-family:var(--font-display);font-size:20px;color:var(--text-muted);flex-shrink:0;position:relative">' +
         (foto ? '<img loading="lazy" src="' + foto + '" width="56" height="56" style="object-fit:cover;border-radius:50%">' : nombre.substring(0,2).toUpperCase()) +
         (escudo ? '<img loading="lazy" src="' + escudo + '" width="18" height="18" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:var(--bg2);border:1px solid var(--border)">' : '') +
       '</div>' +
@@ -445,22 +444,39 @@ async function mostrarHistorial(nombre, club, posicion) {
     '</div>' +
     data.map(d => {
       const marcador = getMarcador(d);
+      const pts = d.total_jornada;
+      const esNegativo = pts < 0;
+      const anchoPct = Math.min(Math.abs(pts) / maxPts * 100, 100);
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
         '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:90px">' +
           '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">J' + d.jornada + '</span>' +
           (d.rival ? '<span style="font-size:10px">' + (d.es_local ? '🏠' : '✈️') + '</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + d.rival + '</span>' : '') +
           (marcador ? '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-left:2px">(' + marcador + ')</span>' : '') +
         '</div>' +
-        '<div style="flex:1;background:var(--surface);border-radius:4px;height:22px;overflow:hidden">' +
-          '<div style="height:100%;width:' + Math.max((d.total_jornada / maxPts) * 100, 0) + '%;background:var(--neon);border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:' + (d.total_jornada > 0 ? '24px' : '0') + '">' +
-            (d.total_jornada > 0 ? '<span style="font-family:var(--font-display);font-size:11px;color:#0d1117;font-weight:700">' + d.total_jornada + '</span>' : '') +
+        '<div style="flex:1;background:var(--surface);border-radius:4px;height:22px;overflow:hidden;display:flex;align-items:center;' + (esNegativo ? 'flex-direction:row-reverse;' : '') + '">' +
+          '<div style="height:100%;width:' + anchoPct + '%;background:' + (esNegativo ? 'var(--red)' : 'var(--neon)') + ';border-radius:4px;display:flex;align-items:center;' + (esNegativo ? 'justify-content:flex-start;padding-left:6px;' : 'justify-content:flex-end;padding-right:6px;') + 'min-width:' + (pts !== 0 ? '24px' : '0') + '">' +
+            (pts !== 0 ? '<span style="font-family:var(--font-display);font-size:11px;color:' + (esNegativo ? 'white' : '#0d1117') + ';font-weight:700">' + pts + '</span>' : '') +
           '</div>' +
         '</div>' +
-        (d.total_jornada <= 0 ? '<span style="font-family:var(--font-display);font-size:12px;color:var(--text-muted)">0</span>' : '') +
+        (pts === 0 ? '<span style="font-family:var(--font-display);font-size:12px;color:var(--text-muted)">0</span>' : '') +
         iconos(d) +
       '</div>';
     }).join('');
 }
+
+function toggleGraficaValor() {
+  const grafica = document.getElementById('grafica-valor');
+  const btn = document.getElementById('btn-toggle-valor');
+  if (!grafica) return;
+  const visible = grafica.style.display !== 'none';
+  grafica.style.display = visible ? 'none' : 'block';
+  btn.innerHTML = visible
+    ? '<i class="ti ti-trending-up" style="font-size:14px"></i> Valor'
+    : '<i class="ti ti-trending-up" style="font-size:14px"></i> Ocultar';
+}
+
+document.getElementById('historial-close')?.addEventListener('click', () => document.getElementById('modal-historial').classList.remove('open'));
+document.getElementById('modal-historial')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
 
 function toggleGraficaValor() {
   const grafica = document.getElementById('grafica-valor');
