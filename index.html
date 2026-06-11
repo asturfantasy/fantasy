@@ -324,6 +324,18 @@
             </div>
         </div>
 
+        <!-- TARJETA: AL DETALLE -->
+        <div class="ranking-card" id="ranking-card-detalle">
+            <div class="ranking-card-header" onclick="goTo('ranking-detalle')">
+                <div class="ranking-card-icon"><i class="ti ti-chart-bar" style="color:var(--green-light)"></i></div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">Al detalle</div>
+                    <div class="ranking-card-sub">Goles · Asistencias · Porterías a cero · Tarjetas</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -395,6 +407,27 @@
     </div>
     <main class="page-body">
         <div id="rtab-jugadores"></div>
+    </main>
+</div>
+
+<!-- PANTALLA DETALLE: AL DETALLE -->
+<div id="screen-ranking-detalle" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('ranking')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title">Al detalle</span>
+    </div>
+    <main class="page-body">
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+            <button class="ranking-subtab active" data-subtab="goles" onclick="cambiarSubtabDetalle('goles')">⚽ Goles</button>
+            <button class="ranking-subtab" data-subtab="asistencias" onclick="cambiarSubtabDetalle('asistencias')">👟 Asist.</button>
+            <button class="ranking-subtab" data-subtab="porterias" onclick="cambiarSubtabDetalle('porterias')">🔒 P.Cero</button>
+            <button class="ranking-subtab" data-subtab="amarillas" onclick="cambiarSubtabDetalle('amarillas')">🟨 Amar.</button>
+            <button class="ranking-subtab" data-subtab="rojas" onclick="cambiarSubtabDetalle('rojas')">🟥 Rojas</button>
+        </div>
+        <div id="detalle-container"></div>
     </main>
 </div>
 
@@ -536,6 +569,34 @@
             </button>
         </div>
     </div>
+</div>
+
+<!-- PANTALLA PERFIL -->
+<div id="screen-perfil" class="screen">
+    <div class="navbar-placeholder"></div>
+    <main class="page-body">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:16px">Mi perfil</div>
+
+        <!-- Cabecera usuario -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+            <div id="perfil-avatar" style="width:56px;height:56px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--neon);flex-shrink:0"></div>
+            <div>
+                <div id="perfil-nombre-equipo" style="font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text)">—</div>
+                <div id="perfil-club-fav" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px">—</div>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Estadísticas</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px" id="perfil-stats"></div>
+
+        <!-- Logros -->
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Logros</div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="perfil-logros"></div>
+
+        <br>
+        <button id="btn-compartir-perfil" onclick="compartirPerfil()" style="width:100%;padding:12px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-share"></i> COMPARTIR PERFIL</button>
+    </main>
 </div>
 
 <!-- MODAL EQUIPO FAVORITO -->
@@ -705,6 +766,13 @@
                         <div style="width:16px;height:16px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left 0.2s"></div>
                       </div>
                     </div>
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer" onclick="toggleUserMenu();goTo('perfil')">
+  <span style="font-size:16px">👤</span>
+  <div style="flex:1">
+    <div style="font-family:var(--font-display);font-size:13px;color:var(--text)">Mi perfil</div>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">Estadísticas y logros</div>
+  </div>
+</div>
                     <div style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px">
   <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer" onclick="abrirContacto()">
     <span style="font-size:16px">✉️</span>
