@@ -645,20 +645,33 @@ async function loadPerfil() {
   const media = puntosPorJornada.length ? (puntosPorJornada.reduce((a,b) => a+b, 0) / puntosPorJornada.length).toFixed(1) : 0;
   const mejorJornadaNum = misJornadas.find(j => j.puntos === mejorJornada)?.jornada || '—';
 
+  // Posición general
+  const { data: generalAll } = await db.from('clasificacion_general_auto').select('user_id, puntos_total').order('puntos_total', { ascending: false });
+  const posGeneral = (generalAll || []).findIndex(r => r.user_id === currentUser.id) + 1;
+  const totalPuntos = (generalAll || []).find(r => r.user_id === currentUser.id)?.puntos_total || 0;
+
+  // Posición semanal última jornada visible
+  const ultimaJornadaClasif = misJornadas.length ? misJornadas[misJornadas.length - 1].jornada : null;
+  const ptsSemanal = ultimaJornadaClasif ? misJornadas.find(j => j.jornada === ultimaJornadaClasif)?.puntos || 0 : 0;
+  const posSemanal = ultimaJornadaClasif
+    ? todas.filter(j => j.jornada === ultimaJornadaClasif).sort((a,b) => b.puntos - a.puntos).findIndex(j => j.user_id === currentUser.id) + 1
+    : 0;
+
+  // Pintar posiciones destacadas
+  document.getElementById('perfil-pos-general').textContent = posGeneral ? '#' + posGeneral : '—';
+  document.getElementById('perfil-pts-total').textContent = totalPuntos + ' pts totales';
+  document.getElementById('perfil-pos-semanal').textContent = posSemanal ? '#' + posSemanal : '—';
+  document.getElementById('perfil-pts-semanal').textContent = ultimaJornadaClasif ? ptsSemanal + ' pts · J' + ultimaJornadaClasif : '—';
+
   // Jornadas consecutivas en top 10
   const jornadasUnicas = [...new Set(todas.map(j => j.jornada))].sort((a,b) => a-b);
   let rachaActual = 0, rachaMax = 0, rachaTemp = 0;
   jornadasUnicas.forEach(jornada => {
     const ranking = todas.filter(j => j.jornada === jornada).sort((a,b) => b.puntos - a.puntos);
     const pos = ranking.findIndex(j => j.user_id === currentUser.id) + 1;
-    if (pos > 0 && pos <= 10) {
-      rachaTemp++;
-      rachaMax = Math.max(rachaMax, rachaTemp);
-    } else {
-      rachaTemp = 0;
-    }
+    if (pos > 0 && pos <= 10) { rachaTemp++; rachaMax = Math.max(rachaMax, rachaTemp); }
+    else { rachaTemp = 0; }
   });
-  // Racha actual (desde el final)
   for (let i = jornadasUnicas.length - 1; i >= 0; i--) {
     const jornada = jornadasUnicas[i];
     const ranking = todas.filter(j => j.jornada === jornada).sort((a,b) => b.puntos - a.puntos);
@@ -667,9 +680,10 @@ async function loadPerfil() {
     else break;
   }
 
-  // Jugador más usado
-  const { data: misEquipos } = await db.from('mi_equipo').select('jugador_id, jornada').eq('user_id', currentUser.id);
-  const { data: jugadoresInfo } = await db.from('jugadores').select('id, nombre, club, jornada, puntos, total_jornada').order('jornada', { ascending: false });
+  // Jugador más usado y capitán más usado
+  const { data: misEquipos } = await db.from('mi_equipo').select('jugador_id, jornada, capitan').eq('user_id', currentUser.id);
+  const { data: jugadoresInfo } = await db.from('jugadores').select('id, nombre, club, jornada, total_jornada').order('jornada', { ascending: false });
+
   const contadorJugadores = {};
   (misEquipos || []).forEach(e => {
     contadorJugadores[e.jugador_id] = (contadorJugadores[e.jugador_id] || 0) + 1;
@@ -680,6 +694,18 @@ async function loadPerfil() {
     masUsadoVeces = masUsadoId[1];
     const jugMasUsado = (jugadoresInfo || []).find(j => j.id === masUsadoId[0]);
     masUsadoNombre = jugMasUsado?.nombre || '—';
+  }
+
+  // Capitán más usado
+  const capitanesData = (misEquipos || []).filter(e => e.capitan === true || e.capitan === 1);
+  const contCapitanes = {};
+  capitanesData.forEach(e => { contCapitanes[e.jugador_id] = (contCapitanes[e.jugador_id] || 0) + 1; });
+  const masCapitanId = Object.entries(contCapitanes).sort((a,b) => b[1] - a[1])[0];
+  let masCapitanNombre = '—', masCapitanVeces = 0;
+  if (masCapitanId) {
+    masCapitanVeces = masCapitanId[1];
+    const jugCapitan = (jugadoresInfo || []).find(j => j.id === masCapitanId[0]);
+    masCapitanNombre = jugCapitan?.nombre || '—';
   }
 
   // Jugador agradecido (mejor media pts / veces alineado)
@@ -698,12 +724,6 @@ async function loadPerfil() {
     .filter(j => j.veces >= 1)
     .sort((a,b) => (b.pts/b.veces) - (a.pts/a.veces))[0];
 
-    console.log('misEquipos:', misEquipos?.length);
-    console.log('jugadoresInfo:', jugadoresInfo?.length);
-    console.log('jugadorPuntos:', jugadorPuntos);
-    console.log('agradecido:', agradecido);
-    console.log('todos jugadorPuntos:', Object.values(jugadorPuntos).map(j => ({nombre: j.nombre, pts: j.pts, veces: j.veces, media: j.pts/j.veces})));
-
   // Pintar estadísticas
   const stats = [
     { label: 'Mejor jornada', value: mejorJornada + ' pts', sub: 'J' + mejorJornadaNum, color: 'var(--neon)' },
@@ -712,6 +732,7 @@ async function loadPerfil() {
     { label: 'Racha top 10', value: rachaActual + ' jornadas', sub: 'Máx. ' + rachaMax, color: 'var(--amber)' },
     { label: 'Jugador más usado', value: masUsadoNombre, sub: masUsadoVeces + ' jornadas', color: 'white' },
     { label: 'Jugador agradecido', value: agradecido?.nombre || '—', sub: agradecido ? (agradecido.pts/agradecido.veces).toFixed(1) + ' pts/jornada' : '—', color: 'white' },
+    //{ label: 'Capitán más usado', value: masCapitanNombre, sub: masCapitanVeces + ' veces', color: 'var(--amber)' },
   ];
 
   document.getElementById('perfil-stats').innerHTML = stats.map(s =>
@@ -728,12 +749,10 @@ async function loadPerfil() {
     return ranking[0]?.user_id === currentUser.id;
   });
 
-  const capitanAcertado = false; // TODO: requiere cruzar capitán con MVP
-
   const logros = [
     { icono: '🏆', titulo: 'Primera victoria', desc: 'Ganar una jornada', desbloqueado: victoriaJornada },
     { icono: '🔥', titulo: 'En racha', desc: '3 jornadas seguidas en top 10', desbloqueado: rachaMax >= 3 },
-    { icono: '🎯', titulo: 'Capitán acertado', desc: 'Tu capitán fue el MVP de la jornada', desbloqueado: capitanAcertado },
+    { icono: '🎯', titulo: 'Capitán acertado', desc: 'Tu capitán fue el MVP de la jornada', desbloqueado: false },
   ];
 
   document.getElementById('perfil-logros').innerHTML = logros.map(l =>
