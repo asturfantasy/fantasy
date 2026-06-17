@@ -132,7 +132,6 @@ async function calcStatsEntrenador(nombre, club) {
     if (pts === 3) victorias++;
     else if (pts === 1) empates++;
     else if (pts === 0 && j.total_jornada !== null) derrotas++;
-
     amarillas += j.amarilla || 0;
     doble_am  += j.doble_amarilla || 0;
     rojas     += j.roja || 0;
@@ -154,20 +153,50 @@ async function calcStatsEntrenador(nombre, club) {
       goles_favor += jugClub.reduce((a, x) => a + (x.gol || 0) + (x.penalti_marcado || 0), 0);
       goles_favor += (jugRival || []).reduce((a, x) => a + (x.gol_pp || 0), 0);
     }
-
     if (partido) {
       const esLocal = partido.local_abrev === club;
       goles_contra += esLocal ? (partido.resultado_visitante || 0) : (partido.resultado_local || 0);
     }
   }
 
-  return {
-    puntos: jornadas.reduce((a, x) => a + (x.total_jornada || 0), 0),
-    partidos: jornadas.filter(x => x.total_jornada !== null).length,
-    victorias, empates, derrotas,
-    goles_favor, goles_contra,
-    amarillas, doble_am, rojas,
+  return { puntos: jornadas.reduce((a, x) => a + (x.total_jornada || 0), 0), partidos: jornadas.filter(x => x.total_jornada !== null).length, victorias, empates, derrotas, goles_favor, goles_contra, amarillas, doble_am, rojas };
+}
+
+function graficaValorComparador(valores1, valores2, nombre1, nombre2) {
+  if (!valores1.length && !valores2.length) return '';
+  const W = 280, H = 90, PAD = 12;
+  const todosValores = [...valores1.map(d => parseFloat(d.valor)), ...valores2.map(d => parseFloat(d.valor))];
+  if (!todosValores.length) return '';
+  const minV = Math.min(...todosValores) - 0.2;
+  const maxV = Math.max(...todosValores) + 0.2;
+  const todasJornadas = [...new Set([...valores1.map(d => d.jornada), ...valores2.map(d => d.jornada)])].sort((a,b) => a-b);
+  const xStep = todasJornadas.length > 1 ? (W - PAD * 2) / (todasJornadas.length - 1) : 0;
+  const yScale = (v) => H - PAD - ((v - minV) / (maxV - minV)) * (H - PAD * 2);
+
+  const lineaPath = (valores, color) => {
+    const pts = todasJornadas.map((j, i) => {
+      const d = valores.find(v => v.jornada === j);
+      return d ? `${PAD + i * xStep},${yScale(parseFloat(d.valor))}` : null;
+    }).filter(Boolean);
+    if (pts.length < 2) return '';
+    return `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` +
+      pts.map(p => `<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="3" fill="${color}"/>`).join('');
   };
+
+  return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);letter-spacing:1px">EVOLUCIÓN DE VALOR</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+        <div style="width:20px;height:2px;background:#4cd97b;border-radius:2px"></div><span style="font-size:9px;color:var(--text-muted)">${nombre1.split(' ')[0]}</span>
+        <div style="width:20px;height:2px;background:#5b9cf6;border-radius:2px;margin-left:6px"></div><span style="font-size:9px;color:var(--text-muted)">${nombre2.split(' ')[0]}</span>
+      </div>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:90px">
+      ${lineaPath(valores1, '#4cd97b')}
+      ${lineaPath(valores2, '#5b9cf6')}
+      ${todasJornadas.map((j, i) => `<text x="${PAD + i * xStep}" y="${H - 1}" text-anchor="middle" font-size="7" fill="#7a9088">J${j}</text>`).join('')}
+    </svg>
+  </div>`;
 }
 
 async function mostrarComparativa() {
@@ -178,6 +207,14 @@ async function mostrarComparativa() {
   const j2 = comparadorSeleccionados[1];
   const esEnt1 = j1.posicion === 'ENT';
   const esEnt2 = j2.posicion === 'ENT';
+
+  // Cargar valores históricos para la gráfica
+  const [{ data: valoresHist1 }, { data: valoresHist2 }] = await Promise.all([
+    db.from('jugadores').select('jornada, valor').eq('nombre', j1.nombre).eq('club', j1.club).order('jornada', { ascending: true }),
+    db.from('jugadores').select('jornada, valor').eq('nombre', j2.nombre).eq('club', j2.club).order('jornada', { ascending: true }),
+  ]);
+  const valores1 = (valoresHist1 || []).filter(d => d.valor != null && parseFloat(d.valor) > 0);
+  const valores2 = (valoresHist2 || []).filter(d => d.valor != null && parseFloat(d.valor) > 0);
 
   let filas = [];
   let stats1, stats2;
@@ -191,35 +228,33 @@ async function mostrarComparativa() {
     const e2 = s2 || { puntos:0, partidos:0, victorias:0, empates:0, derrotas:0, goles_favor:0, goles_contra:0, amarillas:0, doble_am:0, rojas:0 };
     stats1 = e1; stats2 = e2;
     filas = [
-      ['Puntos',         e1.puntos,      e2.puntos,      e1.puntos,      e2.puntos,      'mayor'],
-      ['Partidos',       e1.partidos,    e2.partidos,    e1.partidos,    e2.partidos,    'mayor'],
-      ['Victorias',      e1.victorias,   e2.victorias,   e1.victorias,   e2.victorias,   'mayor'],
-      ['Empates',        e1.empates,     e2.empates,     e1.empates,     e2.empates,     'none'],
-      ['Derrotas',       e1.derrotas,    e2.derrotas,    e1.derrotas,    e2.derrotas,    'menor'],
-      ['Goles a favor',  e1.goles_favor, e2.goles_favor, e1.goles_favor, e2.goles_favor, 'mayor'],
-      ['Goles en contra',e1.goles_contra,e2.goles_contra,e1.goles_contra,e2.goles_contra,'menor'],
-      ['Amarillas',      e1.amarillas,   e2.amarillas,   e1.amarillas,   e2.amarillas,   'menor'],
-      ['Doble amarilla', e1.doble_am,    e2.doble_am,    e1.doble_am,    e2.doble_am,    'menor'],
-      ['Rojas',          e1.rojas,       e2.rojas,       e1.rojas,       e2.rojas,       'menor'],
+      ['Puntos',          e1.puntos,       e2.puntos,       e1.puntos,       e2.puntos,       'mayor'],
+      ['Partidos',        e1.partidos,     e2.partidos,     e1.partidos,     e2.partidos,     'mayor'],
+      ['Victorias',       e1.victorias,    e2.victorias,    e1.victorias,    e2.victorias,    'mayor'],
+      ['Empates',         e1.empates,      e2.empates,      e1.empates,      e2.empates,      'none'],
+      ['Derrotas',        e1.derrotas,     e2.derrotas,     e1.derrotas,     e2.derrotas,     'menor'],
+      ['Goles a favor',   e1.goles_favor,  e2.goles_favor,  e1.goles_favor,  e2.goles_favor,  'mayor'],
+      ['Goles en contra', e1.goles_contra, e2.goles_contra, e1.goles_contra, e2.goles_contra, 'menor'],
+      ['Amarillas',       e1.amarillas,    e2.amarillas,    e1.amarillas,    e2.amarillas,    'menor'],
+      ['Doble amarilla',  e1.doble_am,     e2.doble_am,     e1.doble_am,     e2.doble_am,     'menor'],
+      ['Rojas',           e1.rojas,        e2.rojas,        e1.rojas,        e2.rojas,        'menor'],
     ];
   } else {
     const [r1, r2] = await Promise.all([
       db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
       db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
     ]);
-    const calc = (rows, posicion) => {
+    const calc = (rows) => {
       const r = rows || [];
-      const goles        = r.reduce((a,x) => a + (x.gol||0), 0);
-      const penMarcados  = r.reduce((a,x) => a + (x.penalti_marcado||0), 0);
-      const penFallados  = r.reduce((a,x) => a + (x.penalti_fallado||0), 0);
+      const goles = r.reduce((a,x) => a + (x.gol||0), 0);
+      const penMarcados = r.reduce((a,x) => a + (x.penalti_marcado||0), 0);
+      const penFallados = r.reduce((a,x) => a + (x.penalti_fallado||0), 0);
       return {
         puntos:         r.reduce((a,x) => a + (x.total_jornada||0), 0),
         partidos:       r.filter(x => (x.minutos||0) > 0).length,
         titularidades:  r.filter(x => x.rol === 'titular' && (x.minutos||0) > 0).length,
         minutos:        r.reduce((a,x) => a + (x.minutos||0), 0),
-        goles,
-        penMarcados,
-        penFallados,
+        goles, penMarcados, penFallados,
         totalGoles:     goles + penMarcados,
         asistencias:    r.reduce((a,x) => a + (x.asistencia||0), 0),
         gol_pp:         r.reduce((a,x) => a + (x.gol_pp||0), 0),
@@ -230,8 +265,8 @@ async function mostrarComparativa() {
         porterias_cero: r.filter(x => (x.goles_encajados||0) === 0 && (x.minutos||0) >= 60).length,
       };
     };
-    stats1 = calc(r1.data, j1.posicion);
-    stats2 = calc(r2.data, j2.posicion);
+    stats1 = calc(r1.data);
+    stats2 = calc(r2.data);
 
     const goles1 = stats1.totalGoles + (stats1.penMarcados > 0 ? ` (${stats1.penMarcados})` : '');
     const goles2 = stats2.totalGoles + (stats2.penMarcados > 0 ? ` (${stats2.penMarcados})` : '');
@@ -270,6 +305,7 @@ async function mostrarComparativa() {
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
       ${filas.map(f => fila(f)).join('')}
     </div>
+    ${graficaValorComparador(valores1, valores2, j1.nombre, j2.nombre)}
     <button onclick="exportarComparador()" style="width:100%;margin-top:16px;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
       <i class="ti ti-share"></i> Compartir comparativa
     </button>`;

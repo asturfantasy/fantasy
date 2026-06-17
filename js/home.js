@@ -42,6 +42,21 @@ async function loadHome() {
       const deltaEl = document.getElementById('stat-puntos-delta');
       //if (deltaEl) { deltaEl.textContent = diff >= 0 ? '+' + diff + ' vs media' : diff + ' vs media'; deltaEl.style.color = diff >= 0 ? 'var(--neon)' : 'var(--red)'; }
       document.getElementById('stat-media').textContent = media;
+
+      // Banner ganador de la jornada
+      if (JORNADA_VISIBLE > 0) {
+        const { data: ganadorData } = await db.from('clasificacion_automatica')
+          .select('nombre_equipo, puntos')
+          .eq('jornada', JORNADA_VISIBLE)
+          .order('puntos', { ascending: false })
+          .limit(1)
+          .single();
+        const bannerGanador = document.getElementById('banner-ganador-jornada');
+        if (bannerGanador && ganadorData) {
+          bannerGanador.innerHTML = '🏆 <strong>' + ganadorData.nombre_equipo + '</strong> ganó la J' + JORNADA_VISIBLE + ' con <strong>' + ganadorData.puntos + ' pts</strong>';
+          bannerGanador.style.display = 'block';
+        }
+      }
     }
   }
 

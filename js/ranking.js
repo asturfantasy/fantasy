@@ -562,7 +562,7 @@ let rankingDetalleData = null;
 
 async function loadRankingDetalle() {
   if (!rankingDetalleData) {
-    const { data } = await db.from('ranking_jugadores').select('nombre, club, posicion, escudo_url, foto_url, goles, asistencias, porterias_cero, amarillas, rojas');
+    const { data } = await db.from('ranking_jugadores').select('nombre, club, posicion, escudo_url, foto_url, goles, asistencias, porterias_cero, amarillas, rojas, minutos_total');
     rankingDetalleData = data || [];
   }
   cambiarSubtabDetalle('goles');
@@ -573,11 +573,12 @@ function cambiarSubtabDetalle(subtab) {
   document.querySelector('[data-subtab="' + subtab + '"]')?.classList.add('active');
 
   const campos = {
-    goles:       { campo: 'goles',         label: 'Goles',          icono: '⚽' },
-    asistencias: { campo: 'asistencias',   label: 'Asistencias',    icono: '👟' },
+    goles:       { campo: 'goles',          label: 'Goles',         icono: '⚽' },
+    asistencias: { campo: 'asistencias',    label: 'Asistencias',   icono: '👟' },
     porterias:   { campo: 'porterias_cero', label: 'Port. a cero',  icono: '🔒' },
-    amarillas:   { campo: 'amarillas',     label: 'Amarillas',      icono: '🟨' },
-    rojas:       { campo: 'rojas',         label: 'Rojas',          icono: '🟥' },
+    amarillas:   { campo: 'amarillas',      label: 'Amarillas',     icono: '🟨' },
+    rojas:       { campo: 'rojas',          label: 'Rojas',         icono: '🟥' },
+    minutos:     { campo: 'minutos_total',  label: 'Minutos',       icono: '⏱️' },
   };
 
   const { campo, label, icono } = campos[subtab];

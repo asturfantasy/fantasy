@@ -66,6 +66,18 @@ async function loadLineup() {
   const puntosMap = {};
   (rankingData || []).forEach(r => { puntosMap[r.nombre + '-' + r.club] = r.puntos_total; });
   (data || []).forEach(j => { j.puntos_total = puntosMap[j.nombre + '-' + j.club] ?? j.puntos; });
+
+  // Calcular cambio de valor respecto a jornada anterior
+  const { data: valoresAnt } = await db.from('jugadores')
+    .select('nombre, club, valor')
+    .eq('jornada', JORNADA_ACTIVA - 1);
+  const valorAntMap = {};
+  (valoresAnt || []).forEach(j => { valorAntMap[j.nombre + '|' + j.club] = parseFloat(j.valor) || 0; });
+  (data || []).forEach(j => {
+    const valorAnt = valorAntMap[j.nombre + '|' + j.club];
+    j.cambio_valor = valorAnt !== undefined ? (parseFloat(j.valor) || 0) - valorAnt : 0;
+  });
+
   jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
   (data || []).forEach(j => { if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j); });
   Object.keys(jugadoresPorPos).forEach(pos => { jugadoresPorPos[pos].sort((a, b) => (b.puntos_total ?? 0) - (a.puntos_total ?? 0)); });
@@ -216,6 +228,17 @@ async function loadLineup() {
       }
     }
   }
+  // Aviso jugadores inactivos
+  const inactivosAlin = Object.values(seleccionados).filter(j => j.activo === 0 || j.activo === '0');
+  const avisoEl = document.getElementById('aviso-inactivos-lineup');
+  if (avisoEl) {
+    if (inactivosAlin.length) {
+      //avisoEl.textContent = '⚠️ ' + inactivosAlin.map(j => j.nombre).join(', ') + (inactivosAlin.length === 1 ? ' no está disponible' : ' no están disponibles');
+      //avisoEl.style.display = 'block';
+    } else {
+      avisoEl.style.display = 'none';
+    }
+  }
   setTimeout(() => { renderPitch(); actualizarPresupuesto(); }, 100);
 }
 
@@ -229,40 +252,52 @@ async function exportarAlineacion() {
 
   const ordenPos = ['POR','DEF','MED','DEL','ENT'];
   const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
+  const posLabel = { POR:'PORTERO', DEF:'DEFENSAS', MED:'MEDIOS', DEL:'DELANTEROS', ENT:'ENTRENADOR' };
 
   const jugadores = Object.values(seleccionados).sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
   const costeTotal = jugadores.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0).toFixed(1);
   const capitanId = capitan;
 
+  // Agrupar por posición
+  const porPos = {};
+  jugadores.forEach(j => { if (!porPos[j.posicion]) porPos[j.posicion] = []; porPos[j.posicion].push(j); });
+
+  const jugadorHtml = (j) => {
+    const esC = String(capitanId) === String(j.id);
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#1a2420;border-radius:8px' + (esC ? ';border:1px solid rgba(227,179,65,0.4)' : '') + '">' +
+      '<div style="width:8px;height:8px;border-radius:50%;background:' + (posColor[j.posicion]||'#fff') + ';flex-shrink:0"></div>' +
+      (j.foto_url ? '<img src="' + j.foto_url + '" width="26" height="26" style="object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display=\'none\'">' : '') +
+      '<span style="font-size:12px;color:white;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + (esC ? ' ⭐' : '') + '</span>' +
+      (j.escudo_url ? '<img src="' + j.escudo_url + '" width="18" height="18" style="object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' : '<span style="font-size:10px;color:rgba(255,255,255,0.4);flex-shrink:0">' + j.club + '</span>') +
+      '<span style="font-size:11px;font-weight:700;color:#e3b341;flex-shrink:0;min-width:36px;text-align:right">' + (j.valor || 0) + 'M</span>' +
+    '</div>';
+  };
+
+  const seccionHtml = (pos) => {
+    if (!porPos[pos]?.length) return '';
+    return '<div style="margin-bottom:10px">' +
+      '<div style="font-size:8px;color:#4a5e58;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;padding-left:2px">' + posLabel[pos] + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px">' +
+        porPos[pos].map(jugadorHtml).join('') +
+      '</div>' +
+    '</div>';
+  };
+
   const tarjeta = document.createElement('div');
   tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
 
   tarjeta.innerHTML =
-    // Header
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
       '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px" onerror="this.style.display=\'none\'">' +
       '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
       '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4)">J' + JORNADA_ACTIVA + ' · ' + formacion + '</span>' +
     '</div>' +
-    // Nombre equipo y coste
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
       '<div style="font-size:15px;font-weight:700;color:white">' + nombreEquipo + '</div>' +
       '<div style="font-family:monospace;font-size:11px;color:#e3b341">' + costeTotal + 'M</div>' +
     '</div>' +
-    // Jugadores
-    '<div style="display:flex;flex-direction:column;gap:6px">' +
-      jugadores.map(j => {
-        const esC = String(capitanId) === String(j.id);
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#1a2420;border-radius:8px' + (esC ? ';border:1px solid rgba(227,179,65,0.4)' : '') + '">' +
-          '<div style="width:8px;height:8px;border-radius:50%;background:' + (posColor[j.posicion]||'#fff') + ';flex-shrink:0"></div>' +
-          (j.foto_url ? '<img src="' + j.foto_url + '" width="26" height="26" style="object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display=\'none\'">' : '') +
-          '<span style="font-size:12px;color:white;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + (esC ? ' ⭐' : '') + '</span>' +
-          '<span style="font-size:10px;color:rgba(255,255,255,0.4);flex-shrink:0">' + j.club + '</span>' +
-          '<span style="font-size:11px;font-weight:700;color:#e3b341;flex-shrink:0">' + (j.valor || 0) + 'M</span>' +
-        '</div>';
-      }).join('') +
-    '</div>' +
-    '<div style="margin-top:14px;text-align:center;font-size:9px;color:#4a5e58">asturfantasy.com</div>';
+    ordenPos.map(seccionHtml).join('') +
+    '<div style="margin-top:6px;text-align:center;font-size:9px;color:#4a5e58">asturfantasy.com</div>';
 
   document.body.appendChild(tarjeta);
   try {
@@ -348,8 +383,8 @@ function openModal(slotId, posicion, cls) {
       const noD = j.activo === 0 || j.activo === '0';
       const bR = noD ? '3px solid rgba(220,38,38,0.9)' : '1px solid var(--border)';
       const esc = '<div style="position:relative;width:36px;height:36px;flex-shrink:0">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="36" height="36" style="object-fit:cover;border-radius:50%;border:' + bR + '" onerror="this.style.display=\'none\'">' : '<div style="width:36px;height:36px;border-radius:50%;background:' + colores[cls] + ';color:' + textoCols[cls] + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;border:' + bR + '">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="13" height="13" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + '</div>';
-      return '<div class="modal-player" data-id="' + j.id + '" data-slot="' + slotId + '" style="opacity:' + (usado || clubLleno ? '0.3' : '1') + ';pointer-events:' + (usado || clubLleno ? 'none' : 'auto') + '">' + esc + '<div><div class="modal-player-name">' + j.nombre + '</div><div class="modal-player-meta">' + j.club + ' · ' + j.posicion + (j.rival ? ' · vs ' + j.rival + ' (' + (j.es_local ? '🏠' : '✈️') + ')' : '') + '</div></div><div style="text-align:right"><div class="modal-player-pts">' + (j.puntos_total || 0) + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">' + (j.valor || 0) + 'M</div></div></div>';
-    }).join('');
+      return '<div class="modal-player" data-id="' + j.id + '" data-slot="' + slotId + '" style="opacity:' + (usado || clubLleno ? '0.3' : '1') + ';pointer-events:' + (usado || clubLleno ? 'none' : 'auto') + '">' + esc + '<div><div class="modal-player-name">' + j.nombre + '</div><div class="modal-player-meta">' + j.club + ' · ' + j.posicion + (j.rival ? ' · vs ' + j.rival + ' (' + (j.es_local ? '🏠' : '✈️') + ')' : '') + '</div></div><div style="text-align:right"><div class="modal-player-pts">' + (j.puntos_total || 0) + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">' + (j.valor || 0) + 'M' + (j.cambio_valor > 0 ? ' <span style="color:#4cd97b;font-size:9px">▲</span>' : j.cambio_valor < 0 ? ' <span style="color:#f05e5e;font-size:9px">▼</span>' : '') + '</div></div></div>';
+      }).join('');
     document.querySelectorAll('.modal-player').forEach(el => {
       el.addEventListener('click', () => { seleccionados[slotId] = jugadoresPorPos[posicion].find(j => j.id === el.dataset.id); cambiosSinGuardar = true; closeModal(); renderPitch(); actualizarSelectCapitan(); actualizarPresupuesto(); });
     });
