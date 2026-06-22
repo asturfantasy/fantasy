@@ -116,7 +116,7 @@ function limpiarJugador(idx) {
 async function calcStatsEntrenador(nombre, club) {
   const [{ data: rawJornadas }, { data: partidosFinalizados }] = await Promise.all([
     db.from('jugadores').select('total_jornada, puntos_entrenador, amarilla, doble_amarilla, roja, jornada').eq('nombre', nombre).eq('posicion', 'ENT'),
-    db.from('partidos').select('jornada').eq('finalizado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
+    db.from('partidos').select('jornada').eq('finalizado', true).eq('publicado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
   ]);
 
   const jornadasFinalizadas = new Set((partidosFinalizados || []).map(p => p.jornada));
@@ -139,6 +139,7 @@ async function calcStatsEntrenador(nombre, club) {
     const { data: partido } = await db.from('partidos')
       .select('resultado_local, resultado_visitante, local_abrev, visitante_abrev')
       .eq('jornada', j.jornada)
+      .eq('publicado', true)
       .or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
       .single();
 
