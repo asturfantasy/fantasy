@@ -27,7 +27,7 @@ const CLUBES_INFO = {
   LLA: { nombre: 'CD Llanes', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LLA.png' },
   STA: { nombre: 'Avilés Stadium CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/STA.png' },
   IND: { nombre: 'UD Gijón Industrial', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/IND.png' },
-  SDL: { nombre: 'SD Lenense', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SDL.png' },
+  CAU: { nombre: 'Caudal Deportivo', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CAU.png' },
   AST: { nombre: 'Astur CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/AST.png' },
   AND: { nombre: 'Andés CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/AND.png' },
   CON: { nombre: 'Condal CF', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CON.png' },
