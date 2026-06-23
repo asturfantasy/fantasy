@@ -246,6 +246,7 @@
           <div class="page-title">Partidos</div>
           <div style="display:flex;gap:8px">
             <button class="btn" id="btn-nueva-jornada"><i class="ti ti-calendar-plus"></i> Nueva jornada</button>
+            <button class="btn" id="btn-compartir-jornada"><i class="ti ti-share"></i> Compartir jornada</button>
             <button class="btn btn-primary" id="btn-nuevo-partido"><i class="ti ti-plus"></i> Añadir partido</button>
           </div>
         </div>
@@ -482,6 +483,10 @@
       <div class="form-group"><div class="form-label">Visitante (abrev)</div><input class="form-input" id="np-visitante-abrev" type="text" placeholder="COV" /></div>
       <div class="form-group"><div class="form-label">Visitante (nombre)</div><input class="form-input" id="np-visitante-nombre" type="text" placeholder="Covadonga" /></div>
     </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <div class="form-label">Orden</div>
+      <input class="form-input" id="np-orden" type="number" placeholder="1" min="1" />
+    </div>
     <div class="form-group" style="margin-bottom:16px">
       <div class="form-label">Fecha</div>
       <input class="form-input" id="np-fecha" type="text" placeholder="Domingo 24, 12:00h" />
@@ -709,8 +714,8 @@ async function eliminarJornada(jornada) {
   }
 
   async function cargarTablaPartidos(jornada) {
-    document.getElementById('partidos-jornada-label').textContent = jornada;
-    const { data } = await db.from('partidos').select('*').eq('jornada', jornada).order('fecha');
+  document.getElementById('partidos-jornada-label').textContent = jornada;
+  const { data } = await db.from('partidos').select('*').eq('jornada', jornada).order('orden', { ascending: true });
     const tbody = document.getElementById('tabla-partidos');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">Sin partidos para esta jornada</td></tr>'; return; }
     tbody.innerHTML = data.map(p =>
@@ -767,7 +772,7 @@ async function eliminarJornada(jornada) {
   document.getElementById('btn-nuevo-partido').addEventListener('click', () => {
     const select = document.getElementById('select-jornada-partidos');
     document.getElementById('np-jornada').value = select.value || '';
-    ['np-estadio','np-local-abrev','np-local-nombre','np-visitante-abrev','np-visitante-nombre','np-fecha'].forEach(id => document.getElementById(id).value = '');
+    ['np-estadio','np-local-abrev','np-local-nombre','np-visitante-abrev','np-visitante-nombre','np-fecha','np-orden'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('modal-nuevo-partido').classList.add('open');
   });
 
@@ -804,7 +809,8 @@ async function eliminarJornada(jornada) {
       visitante_escudo_url: jugVisitante?.escudo_url || null,
       estadio: document.getElementById('np-estadio').value.trim() || null,
       fecha: document.getElementById('np-fecha').value.trim() || null,
-      finalizado: false
+orden: parseInt(document.getElementById('np-orden').value) || 0,
+finalizado: false
     });
     btn.disabled = false; btn.textContent = 'Guardar partido';
     document.getElementById('modal-nuevo-partido').classList.remove('open');
@@ -1281,6 +1287,147 @@ async function generarEquipos(jornada) {
   document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
     item.addEventListener('click', () => { if (window.innerWidth <= 768) closeSidebar(); });
   });
+
+  document.getElementById('btn-compartir-jornada').addEventListener('click', () => {
+  const jornada = parseInt(document.getElementById('select-jornada-partidos').value);
+  generarCardJornada(jornada);
+});
+
+async function generarCardJornada(jornada) {
+  const { data: partidos } = await db.from('partidos').select('*').eq('jornada', jornada).order('orden', { ascending: true });
+  if (!partidos?.length) { showToast('Sin partidos para esta jornada', true); return; }
+
+  const W = 800;
+  const ROW = 100;
+  const HEADER = 70;
+  const FOOTER = 44;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = HEADER + partidos.length * ROW + FOOTER;
+  const ctx = canvas.getContext('2d');
+
+  // Fondo general
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#e6edf3';
+ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('JORNADA ' + jornada, W / 2, HEADER / 2);
+
+  // Línea separadora bajo header
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(40, HEADER - 1);
+  ctx.lineTo(W - 40, HEADER - 1);
+  ctx.stroke();
+
+  const cargarImagen = (url) => new Promise((res) => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  for (let i = 0; i < partidos.length; i++) {
+    const p = partidos[i];
+    const y = HEADER + i * ROW;
+    const bg = i % 2 === 0 ? '#161b22' : '#1c2128';
+
+    // Fondo fila
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, y, W, ROW);
+
+    // Línea separadora
+    ctx.strokeStyle = '#21262d';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y + ROW - 1);
+    ctx.lineTo(W, y + ROW - 1);
+    ctx.stroke();
+
+    const escSize = 48;
+    const escY = y + (ROW - escSize) / 2;
+    const margenEsc = 36;
+    const margenNombre = margenEsc + escSize + 14;
+    const centroX = W / 2;
+
+    // Escudo local
+    const escLocal = await cargarImagen(p.local_escudo_url);
+    if (escLocal) {
+      const ratio = escLocal.width / escLocal.height;
+      const h = escSize;
+      const w = h * ratio;
+      ctx.drawImage(escLocal, margenEsc + (escSize - w) / 2, escY, w, h);
+    }
+
+    // Nombre local
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.local_nombre, margenNombre, y + ROW / 2 - 6);
+
+    // Nombre local abrev pequeño
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '11px monospace';
+    ctx.fillText(p.local_abrev, margenNombre, y + ROW / 2 + 12);
+
+    // Resultado o fecha — centro
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (p.finalizado) {
+      ctx.fillStyle = '#00d97e';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillText(p.resultado_local + ' — ' + p.resultado_visitante, centroX, y + ROW / 2);
+    } else {
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '12px monospace';
+      ctx.fillText(p.fecha || 'Por confirmar', centroX, y + ROW / 2 - 6);
+      ctx.fillStyle = '#30363d';
+      ctx.font = '11px monospace';
+      ctx.fillText(p.estadio || '', centroX, y + ROW / 2 + 12);
+    }
+
+    // Nombre visitante
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(p.visitante_nombre, W - margenNombre, y + ROW / 2 - 6);
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '11px monospace';
+    ctx.fillText(p.visitante_abrev, W - margenNombre, y + ROW / 2 + 12);
+
+    // Escudo visitante
+    const escVisitante = await cargarImagen(p.visitante_escudo_url);
+    if (escVisitante) {
+      const ratio = escVisitante.width / escVisitante.height;
+      const h = escSize;
+      const w = h * ratio;
+      ctx.drawImage(escVisitante, W - margenEsc - escSize + (escSize - w) / 2, escY, w, h);
+    }
+  }
+
+  // Footer
+  ctx.fillStyle = '#161b22';
+  ctx.fillRect(0, HEADER + partidos.length * ROW, W, FOOTER);
+  ctx.fillStyle = '#30363d';
+  ctx.fillRect(0, HEADER + partidos.length * ROW, W, 1);
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', W / 2, HEADER + partidos.length * ROW + FOOTER / 2);
+
+  const link = document.createElement('a');
+  link.download = 'jornada-' + jornada + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
 
 </script>
 </body>
