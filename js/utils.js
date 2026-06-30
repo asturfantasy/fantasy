@@ -177,4 +177,6 @@ function goTo(screenId) {
     'perfil': loadPerfil,
   };
   if (loaders[screenId]) loaders[screenId]();
+  const screensPersistentes = ['home', 'lineup', 'myteam', 'ranking', 'criterios', 'perfil'];
+  if (screensPersistentes.includes(screenId)) localStorage.setItem('lastScreen', screenId);
 }
