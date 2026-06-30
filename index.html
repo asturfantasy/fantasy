@@ -89,12 +89,13 @@
             <div class="home-stat-delta muted" id="stat-media-label"></div>
         </div>
     </div>
+    <!--<div id="banner-ganador-jornada" style="display:none;background:var(--surface);border:1px solid rgba(227,179,65,0.3);border-radius:10px;padding:12px 16px;font-family:var(--font-display);font-size:13px;color:var(--amber);margin-bottom:12px;text-align:center"></div>-->
     <main class="page-body">
         <div id="card-mensaje-home" style="display:none;background:rgba(227,179,65,0.12);border:1px solid rgba(227,179,65,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;font-family:var(--font-mono);font-size:11px;color:var(--yellow);text-align:center"></div>
-        <!--<button class="action-btn" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:14px;background:var(--green-brand)">
+        <button class="action-btn" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:14px;background:var(--green-brand)">
             <span class="action-label" style="color:var(--white)">PUNTUACIONES DE JORNADAS ANTERIORES</span>
         </button>
-        <div onclick="window.open('https://www.instagram.com/asturfantasy','_blank')" style="margin:12px 0;border-radius:10px;overflow:hidden;cursor:pointer;position:relative">
+        <!--<div onclick="window.open('https://www.instagram.com/asturfantasy','_blank')" style="margin:12px 0;border-radius:10px;overflow:hidden;cursor:pointer;position:relative">
             <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);letter-spacing:1px;text-align:right;margin-bottom:3px">PUBLICIDAD</div>
             <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/banners/anunciate_aqui.png" style="width:100%;border-radius:10px;display:block" loading="lazy">
         </div>-->
@@ -140,6 +141,7 @@
         <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--white)">PRESUPUESTO DISPONIBLE</div>
         <div id="presupuesto-valor" style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">100M</div>
     </div>
+    <div id="aviso-inactivos-lineup" style="display:none;background:rgba(240,94,94,0.15);border:1px solid rgba(240,94,94,0.3);border-radius:8px;padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:#f05e5e;margin-bottom:8px"></div>
     <div style="padding:8px 16px;display:flex;justify-content:center;align-items:center;gap:12px">
         <select id="formation-select" class="formation-select">
             <option>4-3-3</option><option>4-4-2</option><option>4-5-1</option>
@@ -247,7 +249,7 @@
         </div>
 
 
-        <!--<div onclick="window.open('https://play.asturfutbol.es/#','_blank')" style="margin:12px 0;border-radius:10px;overflow:hidden;cursor:pointer;position:relative">
+       <!-- <div onclick="window.open('https://play.asturfutbol.es/#','_blank')" style="margin:12px 0;border-radius:10px;overflow:hidden;cursor:pointer;position:relative">
             <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);letter-spacing:1px;text-align:right;margin-bottom:3px">PUBLICIDAD</div>
             <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/banners/play_astur.png" style="width:100%;border-radius:10px;display:block" loading="lazy">
         </div>-->
@@ -426,6 +428,7 @@
             <button class="ranking-subtab" data-subtab="porterias" onclick="cambiarSubtabDetalle('porterias')">🔒 P.Cero</button>
             <button class="ranking-subtab" data-subtab="amarillas" onclick="cambiarSubtabDetalle('amarillas')">🟨 Amar.</button>
             <button class="ranking-subtab" data-subtab="rojas" onclick="cambiarSubtabDetalle('rojas')">🟥 Rojas</button>
+            <button class="ranking-subtab" data-subtab="minutos" onclick="cambiarSubtabDetalle('minutos')">⏱️ Min.</button>
         </div>
         <div id="detalle-container"></div>
     </main>
@@ -586,19 +589,6 @@
             </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px">
-            <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(76,217,123,0.2)">
-                <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">General</div>
-                <div id="perfil-pos-general" style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--neon)">—</div>
-                <div id="perfil-pts-total" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:2px">— pts</div>
-            </div>
-            <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(227,179,65,0.2)">
-                <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Última jornada</div>
-                <div id="perfil-pos-semanal" style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--amber)">—</div>
-                <div id="perfil-pts-semanal" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:2px">— pts</div>
-            </div>
-        </div>
-
         <!-- Estadísticas -->
         <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Estadísticas</div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px" id="perfil-stats"></div>
@@ -621,37 +611,25 @@
                 Competirás también en una liga exclusiva de sus aficionados
             </p>
             <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:16px;overflow-y:auto;flex:1;padding-right:4px">
-                <div class="equipo-favorito-item" data-club="COV" onclick="seleccionarEquipoFavorito('COV')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COV.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD COVADONGA</div>
+                <div class="equipo-favorito-item" data-club="AND" onclick="seleccionarEquipoFavorito('AND')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/AND.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">ANDÉS CF</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="MOS" onclick="seleccionarEquipoFavorito('MOS')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/MOS.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD MOSCONIA</div>
+                <div class="equipo-favorito-item" data-club="AST" onclick="seleccionarEquipoFavorito('AST')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/AST.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">ASTUR CF</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="EIS" onclick="seleccionarEquipoFavorito('EIS')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/EIS.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">EI SAN MARTÍN</div>
+                <div class="equipo-favorito-item" data-club="STA" onclick="seleccionarEquipoFavorito('STA')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/STA.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">AVILÉS STADIUM CF</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="LEA" onclick="seleccionarEquipoFavorito('LEA')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LEA.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD LEALTAD</div>
-                </div>
-                <div class="equipo-favorito-item" data-club="UPL" onclick="seleccionarEquipoFavorito('UPL')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/UPL.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">UP LANGREO</div>
-                </div>
-                <div class="equipo-favorito-item" data-club="LEN" onclick="seleccionarEquipoFavorito('LEN')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LEN.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">L'ENTREGU CF</div>
+                <div class="equipo-favorito-item" data-club="CAU" onclick="seleccionarEquipoFavorito('CAU')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CAU.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CAUDAL DEPORTIVO</div>
                 </div>
                 <div class="equipo-favorito-item" data-club="UCC" onclick="seleccionarEquipoFavorito('UCC')">
                     <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/UCC.png" width="56" height="56" style="object-fit:contain">
                     <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">UC CEARES</div>
-                </div>
-                <div class="equipo-favorito-item" data-club="PRA" onclick="seleccionarEquipoFavorito('PRA')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/PRA.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD PRAVIANO</div>
                 </div>
                 <div class="equipo-favorito-item" data-club="SIE" onclick="seleccionarEquipoFavorito('SIE')">
                     <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SIE.png" width="56" height="56" style="object-fit:contain">
@@ -661,33 +639,45 @@
                     <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COL.png" width="56" height="56" style="object-fit:contain">
                     <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD COLUNGA</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="LLA" onclick="seleccionarEquipoFavorito('LLA')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LLA.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD LLANES</div>
+                <div class="equipo-favorito-item" data-club="CON" onclick="seleccionarEquipoFavorito('CON')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CON.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CONDAL CF</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="STA" onclick="seleccionarEquipoFavorito('STA')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/STA.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">AVILÉS STADIUM CF</div>
+                <div class="equipo-favorito-item" data-club="COV" onclick="seleccionarEquipoFavorito('COV')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COV.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD COVADONGA</div>
                 </div>
                 <div class="equipo-favorito-item" data-club="IND" onclick="seleccionarEquipoFavorito('IND')">
                     <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/IND.png" width="56" height="56" style="object-fit:contain">
                     <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">UD GIJÓN INDUSTRIAL</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="SDL" onclick="seleccionarEquipoFavorito('SDL')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SDL.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">SD LENENSE</div>
+                <div class="equipo-favorito-item" data-club="LEN" onclick="seleccionarEquipoFavorito('LEN')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LEN.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">L'ENTREGU CF</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="RIB" onclick="seleccionarEquipoFavorito('RIB')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/RIB.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">RIBADESELLA CF</div>
+                <div class="equipo-favorito-item" data-club="UPL" onclick="seleccionarEquipoFavorito('UPL')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/UPL.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">UP LANGREO</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="AND" onclick="seleccionarEquipoFavorito('AND')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/AND.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">ANDÉS CF</div>
+                <div class="equipo-favorito-item" data-club="LEA" onclick="seleccionarEquipoFavorito('LEA')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LEA.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD LEALTAD</div>
                 </div>
-                <div class="equipo-favorito-item" data-club="CON" onclick="seleccionarEquipoFavorito('CON')">
-                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/CON.png" width="56" height="56" style="object-fit:contain">
-                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CONDAL CF</div>
+                <div class="equipo-favorito-item" data-club="LLA" onclick="seleccionarEquipoFavorito('LLA')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LLA.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD LLANES</div>
+                </div>
+                <div class="equipo-favorito-item" data-club="MOS" onclick="seleccionarEquipoFavorito('MOS')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/MOS.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD MOSCONIA</div>
+                </div>
+                <div class="equipo-favorito-item" data-club="PRA" onclick="seleccionarEquipoFavorito('PRA')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/PRA.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">CD PRAVIANO</div>
+                </div>
+                <div class="equipo-favorito-item" data-club="EIS" onclick="seleccionarEquipoFavorito('EIS')">
+                    <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/EIS.png" width="56" height="56" style="object-fit:contain">
+                    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center">EI SAN MARTÍN</div>
                 </div>
                 <div class="equipo-favorito-item" data-club="SPO" onclick="seleccionarEquipoFavorito('SPO')">
                     <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SPO.png" width="56" height="56" style="object-fit:contain">

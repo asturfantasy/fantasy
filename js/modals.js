@@ -386,7 +386,7 @@ async function mostrarHistorial(nombre, club, posicion) {
       </div>`;
   }
 
-  modal._historialData = { nombre, club, posicion, foto, escudo, total, maxPts, data };
+  modal._historialData = { nombre, club, posicion, foto, escudo, total, maxPts, data, marcadores };
 
   const graficaValorHtml = () => {
     if (valoresData.length < 2) return '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:12px">No hay suficientes datos</div>';
@@ -522,7 +522,7 @@ document.getElementById('modal-historial')?.addEventListener('click', e => { if 
 
 async function compartirHistorial() {
   const modal = document.getElementById('modal-historial');
-  const { nombre, club, posicion, foto, escudo, total, maxPts, data } = modal._historialData;
+  const { nombre, club, posicion, foto, escudo, total, maxPts, data, marcadores } = modal._historialData;
 
   const iconosTexto = (d) => {
     const items = [];
@@ -544,12 +544,10 @@ async function compartirHistorial() {
   tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
 
   tarjeta.innerHTML =
-    // Header logo
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
       '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
       '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
     '</div>' +
-    // Jugador
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.07)">' +
       '<div style="width:52px;height:52px;border-radius:50%;background:#243028;border:2px solid rgba(76,217,123,0.3);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#7a9088;font-weight:700;font-size:16px">' +
         (foto ? '<img src="' + foto + '" width="52" height="52" style="object-fit:cover;border-radius:50%">' : nombre.substring(0,2).toUpperCase()) +
@@ -564,46 +562,43 @@ async function compartirHistorial() {
         '<div style="font-size:9px;color:#7a9088">pts</div>' +
       '</div>' +
     '</div>' +
-    // Barras
-    data.map(d =>
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
-        '<div style="display:flex;align-items:center;gap:3px;flex-shrink:0;min-width:76px">' +
+    data.map(d => {
+      const pts = d.total_jornada;
+      const esNegativo = pts < 0;
+      const anchoPct = Math.min(Math.abs(pts) / maxPts * 100, 100);
+      const marcador = marcadores?.[d.jornada];
+      const marcadorTexto = marcador ? ' (' + marcador.local + '-' + marcador.visitante + ')' : '';
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
+        '<div style="display:flex;align-items:center;gap:3px;flex-shrink:0;min-width:90px">' +
           '<span style="font-size:10px;color:#7a9088">J' + d.jornada + '</span>' +
-          (d.rival ? '<span style="font-size:9px">' + (d.es_local ? '🏠' : '✈️') + '</span><span style="font-size:9px;color:#7a9088">' + d.rival + '</span>' : '') +
+          (d.rival ? '<span style="font-size:9px">' + (d.es_local ? '🏠' : '✈️') + '</span><span style="font-size:9px;color:#7a9088">' + d.rival + marcadorTexto + '</span>' : '') +
         '</div>' +
-        '<div style="flex:1;background:#243028;border-radius:3px;height:20px;overflow:hidden">' +
-          '<div style="height:100%;width:' + Math.max((d.total_jornada / maxPts) * 100, 0) + '%;background:#4cd97b;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;min-width:' + (d.total_jornada > 0 ? '22px' : '0') + '">' +
-            (d.total_jornada > 0 ? '<span style="font-size:10px;color:#111816;font-weight:700">' + d.total_jornada + '</span>' : '') +
+        '<div style="flex:1;background:#243028;border-radius:3px;height:20px;overflow:hidden;display:flex;align-items:center;' + (esNegativo ? 'flex-direction:row-reverse;' : '') + '">' +
+          '<div style="height:100%;width:' + anchoPct + '%;background:' + (esNegativo ? '#f05e5e' : '#4cd97b') + ';border-radius:3px;display:flex;align-items:center;' + (esNegativo ? 'justify-content:flex-start;padding-left:5px;' : 'justify-content:flex-end;padding-right:5px;') + 'min-width:' + (pts !== 0 ? '22px' : '0') + '">' +
+            (pts !== 0 ? '<span style="font-size:10px;color:' + (esNegativo ? 'white' : '#111816') + ';font-weight:700">' + pts + '</span>' : '') +
           '</div>' +
         '</div>' +
-        (d.total_jornada <= 0 ? '<span style="font-size:11px;color:#7a9088">0</span>' : '') +
+        (pts === 0 ? '<span style="font-size:11px;color:#7a9088">0</span>' : '') +
         (iconosTexto(d) ? '<span style="font-size:12px;flex-shrink:0">' + iconosTexto(d) + '</span>' : '') +
-      '</div>'
-    ).join('') +
+      '</div>';
+    }).join('') +
     '<div style="margin-top:14px;text-align:center;font-size:10px;color:#4a5e58">asturfantasy.com</div>';
 
   document.body.appendChild(tarjeta);
-
   try {
-    const canvas = await html2canvas(tarjeta, {
-      backgroundColor: '#111816',
-      scale: 2,
-      useCORS: true,
-    });
+    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
     document.body.removeChild(tarjeta);
-
     canvas.toBlob(async blob => {
       const file = new File([blob], nombre + '_historial.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: nombre + ' · AsturFantasy' });
       } else {
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = nombre + '_historial.png'; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = nombre + '_historial.png'; a.click();
         URL.revokeObjectURL(url);
       }
     });
-  } catch (e) {
+  } catch(e) {
     if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
     showToast('Error al compartir');
   }
@@ -612,8 +607,6 @@ async function compartirHistorial() {
 document.getElementById('historial-close')?.addEventListener('click', () => document.getElementById('modal-historial').classList.remove('open'));
 document.getElementById('modal-historial')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
 
-document.getElementById('historial-close')?.addEventListener('click', () => document.getElementById('modal-historial').classList.remove('open'));
-document.getElementById('modal-historial')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
 
 /* ── PARTIDO ────────────────────────────────────────────── */
 async function mostrarPartido(localAbrev, visitanteAbrev, localNombre, visitanteNombre, jornada, desdeConsulta = false) {
