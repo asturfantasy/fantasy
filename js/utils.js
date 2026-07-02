@@ -175,6 +175,7 @@ function goTo(screenId) {
     'ranking-comparador': loadComparador,
     'ranking-detalle': loadRankingDetalle,
     'perfil': loadPerfil,
+    'equipo': () => {},
   };
   if (loaders[screenId]) loaders[screenId]();
   const screensPersistentes = ['home', 'lineup', 'myteam', 'ranking', 'criterios', 'perfil'];

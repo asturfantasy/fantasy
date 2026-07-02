@@ -69,6 +69,8 @@
         <span class="jornada-num" id="home-jornada-num">—</span>
         <span class="jornada-side" id="home-bienvenida"></span>
     </div>
+    <div id="equipos-carrusel">
+    </div>
     <div id="banner-en-directo" style="display:none;background:#cc0000;color:white;text-align:center;padding:8px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px">
         <span style="animation:parpadeo 1.2s infinite">🔴</span> JORNADA EN DIRECTO
     </div>
@@ -516,6 +518,24 @@
             <div class="criterio-card"><div class="criterio-titulo"><i class="ti ti-cards" style="color:var(--green-light);margin-right:6px"></i>Tarjetas</div><div class="criterio-fila"><span>Amarilla</span><span class="criterio-pts neg">-1</span></div><div class="criterio-fila"><span>Doble amarilla</span><span class="criterio-pts neg">-3</span></div><div class="criterio-fila"><span>Roja directa</span><span class="criterio-pts neg">-5</span></div></div>
             <div class="criterio-card"><div class="criterio-titulo"><i class="ti ti-user-check" style="color:var(--green-light);margin-right:6px"></i>Entrenadores</div><div class="criterio-fila"><span>Partido ganado</span><span class="criterio-pts">3</span></div><div class="criterio-fila"><span>Partido empatado</span><span class="criterio-pts">1</span></div><div class="criterio-fila"><span>Partido perdido</span><span class="criterio-pts">0</span></div></div>
         </div>
+    </main>
+</div>
+
+<div id="screen-equipo" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('home')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title" id="equipo-nombre">—</span>
+    </div>
+    <div style="display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border)">
+        <button class="ranking-subtab active" id="tab-plantilla" onclick="cambiarTabEquipo('plantilla')">Plantilla</button>
+        <button class="ranking-subtab" id="tab-resultados" onclick="cambiarTabEquipo('resultados')">Resultados</button>
+    </div>
+    <main class="page-body">
+        <div id="equipo-grid" class="squad-grid"></div>
+        <div id="equipo-resultados" style="display:none"></div>
     </main>
 </div>
 
