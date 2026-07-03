@@ -613,18 +613,19 @@ function cambiarSubtabDetalle(subtab) {
 function logrosVacios() {
   return [
     { icono: '🏆', titulo: 'Primera victoria', desc: 'Gana una jornada', desbloqueado: false },
-    { icono: '🔥', titulo: 'Mítico', desc: '0/3 jornadas entre los 25 primeros', desbloqueado: false, contador: '0/3' },
-    { icono: '🔝', titulo: 'Capitán acertado', desc: 'Tu capitán fue el jugador con más puntos de tu equipo', desbloqueado: false },
-    { icono: '🧱', titulo: 'El muro', desc: 'Tu portero no encaja ningún gol', desbloqueado: false },
-    { icono: '🔍', titulo: 'Scout', desc: 'Alinea un jugador de menos de 6M que puntúe 10+', desbloqueado: false },
+    { icono: '🔥', titulo: 'Un clásico', desc: 'Logra el TOP50 en al menos 3 jornadas', desbloqueado: false, contador: '0/3' },
+    { icono: '🔝', titulo: 'Líder', desc: 'Tu capitán fue el jugador con más puntos de tu equipo', desbloqueado: false },
+    { icono: '🧱', titulo: 'El muro', desc: 'Tu portero no encaja gol', desbloqueado: false },
+    { icono: '🔍', titulo: 'Scout', desc: 'Alinea un jugador de menos de 6 millones que logre 10 o más puntos en una única jornada', desbloqueado: false },
     { icono: '🧼', titulo: 'Fair Play', desc: 'Tu equipo no recibe tarjetas en una jornada', desbloqueado: false },
-    { icono: '🚀', titulo: 'Artillería pesada', desc: '5 o más goles en una única jornada', desbloqueado: false },
-    { icono: '🛡️', titulo: 'Alma de delantero', desc: 'Un defensa alineado anota un gol', desbloqueado: false },
-    { icono: '🫶', titulo: 'Compañerismo', desc: '3 o más asistencias en una única jornada', desbloqueado: false },
-    { icono: '🍀', titulo: 'D. Trébol', desc: '0/5 jornadas consecutivas acertando entrenador', desbloqueado: false, contador: '0/5' },
+    { icono: '🚀', titulo: 'Artillería pesada', desc: 'Tu equipo anota 5 o más goles en una única jornada', desbloqueado: false },
+    { icono: '🛡️', titulo: 'Alma de delantero', desc: 'Un defensa alineado marca un gol', desbloqueado: false },
+    { icono: '🫶', titulo: 'Compañerismo', desc: 'Tu equipo logra 3 o más asistencias en una única jornada', desbloqueado: false },
+    { icono: '🔮', titulo: 'Oráculo', desc: '5 jornadas consecutivas acertando entrenador', desbloqueado: false, contador: '0/5' },
     { icono: '🆘', titulo: 'Gafe', desc: 'Alineas un jugador con puntuación negativa', desbloqueado: false },
+    { icono: '🌪️', titulo: 'Agitador', desc: 'Usa 50 jugadores diferentes', desbloqueado: false, contador: '0/50' },
     { icono: '💯', titulo: 'Centenario', desc: 'Logra 100 o más puntos en una única jornada', desbloqueado: false },
-    { icono: '⭐', titulo: 'Milenario', desc: '0/1000 puntos en la general', desbloqueado: false, contador: '0/1000' },
+    { icono: '⭐', titulo: 'Milenario', desc: 'Supera los 1.000 puntos en la general', desbloqueado: false, contador: '0/1000' },
   ];
 }
 

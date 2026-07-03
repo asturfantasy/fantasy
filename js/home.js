@@ -179,16 +179,22 @@ function cambiarTabEquipo(tab) {
 async function cargarResultadosEquipo(abrev) {
   const container = document.getElementById('equipo-resultados');
   container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Cargando...</div>';
+
   const { data } = await db
     .from('partidos')
     .select('*')
     .or(`local_abrev.eq.${abrev},visitante_abrev.eq.${abrev}`)
     .order('jornada', { ascending: true });
+
   if (!data?.length) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Sin partidos</div>';
     return;
   }
-  container.innerHTML = data.map(p => {
+
+  const jugados = data.filter(p => p.finalizado);
+  const pendientes = data.filter(p => !p.finalizado);
+
+  const renderPartido = (p) => {
     const esLocal = p.local_abrev === abrev;
     const rival = esLocal ? p.visitante_nombre : p.local_nombre;
     const rivalEscudo = esLocal ? p.visitante_escudo_url : p.local_escudo_url;
@@ -197,7 +203,8 @@ async function cargarResultadosEquipo(abrev) {
     const resultado = p.finalizado ? (golesA > golesC ? 'V' : golesA === golesC ? 'E' : 'D') : '—';
     const colorResultado = resultado === 'V' ? 'var(--neon)' : resultado === 'D' ? 'var(--red)' : 'var(--text-muted)';
     return `
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer"
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;
+                  border-bottom:1px solid var(--border);cursor:pointer"
            onclick="mostrarPartido('${p.local_abrev}', '${p.visitante_abrev}', '${p.local_nombre}', '${p.visitante_nombre}', ${p.jornada})">
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);width:20px;text-align:center">J${p.jornada}</div>
         <div style="font-size:14px;width:24px;text-align:center">${esLocal ? '🏠' : '✈️'}</div>
@@ -205,13 +212,33 @@ async function cargarResultadosEquipo(abrev) {
         <div style="flex:1;font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text)">${rival}</div>
         ${p.finalizado ? `
           <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text)">${golesA} - ${golesC}</div>
-          <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:${colorResultado};width:24px;text-align:center">${resultado}</div>
+          <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:${colorResultado};
+                      width:24px;text-align:center">${resultado}</div>
         ` : `
           <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${p.fecha || 'Por confirmar'}</div>
         `}
       </div>
     `;
-  }).join('');
+  };
+
+  container.innerHTML = `
+    ${jugados.length ? `
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;
+                  text-transform:uppercase;color:var(--neon);padding:8px 0 4px;
+                  border-bottom:1px solid var(--border);margin-bottom:4px">
+        Jugados (${jugados.length})
+      </div>
+      ${jugados.map(renderPartido).join('')}
+    ` : ''}
+    ${pendientes.length ? `
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;
+                  text-transform:uppercase;color:var(--text-muted);padding:8px 0 4px;
+                  border-bottom:1px solid var(--border);margin-bottom:4px;margin-top:16px">
+        Pendientes (${pendientes.length})
+      </div>
+      ${pendientes.map(renderPartido).join('')}
+    ` : ''}
+  `;
 }
 
 async function abrirEquipo(abrev, nombre) {
@@ -228,7 +255,7 @@ async function abrirEquipo(abrev, nombre) {
 
   const { data } = await db
     .from('ranking_jugadores')
-    .select('nombre, posicion, puntos_total, foto_url, escudo_url, valor')
+    .select('nombre, club, posicion, puntos_total, foto_url, escudo_url, valor')
     .eq('club', abrev)
     .order('puntos_total', { ascending: false });
 
@@ -257,7 +284,7 @@ async function abrirEquipo(abrev, nombre) {
       </div>
     `;
     html += jugadoresPos.map(j => `
-      <div class="player-card">
+      <div class="player-card" style="cursor:pointer" onclick="mostrarHistorial('${j.nombre}', '${j.club}', '${j.posicion}')">
         <div class="pc-avatar" style="position:relative;background:${POS_COLORS[j.posicion]};color:${POS_TEXT[j.posicion]};overflow:visible">
           ${j.foto_url
             ? `<img loading="lazy" src="${j.foto_url}" width="40" height="40"
