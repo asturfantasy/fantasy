@@ -643,14 +643,22 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
     .select('id, nombre, posicion, valor, gol, asistencia, amarilla, doble_amarilla, roja, goles_encajados, total_jornada, puerta_cero, puntos_entrenador, jornada, minutos')
     .in('id', jugadoresIds);
 
-  // Solo jornadas con partidos finalizados
-  const { data: partidosFinalizados } = await db
+  const { data: todosPartidos } = await db
     .from('partidos')
-    .select('jornada')
-    .eq('finalizado', true);
+    .select('jornada, finalizado');
+
+  // Una jornada está finalizada solo si TODOS sus partidos están finalizados
+  const jornadasPorPartidos = {};
+  (todosPartidos || []).forEach(p => {
+    if (!jornadasPorPartidos[p.jornada]) jornadasPorPartidos[p.jornada] = { total: 0, finalizados: 0 };
+    jornadasPorPartidos[p.jornada].total++;
+    if (p.finalizado) jornadasPorPartidos[p.jornada].finalizados++;
+  });
 
   const jornadasFinalizadas = new Set(
-    (partidosFinalizados || []).map(p => p.jornada)
+    Object.entries(jornadasPorPartidos)
+      .filter(([_, v]) => v.total > 0 && v.total === v.finalizados)
+      .map(([jornada]) => parseInt(jornada))
   );
 
   if (!jornadasFinalizadas.size) {
@@ -692,7 +700,7 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
       .filter(t => t.jornada === j.jornada && jornadasFinalizadas.has(t.jornada))
       .sort((a,b) => b.puntos - a.puntos);
     const pos = ranking.findIndex(r => r.user_id === currentUser.id);
-    if (pos >= 0 && pos < 25) miticoContador++;
+    if (pos >= 0 && pos < 50) miticoContador++;
   });
   const miticoDesbloqueado = miticoContador >= 3;
 
@@ -711,7 +719,7 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   for (const jornada of Object.keys(jugadoresPorJornada)) {
     const equipo = jugadoresPorJornada[jornada];
     const por = equipo.find(j => j.posicion === 'POR');
-    if (por?.puerta_cero === 1) { elMuro = true; break; }
+    if (por?.puerta_cero === 1 && (por?.minutos || 0) > 0) { elMuro = true; break; }
   }
 
   // Scout
@@ -775,6 +783,12 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   });
   const trebolDesbloqueado = trebolMax >= 5;
 
+  // Agitador: 50 jugadores diferentes durante la temporada
+  const jugadoresDiferentes = new Set(
+    (miEquipoAll || []).map(e => e.jugador_id)
+  ).size;
+  const agitadorDesbloqueado = jugadoresDiferentes >= 50;
+
   // Gafe
   let gafe = false;
   for (const jornada of Object.keys(jugadoresPorJornada)) {
@@ -792,18 +806,19 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
 
   return [
     { icono: '🏆', titulo: 'Primera victoria', desc: 'Gana una jornada', desbloqueado: victoriaJornada },
-    { icono: '🔥', titulo: 'Mítico', desc: `${Math.min(miticoContador, 3)}/3 jornadas entre los 25 primeros`, desbloqueado: miticoDesbloqueado, contador: `${Math.min(miticoContador, 3)}/3` },
-    { icono: '🔝', titulo: 'Capitán acertado', desc: 'Tu capitán fue el jugador con más puntos de tu equipo', desbloqueado: capitanAcertado },
-    { icono: '🧱', titulo: 'El muro', desc: 'Tu portero no encaja ningún gol', desbloqueado: elMuro },
-    { icono: '🔍', titulo: 'Scout', desc: 'Alinea un jugador de menos de 6M que puntúe 10+', desbloqueado: scout },
+    { icono: '🔥', titulo: 'Un clásico', desc: 'Logra el TOP50 en al menos 3 jornadas', desbloqueado: miticoDesbloqueado, contador: `${Math.min(miticoContador, 3)}/3` },
+    { icono: '🔝', titulo: 'Líder', desc: 'Tu capitán fue el jugador con más puntos de tu equipo', desbloqueado: capitanAcertado },
+    { icono: '🧱', titulo: 'El muro', desc: 'Tu portero no encaja gol', desbloqueado: elMuro },
+    { icono: '🔍', titulo: 'Scout', desc: 'Alinea un jugador de menos de 6 millones que logre 10 o más puntos en una única jornada', desbloqueado: scout },
     { icono: '🧼', titulo: 'Fair Play', desc: 'Tu equipo no recibe tarjetas en una jornada', desbloqueado: fairPlay },
-    { icono: '🚀', titulo: 'Artillería pesada', desc: '5 o más goles en una única jornada', desbloqueado: artilleria },
-    { icono: '🛡️', titulo: 'Alma de delantero', desc: 'Un defensa alineado anota un gol', desbloqueado: almaDelantero },
-    { icono: '🫶', titulo: 'Compañerismo', desc: '3 o más asistencias en una única jornada', desbloqueado: companerismo },
+    { icono: '🚀', titulo: 'Artillería pesada', desc: 'Tu equipo anota 5 o más goles en una única jornada', desbloqueado: artilleria },
+    { icono: '🛡️', titulo: 'Alma de delantero', desc: 'Un defensa alineado marca un gol', desbloqueado: almaDelantero },
+    { icono: '🫶', titulo: 'Compañerismo', desc: 'Tu equipo logra 3 o más asistencias en una única jornada', desbloqueado: companerismo },
     { icono: '🔮', titulo: 'Oráculo', desc: `${Math.min(trebolMax, 5)}/5 jornadas consecutivas acertando entrenador`, desbloqueado: trebolDesbloqueado, contador: `${Math.min(trebolMax, 5)}/5` },
     { icono: '🆘', titulo: 'Gafe', desc: 'Alineas un jugador con puntuación negativa', desbloqueado: gafe },
+    { icono: '🌪️', titulo: 'Agitador', desc: 'Usa 50 jugadores diferentes', desbloqueado: agitadorDesbloqueado, contador: `${Math.min(jugadoresDiferentes, 50)}/50` },
     { icono: '💯', titulo: 'Centenario', desc: 'Logra 100 o más puntos en una única jornada', desbloqueado: centenario },
-    { icono: '⭐', titulo: 'Milenario', desc: `${totalPuntos}/1000 puntos en la general`, desbloqueado: milenarioDesbloqueado, contador: `${totalPuntos}/1000` },
+    { icono: '⭐', titulo: 'Milenario', desc: 'Supera los 1.000 puntos en la general', desbloqueado: milenarioDesbloqueado, contador: `${totalPuntos}/1000` },
   ];
 }
 
