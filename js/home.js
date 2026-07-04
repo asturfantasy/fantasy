@@ -63,7 +63,7 @@ async function loadHome() {
     });
     clubes.sort((a, b) => a.nombre.localeCompare(b.nombre));
     carrusel.innerHTML = clubes.map(c => `
-      <div onclick="abrirEquipo('${c.abrev}', '${c.nombre}')"
+      <div onclick="abrirEquipo('${c.abrev}', '${c.nombre.replace(/'/g, "\\'")}')"
            style="flex-shrink:0;width:52px;height:52px;border-radius:10px;
                   background:var(--surface);border:1px solid var(--border);
                   display:flex;align-items:center;justify-content:center;
@@ -146,7 +146,7 @@ async function loadHome() {
                         padding:8px 10px;align-items:center;cursor:pointer;
                         background:${getBg(c.posicion)};
                         border-bottom:${getBorder(c.posicion)}"
-                 onclick="abrirEquipoDesdeClasif('${c.abrev}', '${c.equipo}')">
+                 onclick="abrirEquipoDesdeClasif('${c.abrev}', '${c.equipo.replace(/'/g, "\\'")}')">
               <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${c.posicion}</span>
               <div style="display:flex;align-items:center;gap:6px">
                 ${c.escudo_url ? `<img src="${c.escudo_url}" width="18" height="18" style="object-fit:contain">` : ''}
