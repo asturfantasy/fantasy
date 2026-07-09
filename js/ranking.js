@@ -484,7 +484,6 @@ async function exportarMVP() {
 }
 
 async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club, ligaId, ligaNombre) {
-  // Obtener datos completos según el tipo
   let tabla = [];
   let titulo = '';
   let subtitulo = '';
@@ -504,80 +503,173 @@ async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club
     const nombreClub = CLUBES_INFO[club]?.nombre || club || 'tu club';
     titulo = nombreClub;
     subtitulo = 'Liga de peña';
-  } else {
-    const { data } = await db.from('clasificacion_general_auto').select('*');
-    tabla = (data || []).map((r, i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos_total, esYo: r.user_id === currentUser?.id }));
-    titulo = 'Clasificación general';
-    subtitulo = 'AsturFantasy';
-  }
-  if (tipo === 'liga') {
-    const ligaId = arguments[5];
-    const ligaNombre = arguments[6];
+  } else if (tipo === 'liga') {
     const { data: miembros } = await db.from('liga_miembros').select('user_id').eq('liga_id', ligaId);
     const userIds = (miembros || []).map(m => m.user_id);
     const { data } = await db.from('clasificacion_general_auto').select('*').in('user_id', userIds);
     tabla = (data || []).sort((a,b) => b.puntos_total - a.puntos_total).map((r,i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos_total, esYo: r.user_id === currentUser?.id }));
     titulo = ligaNombre;
     subtitulo = 'Liga privada';
+  } else {
+    const { data } = await db.from('clasificacion_general_auto').select('*');
+    tabla = (data || []).map((r, i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos_total, esYo: r.user_id === currentUser?.id }));
+    titulo = 'Clasificación general';
+    subtitulo = 'AsturFantasy';
   }
 
-  const top10 = tabla.slice(0, 10);
+  const top10 = Array.from({ length: 10 }, (_, i) => tabla[i] || { pos: i+1, nombre: '—', pts: '—', esYo: false, vacio: true });
   const yo = tabla.find(r => r.esYo);
   const yoEnTop10 = yo && yo.pos <= 10;
 
-  const medalColor = (pos) => pos === 1 ? '#e3b341' : pos === 2 ? '#8b949e' : pos === 3 ? '#cd7f32' : 'rgba(255,255,255,0.3)';
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
 
-  const filaHtml = (r, destacado = false) =>
-    '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;' + (destacado ? 'background:rgba(0,217,126,0.12);border-radius:6px;' : '') + '">' +
-      '<div style="width:20px;font-family:monospace;font-size:11px;font-weight:700;color:' + medalColor(r.pos) + ';flex-shrink:0;text-align:right">' + r.pos + '</div>' +
-      '<div style="flex:1;font-size:11px;color:' + (destacado ? '#4cd97b' : 'white') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.nombre + '</div>' +
-      '<div style="font-size:12px;font-weight:700;color:' + (destacado ? '#4cd97b' : 'white') + ';flex-shrink:0">' + r.pts + '</div>' +
-    '</div>';
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  const tarjeta = document.createElement('div');
-  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
+  // ── Header ──
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 55);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 55);
 
-  tarjeta.innerHTML =
-    // Header
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
-      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="22" height="22" style="border-radius:6px">' +
-      '<span style="color:white;font-weight:700;font-size:12px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
-      '<span style="margin-left:auto;font-size:10px;color:rgba(255,255,255,0.4)">' + subtitulo + '</span>' +
-    '</div>' +
-    // Título
-    '<div style="font-size:15px;font-weight:800;color:white;margin-bottom:12px">' + titulo + '</div>' +
-    // Top 10
-    '<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:' + (!yoEnTop10 && yo ? '8px' : '14px') + '">' +
-      top10.map(r => filaHtml(r, r.esYo)).join('') +
-    '</div>' +
-    // Mi posición si no estoy en top 10
-    (!yoEnTop10 && yo
-      ? '<div style="border-top:1px dashed rgba(255,255,255,0.1);padding-top:8px;margin-bottom:14px">' +
-          '<div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1px;margin-bottom:4px;padding-left:12px">TU POSICIÓN</div>' +
-          filaHtml(yo, true) +
-        '</div>'
-      : '') +
-    // Footer
-    '<div style="text-align:center;font-size:9px;color:#4a5e58">asturfantasy.com</div>';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(titulo, SIZE - 40, 55);
 
-  document.body.appendChild(tarjeta);
-  try {
-    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
-    document.body.removeChild(tarjeta);
-    canvas.toBlob(async blob => {
-      const file = new File([blob], 'clasificacion_' + (tipo || 'general') + '.png', { type: 'image/png' });
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: titulo + ' · AsturFantasy' });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'clasificacion.png'; a.click();
-        URL.revokeObjectURL(url);
-      }
-    });
-  } catch(e) {
-    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
-    showToast('Error al compartir');
+  const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradH.addColorStop(0, 'transparent');
+  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradH;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 90);
+  ctx.lineTo(SIZE, 90);
+  ctx.stroke();
+
+  // ── Filas ──
+  const HEADER_H = 90;
+  const FOOTER_H = 50;
+  const listaTotal = yoEnTop10 ? top10 : [...top10, null, yo].filter(Boolean);
+  const AVAILABLE_H = SIZE - HEADER_H - FOOTER_H;
+  const ROW_H = Math.floor(AVAILABLE_H / listaTotal.length);
+  const CARD_H = ROW_H - 8;
+  const PADDING = 16;
+
+  const medalColor = (pos) => {
+    if (pos === 1) return '#e3b341';
+    if (pos === 2) return '#8b949e';
+    if (pos === 3) return '#cd7f32';
+    return 'rgba(255,255,255,0.3)';
+  };
+
+  const dibujarFila = (r, y, esYo, esSeparador = false) => {
+    if (esSeparador) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(PADDING, y + CARD_H / 2);
+      ctx.lineTo(SIZE - PADDING, y + CARD_H / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
+    ctx.fillStyle = r.vacio ? 'rgba(255,255,255,0.03)' : esYo ? 'rgba(0,122,69,0.2)' : r.pos % 2 === 0 ? '#141a17' : '#0f1512';
+    if (r.vacio) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(PADDING, y, SIZE - PADDING * 2, CARD_H, 8);
+      ctx.stroke();
+      return;
+    }
+
+    ctx.fillStyle = esYo ? 'rgba(0,122,69,0.2)' : r.pos % 2 === 0 ? '#141a17' : '#0f1512';
+    ctx.beginPath();
+    ctx.roundRect(PADDING, y, SIZE - PADDING * 2, CARD_H, 8);
+    ctx.fill();
+
+    if (esYo) {
+      ctx.strokeStyle = '#007a45';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(PADDING, y, SIZE - PADDING * 2, CARD_H, 8);
+      ctx.stroke();
+    }
+
+    // Posición
+    ctx.fillStyle = medalColor(r.pos);
+    ctx.font = `bold ${Math.floor(CARD_H * 0.35)}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(r.pos, PADDING + 14, y + CARD_H / 2);
+
+    // Nombre
+    ctx.fillStyle = esYo ? '#00d97e' : '#ffffff';
+    ctx.font = `bold ${Math.floor(CARD_H * 0.32)}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText(r.nombre, PADDING + 70, y + CARD_H / 2);
+
+    // Puntos
+    ctx.fillStyle = esYo ? '#00d97e' : '#ffffff';
+    ctx.font = `bold ${Math.floor(CARD_H * 0.35)}px sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.fillText(r.pts + ' pts', SIZE - PADDING - 14, y + CARD_H / 2);
+  };
+
+  let currentY = HEADER_H;
+  top10.forEach(r => {
+    dibujarFila(r, currentY, r.esYo);
+    currentY += ROW_H;
+  });
+
+  if (!yoEnTop10 && yo) {
+    dibujarFila(null, currentY, false, true);
+    currentY += ROW_H;
+    dibujarFila(yo, currentY, true);
   }
+
+  // ── Footer ──
+  const footerY = SIZE - FOOTER_H;
+  const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradF.addColorStop(0, 'transparent');
+  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradF;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(SIZE, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 25);
+
+  canvas.toBlob(async blob => {
+    const file = new File([blob], `clasificacion_${tipo || 'general'}.png`, { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: `${titulo} · AsturFantasy` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'clasificacion.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
 }
 
 async function loadRankingJugadores() {
