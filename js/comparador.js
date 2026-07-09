@@ -208,8 +208,8 @@ async function mostrarComparativa() {
   const j2 = comparadorSeleccionados[1];
   const esEnt1 = j1.posicion === 'ENT';
   const esEnt2 = j2.posicion === 'ENT';
+  const ambosPor = j1.posicion === 'POR' && j2.posicion === 'POR';
 
-  // Cargar valores históricos para la gráfica
   const [{ data: valoresHist1 }, { data: valoresHist2 }] = await Promise.all([
     db.from('jugadores').select('jornada, valor').eq('nombre', j1.nombre).eq('club', j1.club).order('jornada', { ascending: true }),
     db.from('jugadores').select('jornada, valor').eq('nombre', j2.nombre).eq('club', j2.club).order('jornada', { ascending: true }),
@@ -242,20 +242,22 @@ async function mostrarComparativa() {
     ];
   } else {
     const [r1, r2] = await Promise.all([
-      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
-      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
+      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,penalti_parado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
+      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,penalti_parado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
     ]);
+
     const calc = (rows) => {
       const r = rows || [];
       const goles = r.reduce((a,x) => a + (x.gol||0), 0);
       const penMarcados = r.reduce((a,x) => a + (x.penalti_marcado||0), 0);
       const penFallados = r.reduce((a,x) => a + (x.penalti_fallado||0), 0);
+      const penParados = r.reduce((a,x) => a + (x.penalti_parado||0), 0);
       return {
         puntos:         r.reduce((a,x) => a + (x.total_jornada||0), 0),
         partidos:       r.filter(x => (x.minutos||0) > 0).length,
         titularidades:  r.filter(x => x.rol === 'titular' && (x.minutos||0) > 0).length,
         minutos:        r.reduce((a,x) => a + (x.minutos||0), 0),
-        goles, penMarcados, penFallados,
+        goles, penMarcados, penFallados, penParados,
         totalGoles:     goles + penMarcados,
         asistencias:    r.reduce((a,x) => a + (x.asistencia||0), 0),
         gol_pp:         r.reduce((a,x) => a + (x.gol_pp||0), 0),
@@ -278,7 +280,9 @@ async function mostrarComparativa() {
       ['Titularidades',    stats1.titularidades, stats2.titularidades, stats1.titularidades, stats2.titularidades, 'mayor'],
       ['Minutos',          stats1.minutos,       stats2.minutos,       stats1.minutos,       stats2.minutos,       'mayor'],
       ['Goles',            goles1,               goles2,               stats1.totalGoles,    stats2.totalGoles,    'mayor'],
-      ['Pen. fallados',    stats1.penFallados,   stats2.penFallados,   stats1.penFallados,   stats2.penFallados,   'menor'],
+      ambosPor
+        ? ['Pen. parados',  stats1.penParados,  stats2.penParados,  stats1.penParados,  stats2.penParados,  'mayor']
+        : ['Pen. fallados', stats1.penFallados, stats2.penFallados, stats1.penFallados, stats2.penFallados, 'menor'],
       ['Asistencias',      stats1.asistencias,   stats2.asistencias,   stats1.asistencias,   stats2.asistencias,   'mayor'],
       ['Gol PP',           stats1.gol_pp,        stats2.gol_pp,        stats1.gol_pp,        stats2.gol_pp,        'menor'],
       ['Amarillas',        stats1.amarillas,     stats2.amarillas,     stats1.amarillas,     stats2.amarillas,     'menor'],
@@ -314,65 +318,185 @@ async function mostrarComparativa() {
 
 async function exportarComparador() {
   const { j1, j2, filas } = window._comparadorData;
-  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
 
-  const avatar = (j) =>
-    j.foto_url
-      ? `<img src="${j.foto_url}" width="40" height="40" style="object-fit:cover;border-radius:50%;width:100%;height:100%">`
-      : `<span style="font-size:14px;font-weight:700;color:white">${j.nombre.substring(0,2).toUpperCase()}</span>`;
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
 
-  const tarjeta = document.createElement('div');
-  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  tarjeta.innerHTML =
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
-      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px">' +
-      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
-      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.5)">Comparador</span>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">' +
-      [j1, j2].map(j =>
-        '<div style="background:#1a2420;border-radius:10px;padding:12px;text-align:center">' +
-          '<div style="width:44px;height:44px;border-radius:50%;background:' + (posColor[j.posicion] || '#243028') + ';margin:0 auto 6px;display:flex;align-items:center;justify-content:center;overflow:hidden">' +
-            avatar(j) +
-          '</div>' +
-          '<div style="font-size:12px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + '</div>' +
-          '<div style="font-size:9px;color:#7a9088">' + j.posicion + ' · ' + j.club + '</div>' +
-        '</div>'
-      ).join('') +
-    '</div>' +
-    '<div style="display:flex;flex-direction:column;gap:0">' +
-      filas.map(([label, v1, v2, n1, n2, tipo]) => {
-        const empate = n1 === n2;
-        const gana1 = !empate && tipo !== 'none' && (tipo === 'mayor' ? n1 > n2 : n1 < n2);
-        const gana2 = !empate && tipo !== 'none' && (tipo === 'mayor' ? n2 > n1 : n2 < n1);
-        return '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' +
-          '<div style="font-size:13px;font-weight:700;color:' + (gana1 ? '#4cd97b' : 'white') + ';text-align:left">' + v1 + '</div>' +
-          '<div style="font-size:8px;color:#7a9088;text-transform:uppercase;letter-spacing:1px;text-align:center;padding:0 8px">' + label + '</div>' +
-          '<div style="font-size:13px;font-weight:700;color:' + (gana2 ? '#4cd97b' : 'white') + ';text-align:right">' + v2 + '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>' +
-    '<div style="margin-top:14px;text-align:center;font-size:10px;color:#4a5e58">asturfantasy.com</div>';
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
 
-  document.body.appendChild(tarjeta);
-  try {
-    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
-    document.body.removeChild(tarjeta);
-    canvas.toBlob(async blob => {
-      const file = new File([blob], j1.nombre + '_vs_' + j2.nombre + '.png', { type: 'image/png' });
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: j1.nombre + ' vs ' + j2.nombre + ' · AsturFantasy' });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = j1.nombre + '_vs_' + j2.nombre + '.png'; a.click();
-        URL.revokeObjectURL(url);
-      }
-    });
-  } catch(e) {
-    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
-    showToast('Error al compartir');
-  }
+  // ── Header ──
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 55);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 55);
+
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('Comparador', SIZE - 40, 55);
+
+  const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradH.addColorStop(0, 'transparent');
+  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradH;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 90);
+  ctx.lineTo(SIZE, 90);
+  ctx.stroke();
+
+  // ── Cards jugadores ──
+  const CARD_Y = 110;
+  const CARD_W = (SIZE - 80) / 2;
+  const CARD_H = 160;
+  const r = 50;
+
+  const dibujarJugador = async (j, x) => {
+    const fotoImg   = await cargarImg(j.foto_url);
+    const escudoImg = await cargarImg(j.escudo_url);
+
+    ctx.fillStyle = '#007a45';
+    ctx.beginPath();
+    ctx.roundRect(x, CARD_Y, CARD_W, CARD_H, 12);
+    ctx.fill();
+
+    const cx = x + CARD_W / 2;
+    const cy = CARD_Y + 14 + r;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+
+    if (fotoImg) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(fotoImg, cx - r, cy - r, r * 2, r * 2);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(j.nombre.substring(0,2).toUpperCase(), cx, cy);
+    }
+
+    if (escudoImg) {
+      const er = 18;
+      const ex = cx + r - er + 2;
+      const ey = cy + r - er + 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.clip();
+      ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
+      ctx.restore();
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(j.nombre, cx, CARD_Y + 14 + r * 2 + 10);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '13px monospace';
+    ctx.fillText(j.posicion + ' · ' + j.club, cx, CARD_Y + 14 + r * 2 + 34);
+  };
+
+  await dibujarJugador(j1, 40);
+  await dibujarJugador(j2, SIZE / 2 + 4);
+
+  // ── Filas comparación ──
+  const FILAS_Y = CARD_Y + CARD_H + 20;
+  const AVAILABLE_H = SIZE - FILAS_Y - 60;
+  const ROW_H = Math.floor(AVAILABLE_H / filas.length);
+  const FILA_H = ROW_H - 6;
+
+  filas.forEach(([label, v1, v2, n1, n2, tipo], i) => {
+    const y = FILAS_Y + i * ROW_H;
+    const empate = n1 === n2;
+    const gana1 = !empate && tipo !== 'none' && (tipo === 'mayor' ? n1 > n2 : n1 < n2);
+    const gana2 = !empate && tipo !== 'none' && (tipo === 'mayor' ? n2 > n1 : n2 < n1);
+
+    ctx.fillStyle = i % 2 === 0 ? '#0e1512' : '#101715';
+    ctx.beginPath();
+    ctx.roundRect(16, y, SIZE - 32, FILA_H, 8);
+    ctx.fill();
+
+    // Valor j1
+    ctx.fillStyle = gana1 ? '#00d97e' : '#ffffff';
+    ctx.font = `bold ${Math.floor(FILA_H * 0.48)}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(v1, 32, y + FILA_H / 2);
+
+    // Label centro
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = `${Math.floor(FILA_H * 0.32)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(label.toUpperCase(), SIZE / 2, y + FILA_H / 2);
+
+    // Valor j2
+    ctx.fillStyle = gana2 ? '#00d97e' : '#ffffff';
+    ctx.font = `bold ${Math.floor(FILA_H * 0.48)}px sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.fillText(v2, SIZE - 32, y + FILA_H / 2);
+  });
+
+  // ── Footer ──
+  const footerY = SIZE - 52;
+  const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradF.addColorStop(0, 'transparent');
+  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradF;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(SIZE, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
+
+  canvas.toBlob(async blob => {
+    const file = new File([blob], `${j1.nombre}_vs_${j2.nombre}.png`, { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: `${j1.nombre} vs ${j2.nombre} · AsturFantasy` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${j1.nombre}_vs_${j2.nombre}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
 }
 
 document.addEventListener('click', e => {
