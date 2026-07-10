@@ -69,37 +69,45 @@
         <span class="jornada-num" id="home-jornada-num">—</span>
         <span class="jornada-side" id="home-bienvenida"></span>
     </div>
+    <div id="equipos-carrusel">
+    </div>
     <div id="banner-en-directo" style="display:none;background:#cc0000;color:white;text-align:center;padding:8px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px">
         <span style="animation:parpadeo 1.2s infinite">🔴</span> JORNADA EN DIRECTO
     </div>
-    <div class="home-stats" id="home-stats-container">
-        <div class="home-stat-card">
-            <div class="home-stat-label">Tu posición</div>
-            <div class="home-stat-value" id="stat-posicion">—</div>
-            <div class="home-stat-delta" id="stat-posicion-delta"></div>
-        </div>
-        <div class="home-stat-card">
-            <div class="home-stat-label">Puntos J<span id="stat-jornada-label">—</span></div>
-            <div class="home-stat-value green" id="stat-puntos">—</div>
-            <div class="home-stat-delta" id="stat-puntos-delta"></div>
-        </div>
-        <div class="home-stat-card">
-            <div class="home-stat-label">Media liga</div>
-            <div class="home-stat-value" id="stat-media">—</div>
-            <div class="home-stat-delta muted" id="stat-media-label"></div>
+    <div class="matches-grid stats-wrapper">
+        <div class="match-card" style="cursor:default;justify-content:space-around">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;
+                  text-transform:uppercase;color:var(--text-muted)">Tu posición</div>
+                <div style="font-family:var(--font-display);font-weight:700;font-size:22px;
+                  color:var(--text)" id="stat-posicion">—</div>
+                <div id="stat-posicion-delta"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;
+                border-left:1px solid var(--border);border-right:1px solid var(--border);
+                padding:0 20px">
+                <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;
+                  text-transform:uppercase;color:var(--text-muted)">Pts J<span id="stat-jornada-label" style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase">—</span></div>
+                <div style="font-family:var(--font-display);font-weight:700;font-size:22px;
+                  color:var(--neon)" id="stat-puntos">—</div>
+                <div id="stat-puntos-delta"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;
+                  text-transform:uppercase;color:var(--text-muted)">Media jornada</div>
+                <div style="font-family:var(--font-display);font-weight:700;font-size:22px;
+                  color:var(--text)" id="stat-media">—</div>
+                <div id="stat-media-label" class="muted"></div>
+            </div>
         </div>
     </div>
-    <!--<div id="banner-ganador-jornada" style="display:none;background:var(--surface);border:1px solid rgba(227,179,65,0.3);border-radius:10px;padding:12px 16px;font-family:var(--font-display);font-size:13px;color:var(--amber);margin-bottom:12px;text-align:center"></div>-->
     <main class="page-body">
         <div id="card-mensaje-home" style="display:none;background:rgba(227,179,65,0.12);border:1px solid rgba(227,179,65,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;font-family:var(--font-mono);font-size:11px;color:var(--yellow);text-align:center"></div>
-        <button class="action-btn" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%;margin-bottom:14px;background:var(--green-brand)">
-            <span class="action-label" style="color:var(--white)">PUNTUACIONES DE JORNADAS ANTERIORES</span>
+        <button class="action-btn btn-secundario-home" id="btn-consulta-ptos-jornada" onclick="abrirConsultaPuntos()" style="width:100%">
+            <i class="ti ti-history" style="font-size:16px;color:var(--green-light)"></i>
+            <span class="action-label">PUNTUACIONES DE JORNADAS ANTERIORES</span>
         </button>
-        <!--<div onclick="window.open('https://www.instagram.com/asturfantasy','_blank')" style="margin:12px 0;border-radius:10px;overflow:hidden;cursor:pointer;position:relative">
-            <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);letter-spacing:1px;text-align:right;margin-bottom:3px">PUBLICIDAD</div>
-            <img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/banners/anunciate_aqui.png" style="width:100%;border-radius:10px;display:block" loading="lazy">
-        </div>-->
-        <div class="section-label"><strong id="titulo-jornada-home"></strong></div>
+        <div class="section-label" style="margin-top:8px"><strong id="titulo-jornada-home"></strong></div>
         <div id="matches-container" class="matches-grid">
             <div style="text-align:center;padding:32px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:12px">Cargando jornada...</div>
         </div>
@@ -136,44 +144,59 @@
         <span class="jornada-text">JORNADA</span>
         <span class="jornada-num" id="lineup-jornada">—</span>
     </div>
-    <div id="deadline-info" class="deadline-info" style="padding:8px 0 4px"></div>
-    <div id="presupuesto-info" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border)">
-        <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--white)">PRESUPUESTO DISPONIBLE</div>
-        <div id="presupuesto-valor" style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">100M</div>
-    </div>
-    <div id="aviso-inactivos-lineup" style="display:none;background:rgba(240,94,94,0.15);border:1px solid rgba(240,94,94,0.3);border-radius:8px;padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:#f05e5e;margin-bottom:8px"></div>
-    <div style="padding:8px 16px;display:flex;justify-content:center;align-items:center;gap:12px">
-        <select id="formation-select" class="formation-select">
-            <option>4-3-3</option><option>4-4-2</option><option>4-5-1</option>
-            <option>3-4-3</option><option>3-5-2</option><option>5-3-2</option>
-        </select>
-    </div>
-    <div id="export-area">
-        <div id="export-header" style="display:none;padding:12px 16px;justify-content:space-between;align-items:center">
-            <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text)"><span id="export-nombre-equipo">Mi Equipo</span></div>
-            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);text-align:right"><span id="export-formacion">—</span> · J<span id="export-jornada">—</span></div>
+    <div class="lineup-content">
+        <div class="deadline-card">
+            <i class="ti ti-clock" style="font-size:18px"></i>
+            <div id="deadline-info" class="deadline-info"></div>
         </div>
-        <div class="pitch-wrapper">
-            <div id="pitch" class="pitch">
-                <div class="pitch-stripes" id="pitch-stripes"></div>
-                <div class="pitch-halftime"></div>
-                <div class="pitch-center-circle"></div>
+
+        <div class="presupuesto-card">
+            <i class="ti ti-coin" style="font-size:18px"></i>
+            <div id="presupuesto-info">
+                <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--white)">PRESUPUESTO DISPONIBLE</div>
+                <div id="presupuesto-valor" style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">100M</div>
             </div>
         </div>
-    </div>
-    <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none">CONSULTA TU EQUIPO</button>
-    <div id="capitan-wrapper" style="padding:0 16px;margin-bottom:8px">
-        <div class="capitan-card" style="text-align:center">
-            <div class="capitan-card-titulo">SELECCIONA UN CAPITÁN</div>
-            <div class="capitan-card-sub">Puntuará doble</div>
-            <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px;text-align:center">
-                <option value="">Elige tu capitán</option>
+
+        <div id="aviso-inactivos-lineup" style="display:none;background:rgba(240,94,94,0.15);border:1px solid rgba(240,94,94,0.3);border-radius:8px;padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:#f05e5e;margin-top:8px"></div>
+
+        <div style="padding:12px 0;display:flex;justify-content:center;align-items:center;gap:12px">
+            <select id="formation-select" class="formation-select">
+                <option>4-3-3</option><option>4-4-2</option><option>4-5-1</option>
+                <option>3-4-3</option><option>3-5-2</option><option>5-3-2</option>
             </select>
         </div>
+
+        <div id="export-area">
+            <div id="export-header" style="display:none;padding:12px 0;justify-content:space-between;align-items:center">
+                <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text)"><span id="export-nombre-equipo">Mi Equipo</span></div>
+                <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);text-align:right"><span id="export-formacion">—</span> · J<span id="export-jornada">—</span></div>
+            </div>
+            <div class="pitch-wrapper" style="padding:12px 0">
+                <div id="pitch" class="pitch">
+                    <div class="pitch-stripes" id="pitch-stripes"></div>
+                    <div class="pitch-halftime"></div>
+                    <div class="pitch-center-circle"></div>
+                </div>
+            </div>
+        </div>
+
+        <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none;width:100%;margin:4px 0">CONSULTA TU EQUIPO</button>
+
+        <div id="capitan-wrapper" style="margin-bottom:8px">
+            <div class="capitan-card" style="text-align:center">
+                <div class="capitan-card-titulo">SELECCIONA UN CAPITÁN</div>
+                <div class="capitan-card-sub">Puntuará doble</div>
+                <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px;text-align:center">
+                    <option value="">Elige tu capitán</option>
+                </select>
+            </div>
+        </div>
+
+        <button id="btn-save-lineup" class="btn-primary" style="width:100%;margin:4px 0">GUARDAR ALINEACIÓN</button>
+        <button id="btn-clear-lineup" class="btn-clear" style="width:100%;margin:4px 0">VACIAR ALINEACIÓN</button>
+        <button id="btn-export-png" class="btn-primary" style="width:100%;margin:4px 0 16px">EXPORTAR ALINEACIÓN</button>
     </div>
-    <button id="btn-save-lineup" class="btn-primary">GUARDAR ALINEACIÓN</button>
-    <button id="btn-clear-lineup" class="btn-clear">VACIAR ALINEACIÓN</button>
-    <button id="btn-export-png" class="btn-primary">EXPORTAR ALINEACIÓN</button>
 </div>
 
 <!-- MI EQUIPO -->
@@ -516,6 +539,24 @@
             <div class="criterio-card"><div class="criterio-titulo"><i class="ti ti-cards" style="color:var(--green-light);margin-right:6px"></i>Tarjetas</div><div class="criterio-fila"><span>Amarilla</span><span class="criterio-pts neg">-1</span></div><div class="criterio-fila"><span>Doble amarilla</span><span class="criterio-pts neg">-3</span></div><div class="criterio-fila"><span>Roja directa</span><span class="criterio-pts neg">-5</span></div></div>
             <div class="criterio-card"><div class="criterio-titulo"><i class="ti ti-user-check" style="color:var(--green-light);margin-right:6px"></i>Entrenadores</div><div class="criterio-fila"><span>Partido ganado</span><span class="criterio-pts">3</span></div><div class="criterio-fila"><span>Partido empatado</span><span class="criterio-pts">1</span></div><div class="criterio-fila"><span>Partido perdido</span><span class="criterio-pts">0</span></div></div>
         </div>
+    </main>
+</div>
+
+<div id="screen-equipo" class="screen">
+    <div class="navbar-placeholder"></div>
+    <div class="detail-header">
+        <button class="detail-back" onclick="goTo('home')">
+            <i class="ti ti-arrow-left"></i>
+        </button>
+        <span class="detail-title" id="equipo-nombre">—</span>
+    </div>
+    <div style="display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border)">
+        <button class="ranking-subtab active" id="tab-plantilla" onclick="cambiarTabEquipo('plantilla')">Plantilla</button>
+        <button class="ranking-subtab" id="tab-resultados" onclick="cambiarTabEquipo('resultados')">Resultados</button>
+    </div>
+    <main class="page-body">
+        <div id="equipo-grid" class="squad-grid"></div>
+        <div id="equipo-resultados" style="display:none"></div>
     </main>
 </div>
 

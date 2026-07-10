@@ -243,81 +243,202 @@ async function loadLineup() {
 }
 
 async function exportarAlineacion() {
-  const btn = document.getElementById('btn-export-png');
-  btn.disabled = true; btn.textContent = 'GENERANDO...';
+  await new FontFace('Space Grotesk', 'url(https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gowFXNvNm8.woff2)').load()
+    .then(f => document.fonts.add(f))
+    .catch(() => {});
 
-  const { data: ed } = await db.from('equipos').select('nombre_equipo').eq('user_id', currentUser.id).single();
-  const nombreEquipo = ed?.nombre_equipo || 'Mi Equipo';
+  const { data: equipoData } = await db
+    .from('equipos')
+    .select('nombre_equipo')
+    .eq('user_id', currentUser.id)
+    .single();
+  const nombreEquipo = equipoData?.nombre_equipo || 'Mi Equipo';
   const formacion = document.getElementById('formation-select')?.value || '—';
 
   const ordenPos = ['POR','DEF','MED','DEL','ENT'];
-  const posColor = { POR:'#e3b341', DEF:'#5b9cf6', MED:'#4cd97b', DEL:'#f05e5e', ENT:'#a78bfa' };
-  const posLabel = { POR:'PORTERO', DEF:'DEFENSAS', MED:'MEDIOS', DEL:'DELANTEROS', ENT:'ENTRENADOR' };
+  const jugadores = Object.values(seleccionados).sort((a,b) =>
+    ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion)
+  );
 
-  const jugadores = Object.values(seleccionados).sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion));
-  const costeTotal = jugadores.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0).toFixed(1);
-  const capitanId = capitan;
+  if (!jugadores.length) { showToast('No hay jugadores en la alineación', true); return; }
 
-  // Agrupar por posición
-  const porPos = {};
-  jugadores.forEach(j => { if (!porPos[j.posicion]) porPos[j.posicion] = []; porPos[j.posicion].push(j); });
+  const mitad = Math.ceil(jugadores.length / 2);
+  const colIzq = jugadores.slice(0, mitad);
+  const colDer = jugadores.slice(mitad);
 
-  const jugadorHtml = (j) => {
-    const esC = String(capitanId) === String(j.id);
-    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#1a2420;border-radius:8px' + (esC ? ';border:1px solid rgba(227,179,65,0.4)' : '') + '">' +
-      '<div style="width:8px;height:8px;border-radius:50%;background:' + (posColor[j.posicion]||'#fff') + ';flex-shrink:0"></div>' +
-      (j.foto_url ? '<img src="' + j.foto_url + '" width="26" height="26" style="object-fit:cover;border-radius:50%;flex-shrink:0" onerror="this.style.display=\'none\'">' : '') +
-      '<span style="font-size:12px;color:white;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + (esC ? ' ⭐' : '') + '</span>' +
-      (j.escudo_url ? '<img src="' + j.escudo_url + '" width="18" height="18" style="object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' : '<span style="font-size:10px;color:rgba(255,255,255,0.4);flex-shrink:0">' + j.club + '</span>') +
-      '<span style="font-size:11px;font-weight:700;color:#e3b341;flex-shrink:0;min-width:36px;text-align:right">' + (j.valor || 0) + 'M</span>' +
-    '</div>';
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  // Fondo sólido
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  // ── Header ──
+  const HEADER_H = 140;
+
+  // Logo ASTURFANTASY
+  ctx.font = 'bold 36px "Space Grotesk"';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 48);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 48);
+
+  // Nombre equipo y jornada
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px "Space Grotesk"';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${nombreEquipo} · J${JORNADA_ACTIVA}`, 40, 88);
+
+  // Formación
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '13px monospace';
+  ctx.fillText(formacion, 40, 118);
+
+  // Línea separadora header
+  const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradH.addColorStop(0, 'transparent');
+  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradH;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, HEADER_H);
+  ctx.lineTo(SIZE, HEADER_H);
+  ctx.stroke();
+
+  // ── Jugadores ──
+  const PADDING = 32;
+  const COL_W = SIZE / 2;
+  const filas = Math.max(colIzq.length, colDer.length);
+  const AVAILABLE_H = SIZE - HEADER_H - 70;
+  const ROW_H = Math.floor(AVAILABLE_H / filas);
+  const CARD_H = ROW_H - 16;
+  const START_Y = HEADER_H + 10;
+
+  const dibujarJugador = async (j, x, y, cardW) => {
+    const fotoImg   = await cargarImg(j.foto_url);
+    const escudoImg = await cargarImg(j.escudo_url);
+    const esCap = String(capitan) === String(j.id);
+
+    // Card
+    ctx.fillStyle = esCap ? 'rgba(245,158,11,0.2)' : '#007a45';
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, CARD_H, 10);
+    ctx.fill();
+
+    if (esCap) {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x, y, cardW, CARD_H, 10);
+      ctx.stroke();
+    }
+
+    // Foto circular
+    const r = Math.floor(CARD_H * 0.38);
+    const cx = x + 14 + r;
+    const cy = y + CARD_H / 2;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+
+    if (fotoImg) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(fotoImg, cx - r, cy - r, r * 2, r * 2);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.floor(r * 0.6)}px "Space Grotesk"`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(j.nombre.substring(0,2).toUpperCase(), cx, cy);
+    }
+
+    // Escudo pequeño
+    if (escudoImg) {
+      const er = Math.floor(r * 0.35);
+      const ex = cx + r - er + 2;
+      const ey = cy + r - er + 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.clip();
+      ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
+      ctx.restore();
+    }
+
+    // Texto
+    const txtX = x + 14 + r * 2 + 12;
+
+    ctx.fillStyle = esCap ? '#f59e0b' : '#ffffff';
+    ctx.font = `bold ${Math.floor(CARD_H * 0.22)}px "Space Grotesk"`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(j.nombre, txtX, y + CARD_H * 0.18);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = `${Math.floor(CARD_H * 0.16)}px monospace`;
+    ctx.fillText(j.posicion + ' · ' + j.club, txtX, y + CARD_H * 0.48);
+
+    if (esCap) {
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = `bold ${Math.floor(CARD_H * 0.14)}px "Space Grotesk"`;
+      ctx.fillText('⭐ Capitán', txtX, y + CARD_H * 0.68);
+    }
   };
 
-  const seccionHtml = (pos) => {
-    if (!porPos[pos]?.length) return '';
-    return '<div style="margin-bottom:10px">' +
-      '<div style="font-size:8px;color:#4a5e58;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;padding-left:2px">' + posLabel[pos] + '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:4px">' +
-        porPos[pos].map(jugadorHtml).join('') +
-      '</div>' +
-    '</div>';
-  };
-
-  const tarjeta = document.createElement('div');
-  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#111816;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;border:1px solid rgba(76,217,123,0.2)';
-
-  tarjeta.innerHTML =
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
-      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="24" height="24" style="border-radius:6px" onerror="this.style.display=\'none\'">' +
-      '<span style="color:white;font-weight:700;font-size:13px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
-      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4)">J' + JORNADA_ACTIVA + ' · ' + formacion + '</span>' +
-    '</div>' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
-      '<div style="font-size:15px;font-weight:700;color:white">' + nombreEquipo + '</div>' +
-      '<div style="font-family:monospace;font-size:11px;color:#e3b341">' + costeTotal + 'M</div>' +
-    '</div>' +
-    ordenPos.map(seccionHtml).join('') +
-    '<div style="margin-top:6px;text-align:center;font-size:9px;color:#4a5e58">asturfantasy.com</div>';
-
-  document.body.appendChild(tarjeta);
-  try {
-    const canvas = await html2canvas(tarjeta, { backgroundColor: '#111816', scale: 2, useCORS: true });
-    document.body.removeChild(tarjeta);
-    canvas.toBlob(async blob => {
-      const file = new File([blob], nombreEquipo + '_J' + JORNADA_ACTIVA + '.png', { type: 'image/png' });
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: nombreEquipo + ' · J' + JORNADA_ACTIVA + ' · AsturFantasy' });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = nombreEquipo + '_J' + JORNADA_ACTIVA + '.png'; a.click();
-        URL.revokeObjectURL(url);
-      }
-    });
-  } catch(e) {
-    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
-    showToast('Error al exportar');
+  for (let i = 0; i < colIzq.length; i++) {
+    await dibujarJugador(colIzq[i], PADDING, START_Y + i * ROW_H, COL_W - PADDING - 8);
   }
-  btn.disabled = false; btn.textContent = 'EXPORTAR ALINEACIÓN';
+  for (let i = 0; i < colDer.length; i++) {
+    await dibujarJugador(colDer[i], COL_W + 8, START_Y + i * ROW_H, COL_W - PADDING - 8);
+  }
+
+  // ── Footer ──
+  const footerY = SIZE - 52;
+  const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradF.addColorStop(0, 'transparent');
+  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradF;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(SIZE, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
+
+  const link = document.createElement('a');
+  link.download = `alineacion-j${JORNADA_ACTIVA}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 }
 
 function renderPitch() {

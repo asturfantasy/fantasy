@@ -247,6 +247,7 @@
           <div style="display:flex;gap:8px">
             <button class="btn" id="btn-nueva-jornada"><i class="ti ti-calendar-plus"></i> Nueva jornada</button>
             <button class="btn" id="btn-compartir-jornada"><i class="ti ti-share"></i> Compartir jornada</button>
+            <button class="btn" id="btn-compartir-clasificacion"><i class="ti ti-trophy"></i> Compartir clasificación</button>
             <button class="btn btn-primary" id="btn-nuevo-partido"><i class="ti ti-plus"></i> Añadir partido</button>
           </div>
         </div>
@@ -1293,35 +1294,49 @@ async function generarEquipos(jornada) {
   generarCardJornada(jornada);
 });
 
+document.getElementById('btn-compartir-clasificacion').addEventListener('click', () => {
+  generarCardClasificacion();
+});
+
 async function generarCardJornada(jornada) {
   const { data: partidos } = await db.from('partidos').select('*').eq('jornada', jornada).order('orden', { ascending: true });
   if (!partidos?.length) { showToast('Sin partidos para esta jornada', true); return; }
 
-  const W = 800;
-  const ROW = 100;
-  const HEADER = 70;
-  const FOOTER = 44;
+  const SIZE = 1080;
+  const HEADER = 110;
+  const FOOTER = 50;
+  const ROW = Math.floor((SIZE - HEADER - FOOTER) / partidos.length);
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = HEADER + partidos.length * ROW + FOOTER;
+  canvas.width = SIZE;
+  canvas.height = SIZE;
   const ctx = canvas.getContext('2d');
 
-  // Fondo general
-  ctx.fillStyle = '#0d1117';
+  ctx.fillStyle = '#101715';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = '#e6edf3';
-ctx.font = 'bold 20px sans-serif';
-  ctx.textAlign = 'center';
+  // ── Header ──
+  ctx.font = 'bold 36px sans-serif';
   ctx.textBaseline = 'middle';
-  ctx.fillText('JORNADA ' + jornada, W / 2, HEADER / 2);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 55);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 55);
 
-  // Línea separadora bajo header
-  ctx.strokeStyle = '#30363d';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`JORNADA ${jornada}`, SIZE - 40, 55);
+
+  const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradH.addColorStop(0, 'transparent');
+  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradH;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(40, HEADER - 1);
-  ctx.lineTo(W - 40, HEADER - 1);
+  ctx.moveTo(0, HEADER);
+  ctx.lineTo(SIZE, HEADER);
   ctx.stroke();
 
   const cargarImagen = (url) => new Promise((res) => {
@@ -1333,98 +1348,240 @@ ctx.font = 'bold 20px sans-serif';
     img.src = url;
   });
 
+  const CENTRO = SIZE / 2;
+  const ESC_SIZE = 52;
+  const ESC_MARGEN = 100;
+  const NOMBRE_LOCAL_X = ESC_MARGEN + ESC_SIZE + 12;
+  const NOMBRE_VISIT_X = SIZE - ESC_MARGEN - ESC_SIZE - 12;
+
   for (let i = 0; i < partidos.length; i++) {
     const p = partidos[i];
     const y = HEADER + i * ROW;
-    const bg = i % 2 === 0 ? '#161b22' : '#1c2128';
+    const midY = y + ROW / 2;
 
-    // Fondo fila
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, y, W, ROW);
+    ctx.fillStyle = i % 2 === 0 ? '#0e1512' : '#101715';
+    ctx.fillRect(0, y, SIZE, ROW);
 
-    // Línea separadora
-    ctx.strokeStyle = '#21262d';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, y + ROW - 1);
-    ctx.lineTo(W, y + ROW - 1);
-    ctx.stroke();
+    const [escLocal, escVisitante] = await Promise.all([
+      cargarImagen(p.local_escudo_url),
+      cargarImagen(p.visitante_escudo_url)
+    ]);
 
-    const escSize = 48;
-    const escY = y + (ROW - escSize) / 2;
-    const margenEsc = 36;
-    const margenNombre = margenEsc + escSize + 14;
-    const centroX = W / 2;
-
-    // Escudo local
-    const escLocal = await cargarImagen(p.local_escudo_url);
     if (escLocal) {
       const ratio = escLocal.width / escLocal.height;
-      const h = escSize;
-      const w = h * ratio;
-      ctx.drawImage(escLocal, margenEsc + (escSize - w) / 2, escY, w, h);
+      const h = ESC_SIZE, w = h * ratio;
+      ctx.drawImage(escLocal, ESC_MARGEN + (ESC_SIZE - w) / 2, y + (ROW - h) / 2, w, h);
+    }
+
+    if (escVisitante) {
+      const ratio = escVisitante.width / escVisitante.height;
+      const h = ESC_SIZE, w = h * ratio;
+      ctx.drawImage(escVisitante, SIZE - ESC_MARGEN - ESC_SIZE + (ESC_SIZE - w) / 2, y + (ROW - h) / 2, w, h);
     }
 
     // Nombre local
-    ctx.fillStyle = '#e6edf3';
-    ctx.font = 'bold 15px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(p.local_nombre, margenNombre, y + ROW / 2 - 6);
+    ctx.fillText(p.local_nombre, NOMBRE_LOCAL_X, midY);
 
-    // Nombre local abrev pequeño
-    ctx.fillStyle = '#8b949e';
-    ctx.font = '11px monospace';
-    ctx.fillText(p.local_abrev, margenNombre, y + ROW / 2 + 12);
+    // Nombre visitante
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.visitante_nombre, NOMBRE_VISIT_X, midY);
 
-    // Resultado o fecha — centro
+    // Resultado o estadio
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (p.finalizado) {
-      ctx.fillStyle = '#00d97e';
-      ctx.font = 'bold 26px sans-serif';
-      ctx.fillText(p.resultado_local + ' — ' + p.resultado_visitante, centroX, y + ROW / 2);
-    } else {
-      ctx.fillStyle = '#8b949e';
-      ctx.font = '12px monospace';
-      ctx.fillText(p.fecha || 'Por confirmar', centroX, y + ROW / 2 - 6);
-      ctx.fillStyle = '#30363d';
+      ctx.fillStyle = '#007a45';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText(p.resultado_local + ' — ' + p.resultado_visitante, CENTRO, midY - 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
       ctx.font = '11px monospace';
-      ctx.fillText(p.estadio || '', centroX, y + ROW / 2 + 12);
+      ctx.fillText('FINAL', CENTRO, midY + 18);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '13px monospace';
+      ctx.fillText(p.estadio || 'Por confirmar', CENTRO, midY - 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(p.fecha || '', CENTRO, midY + 14);
     }
 
-    // Nombre visitante
-    ctx.fillStyle = '#e6edf3';
-    ctx.font = 'bold 15px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(p.visitante_nombre, W - margenNombre, y + ROW / 2 - 6);
-    ctx.fillStyle = '#8b949e';
-    ctx.font = '11px monospace';
-    ctx.fillText(p.visitante_abrev, W - margenNombre, y + ROW / 2 + 12);
-
-    // Escudo visitante
-    const escVisitante = await cargarImagen(p.visitante_escudo_url);
-    if (escVisitante) {
-      const ratio = escVisitante.width / escVisitante.height;
-      const h = escSize;
-      const w = h * ratio;
-      ctx.drawImage(escVisitante, W - margenEsc - escSize + (escSize - w) / 2, escY, w, h);
-    }
+    // Línea separadora
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, y + ROW - 1);
+    ctx.lineTo(SIZE - 40, y + ROW - 1);
+    ctx.stroke();
   }
 
-  // Footer
-  ctx.fillStyle = '#161b22';
-  ctx.fillRect(0, HEADER + partidos.length * ROW, W, FOOTER);
-  ctx.fillStyle = '#30363d';
-  ctx.fillRect(0, HEADER + partidos.length * ROW, W, 1);
-  ctx.fillStyle = '#8b949e';
-  ctx.font = '11px monospace';
+  // ── Footer ──
+  const footerY = SIZE - FOOTER;
+  const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradF.addColorStop(0, 'transparent');
+  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradF;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(SIZE, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('asturfantasy.com', W / 2, HEADER + partidos.length * ROW + FOOTER / 2);
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 25);
 
   const link = document.createElement('a');
   link.download = 'jornada-' + jornada + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+  async function generarCardClasificacion() {
+  const { data: clasif } = await db
+    .from('clasificacion_competicion')
+    .select('*')
+    .order('posicion', { ascending: true });
+
+  if (!clasif?.length) { showToast('Sin datos de clasificación', true); return; }
+
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 55);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 55);
+
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('CLASIFICACIÓN', SIZE - 40, 55);
+
+  const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradH.addColorStop(0, 'transparent');
+  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradH;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 90);
+  ctx.lineTo(SIZE, 90);
+  ctx.stroke();
+
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  const total = clasif.length;
+  const mitad = Math.ceil(total / 2);
+  const colIzq = clasif.slice(0, mitad);
+  const colDer = clasif.slice(mitad);
+
+  const HEADER_H = 90;
+  const FOOTER_H = 50;
+  const COL_W = SIZE / 2;
+  const AVAILABLE_H = SIZE - HEADER_H - FOOTER_H;
+  const ROW_H = Math.floor(AVAILABLE_H / mitad);
+  const CARD_H = ROW_H - 10;
+  const PADDING = 16;
+  const ESC_ZONA = 36;
+
+  const getBg = (pos) => {
+    if (pos === 1) return '#0d3b22';
+    if (pos <= 5) return '#0e2a1a';
+    if (pos > total - 3) return '#2a0d0d';
+    return pos % 2 === 0 ? '#141a17' : '#0f1512';
+  };
+
+  const dibujarFila = async (c, x, y, cardW) => {
+    const escudoImg = await cargarImg(c.escudo_url);
+
+    ctx.fillStyle = getBg(c.posicion);
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, CARD_H, 8);
+    ctx.fill();
+
+    // Número posición
+    const posColor = c.posicion === 1 ? '#007a45' : c.posicion > total - 3 ? '#dc2626' : 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = posColor;
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(c.posicion, x + 10, y + CARD_H / 2);
+
+    // Escudo en zona fija
+    if (escudoImg) {
+      const maxH = CARD_H * 0.6;
+      const ratio = escudoImg.width / escudoImg.height;
+      const escH = maxH;
+      const escW = maxH * ratio;
+      ctx.drawImage(escudoImg, x + 42 + (ESC_ZONA - escW) / 2, y + (CARD_H - escH) / 2, escW, escH);
+    }
+
+    // Nombre siempre a la misma X
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(c.equipo, x + 90, y + CARD_H / 2);
+
+    // Puntos
+    ctx.fillStyle = c.posicion === 1 ? '#007a45' : c.posicion > total - 3 ? '#dc2626' : '#ffffff';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(c.puntos + ' pts', x + cardW - 12, y + CARD_H / 2);
+  };
+
+  for (let i = 0; i < colIzq.length; i++) {
+    await dibujarFila(colIzq[i], PADDING, HEADER_H + i * ROW_H, COL_W - PADDING - 8);
+  }
+  for (let i = 0; i < colDer.length; i++) {
+    await dibujarFila(colDer[i], COL_W + 8, HEADER_H + i * ROW_H, COL_W - PADDING - 8);
+  }
+
+  const footerY = SIZE - FOOTER_H;
+  const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradF.addColorStop(0, 'transparent');
+  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradF;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(SIZE, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 25);
+
+  const link = document.createElement('a');
+  link.download = 'clasificacion.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
 }

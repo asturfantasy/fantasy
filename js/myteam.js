@@ -90,90 +90,218 @@ async function cargarMyTeam(jornada) {
 }
 
 async function compartirEquipo() {
-  const banner = document.getElementById('myteam-banner');
-  const grid   = document.getElementById('myteam-grid');
   const jornada = document.getElementById('myteam-jornada-num').textContent;
-
   const { data: ed } = await db.from('equipos').select('nombre_equipo').eq('user_id', currentUser.id).single();
   const nombreEquipo = ed?.nombre_equipo || 'Mi equipo';
 
-  const ptsMatch   = banner.innerHTML.match(/(\d+) PUNTOS/);
-  const mediaMatch = banner.innerHTML.match(/Media de la jornada: <strong>(\d+)/);
+  const banner = document.getElementById('myteam-banner');
+  const ptsMatch = banner.innerHTML.match(/(\d+) PUNTOS/);
+  const mediaMatch = banner.innerHTML.match(/Media de managers: <strong>(\d+)/);
   const totalPuntos = ptsMatch ? ptsMatch[1] : '—';
   const media = mediaMatch ? mediaMatch[1] : '—';
 
-  const cards = grid.querySelectorAll('.player-card');
+  const cards = document.getElementById('myteam-grid').querySelectorAll('.player-card');
   const jugadores = Array.from(cards).map(card => {
     const nombreEl = card.querySelector('.pc-name');
     const esCapitan = nombreEl?.textContent?.includes('⭐') || false;
     const nombre = nombreEl?.textContent?.replace(' ⭐','').trim() || '';
-    const meta   = card.querySelector('.pc-meta')?.textContent?.trim() || '';
-    const pts    = card.querySelector('.pc-pts')?.textContent?.trim() || '0';
-    const pos    = meta.split(' · ')[0] || '';
-    return { nombre, pts, pos, esCapitan };
+    const meta = card.querySelector('.pc-meta')?.textContent?.trim() || '';
+    const pts = card.querySelector('.pc-pts')?.textContent?.trim() || '0';
+    const pos = meta.split(' · ')[0] || '';
+    const club = meta.split(' · ')[1] || '';
+    const foto = card.querySelector('.pc-avatar img')?.src || null;
+    const escudo = card.querySelector('.pc-avatar img:last-child')?.src || null;
+    return { nombre, pts, pos, club, esCapitan, foto, escudo };
   });
 
-  const { data: clGeneral } = await db.from('clasificacion_general_auto').select('user_id, puntos_total');
-  const sorted = (clGeneral || []).sort((a,b) => b.puntos_total - a.puntos_total);
-  const miPos  = sorted.findIndex(r => r.user_id === currentUser.id);
-  const posicion = miPos >= 0 ? (miPos + 1) + 'º' : '—';
+  const ordenPos = ['POR','DEF','MED','DEL','ENT'];
+  jugadores.sort((a,b) => ordenPos.indexOf(a.pos) - ordenPos.indexOf(b.pos));
 
-  const posColor = { POR: '#e3b341', DEF: '#5b9cf6', MED: '#4cd97b', DEL: '#f05e5e', ENT: '#a78bfa' };
+  const mitad = Math.ceil(jugadores.length / 2);
+  const colIzq = jugadores.slice(0, mitad);
+  const colDer = jugadores.slice(mitad);
 
-  const tarjeta = document.createElement('div');
-  tarjeta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:360px;background:#007a45;border-radius:16px;overflow:hidden;font-family:Space Grotesk,sans-serif;padding:20px;background-image:repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(0,0,0,0.06) 40px,rgba(0,0,0,0.06) 80px),repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(0,0,0,0.06) 40px,rgba(0,0,0,0.06) 80px)';
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
 
-  tarjeta.innerHTML =
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
-      '<img src="https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/logo_asturfantasy_redondo.png" width="28" height="28" style="border-radius:8px">' +
-      '<span style="color:white;font-weight:700;font-size:14px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
-      '<span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.6)">J' + jornada + '</span>' +
-    '</div>' +
-    '<div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:2px">' + nombreEquipo + '</div>' +
-    '<div style="font-size:48px;font-weight:900;color:white;line-height:1;letter-spacing:-2px;margin-bottom:4px">' + totalPuntos + ' <span style="font-size:20px;font-weight:500">pts</span></div>' +
-    '<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:16px">Media: ' + media + ' pts · ' + posicion + ' general</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' +
-      jugadores.map(j =>
-        '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:8px;display:flex;align-items:center;justify-content:space-between;gap:4px' + (j.esCapitan ? ';border:1px solid rgba(227,179,65,0.4)' : '') + '">' +
-          '<div style="display:flex;align-items:center;gap:6px;min-width:0">' +
-            '<div style="width:8px;height:8px;border-radius:50%;background:' + (posColor[j.pos] || '#fff') + ';flex-shrink:0"></div>' +
-            '<span style="font-size:11px;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + j.nombre + '</span>' +
-            (j.esCapitan ? '<span style="background:rgba(227,179,65,0.3);color:#e3b341;border-radius:4px;padding:1px 4px;font-size:9px;font-weight:700;flex-shrink:0">C</span>' : '') +
-          '</div>' +
-          '<span style="font-size:14px;font-weight:700;color:#4cd97b;flex-shrink:0">' + j.pts + '</span>' +
-        '</div>'
-      ).join('') +
-    '</div>' +
-    '<div style="margin-top:14px;text-align:center;font-size:10px;color:rgba(255,255,255,0.4)">asturfantasy.com</div>';
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  document.body.appendChild(tarjeta);
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
 
-  try {
-    const canvas = await html2canvas(tarjeta, {
-      backgroundColor: '#007a45',
-      scale: 2,
-      useCORS: true,
-    });
+  // ── Header ──
+  const HEADER_H = 140;
 
-    document.body.removeChild(tarjeta);
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 48);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 48);
+  ctx.font = 'bold 64px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(totalPuntos, SIZE - 40, 55);
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('puntos', SIZE - 40, 90);
 
-    canvas.toBlob(async blob => {
-      const file = new File([blob], nombreEquipo + '_J' + jornada + '.png', { type: 'image/png' });
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: nombreEquipo + ' · AsturFantasy J' + jornada });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = nombreEquipo + '_J' + jornada + '.png';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    });
-  } catch (e) {
-    if (document.body.contains(tarjeta)) document.body.removeChild(tarjeta);
-    showToast('Error al compartir');
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`Mi equipo · ${nombreEquipo} · Jornada ${jornada}`, 40, 88);
+
+  const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradH.addColorStop(0, 'transparent');
+  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradH;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, HEADER_H);
+  ctx.lineTo(SIZE, HEADER_H);
+  ctx.stroke();
+
+  // ── Jugadores ──
+  const PADDING = 32;
+  const COL_W = SIZE / 2;
+  const filas = Math.max(colIzq.length, colDer.length);
+  const AVAILABLE_H = SIZE - HEADER_H - 70;
+  const ROW_H = Math.floor(AVAILABLE_H / filas);
+  const CARD_H = ROW_H - 16;
+  const START_Y = HEADER_H + 10;
+
+  const dibujarJugador = async (j, x, y, cardW) => {
+    const fotoImg   = await cargarImg(j.foto);
+    const escudoImg = await cargarImg(j.escudo);
+
+    ctx.fillStyle = j.esCapitan ? 'rgba(245,158,11,0.2)' : '#007a45';
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, CARD_H, 10);
+    ctx.fill();
+
+    if (j.esCapitan) {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x, y, cardW, CARD_H, 10);
+      ctx.stroke();
+    }
+
+    const r = Math.floor(CARD_H * 0.38);
+    const cx = x + 14 + r;
+    const cy = y + CARD_H / 2;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+
+    if (fotoImg) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(fotoImg, cx - r, cy - r, r * 2, r * 2);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.floor(r * 0.6)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(j.nombre.substring(0,2).toUpperCase(), cx, cy);
+    }
+
+    if (escudoImg) {
+      const er = Math.floor(r * 0.35);
+      const ex = cx + r - er + 2;
+      const ey = cy + r - er + 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.clip();
+      ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
+      ctx.restore();
+    }
+
+    const txtX = x + 14 + r * 2 + 12;
+
+    ctx.fillStyle = j.esCapitan ? '#f59e0b' : '#ffffff';
+    ctx.font = `bold ${Math.floor(CARD_H * 0.22)}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(j.nombre, txtX, y + CARD_H * 0.18);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = `${Math.floor(CARD_H * 0.16)}px monospace`;
+    ctx.fillText(`${j.pos} · ${j.club}`, txtX, y + CARD_H * 0.48);
+
+    ctx.fillStyle = '#00d97e';
+    ctx.font = `bold ${Math.floor(CARD_H * 0.2)}px sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.fillText(j.pts + ' pts', x + cardW - 12, y + CARD_H * 0.35);
+
+    if (j.esCapitan) {
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = `bold ${Math.floor(CARD_H * 0.14)}px sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText('⭐ Capitán', txtX, y + CARD_H * 0.68);
+    }
+  };
+
+  for (let i = 0; i < colIzq.length; i++) {
+    await dibujarJugador(colIzq[i], PADDING, START_Y + i * ROW_H, COL_W - PADDING - 8);
   }
+  for (let i = 0; i < colDer.length; i++) {
+    await dibujarJugador(colDer[i], COL_W + 8, START_Y + i * ROW_H, COL_W - PADDING - 8);
+  }
+
+  // ── Footer ──
+  const footerY = SIZE - 52;
+  const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradF.addColorStop(0, 'transparent');
+  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradF;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(SIZE, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
+
+  canvas.toBlob(async blob => {
+    const file = new File([blob], `${nombreEquipo}_J${jornada}.png`, { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: `${nombreEquipo} · J${jornada} · AsturFantasy` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${nombreEquipo}_J${jornada}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
 }
 
 async function guardarNombreEquipo() {
