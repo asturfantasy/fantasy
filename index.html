@@ -145,22 +145,26 @@
         <span class="jornada-num" id="lineup-jornada">—</span>
     </div>
     <div class="lineup-content">
-        <div class="deadline-card">
-            <i class="ti ti-clock" style="font-size:18px"></i>
-            <div id="deadline-info" class="deadline-info"></div>
-        </div>
+        <div class="jornada-info-row">
+            <div class="deadline-card">
+                <i class="ti ti-clock"></i>
+                <div id="deadline-info">
+                    <div class="card-label">Cierre</div>
+                </div>
+            </div>
 
-        <div class="presupuesto-card">
-            <i class="ti ti-coin" style="font-size:18px"></i>
-            <div id="presupuesto-info">
-                <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--white)">PRESUPUESTO DISPONIBLE</div>
-                <div id="presupuesto-valor" style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--neon)">100M</div>
+            <div class="presupuesto-card">
+                <i class="ti ti-coin"></i>
+                <div id="presupuesto-info">
+                    <div class="card-label">Presupuesto</div>
+                    <div id="presupuesto-valor">100M</div>
+                </div>
             </div>
         </div>
 
         <div id="aviso-inactivos-lineup" style="display:none;background:rgba(240,94,94,0.15);border:1px solid rgba(240,94,94,0.3);border-radius:8px;padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:#f05e5e;margin-top:8px"></div>
 
-        <div style="padding:12px 0;display:flex;justify-content:center;align-items:center;gap:12px">
+        <div style="padding:12px 0 3px;display:flex;justify-content:center;align-items:center;gap:12px">
             <select id="formation-select" class="formation-select">
                 <option>4-3-3</option><option>4-4-2</option><option>4-5-1</option>
                 <option>3-4-3</option><option>3-5-2</option><option>5-3-2</option>
@@ -173,29 +177,67 @@
                 <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);text-align:right"><span id="export-formacion">—</span> · J<span id="export-jornada">—</span></div>
             </div>
             <div class="pitch-wrapper" style="padding:12px 0">
+                <a href="https://nexusclub.es" target="_blank" rel="noopener" class="pitch-ad-banner pitch-ad-top">
+                    <div class="pitch-ad-track">
+                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                    </div>
+                </a>
+
                 <div id="pitch" class="pitch">
                     <div class="pitch-stripes" id="pitch-stripes"></div>
                     <div class="pitch-halftime"></div>
                     <div class="pitch-center-circle"></div>
+                </div>
+
+                <a href="https://nexusclub.es" target="_blank" rel="noopener" class="pitch-ad-banner pitch-ad-bottom">
+                    <div class="pitch-ad-track">
+                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                    </div>
+                </a>
+            </div>
+            <div class="coach-card" id="coach-card" style="cursor:pointer">
+                <img class="coach-card-avatar" id="coach-avatar" src="" alt="" style="display:none">
+                <div class="coach-card-info">
+                    <div class="coach-card-label">Entrenador</div>
+                    <div class="coach-card-name" id="coach-name">Elige entrenador</div>
+                    <div class="coach-card-club" id="coach-club">—</div>
                 </div>
             </div>
         </div>
 
         <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none;width:100%;margin:4px 0">CONSULTA TU EQUIPO</button>
 
-        <div id="capitan-wrapper" style="margin-bottom:8px">
-            <div class="capitan-card" style="text-align:center">
-                <div class="capitan-card-titulo">SELECCIONA UN CAPITÁN</div>
-                <div class="capitan-card-sub">Puntuará doble</div>
-                <select id="capitan-select" class="formation-select" style="width:100%;margin-top:10px;text-align:center">
-                    <option value="">Elige tu capitán</option>
-                </select>
+        <div id="capitan-wrapper">
+            <div class="capitan-card">
+                <div class="capitan-card-icon"><i class="ti ti-star-filled"></i></div>
+                <div class="capitan-card-body">
+                    <div class="capitan-card-titulo">Capitán · Puntúa doble</div>
+                    <select id="capitan-select">
+                        <option value="">Elige tu capitán</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <button id="btn-save-lineup" class="btn-primary" style="width:100%;margin:4px 0">GUARDAR ALINEACIÓN</button>
-        <button id="btn-clear-lineup" class="btn-clear" style="width:100%;margin:4px 0">VACIAR ALINEACIÓN</button>
-        <button id="btn-export-png" class="btn-primary" style="width:100%;margin:4px 0 16px">EXPORTAR ALINEACIÓN</button>
+        <button id="btn-save-lineup" class="btn-primary" style="width:100%">
+            <i class="ti ti-check"></i>
+            GUARDAR ALINEACIÓN
+        </button>
+
+        <div class="lineup-btn-row">
+            <button id="btn-clear-lineup" class="btn-clear">
+                <i class="ti ti-trash"></i>
+                VACIAR
+            </button>
+            <button id="btn-export-png" class="btn-primary">
+                <i class="ti ti-download"></i>
+                EXPORTAR
+            </button>
+        </div>
     </div>
 </div>
 
@@ -247,7 +289,7 @@
             <div class="ranking-card-header" onclick="goTo('ranking-clasificacion')">
                 <div class="ranking-card-icon"><i class="ti ti-trophy" style="color:var(--green-light)"></i></div>
                 <div class="ranking-card-info">
-                    <div class="ranking-card-title">Clasificación</div>
+                    <div class="ranking-card-title">CLASIFICACIÓN</div>
                     <div class="ranking-card-sub">General · Jornada · Tu club</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
@@ -282,7 +324,7 @@
             <div class="ranking-card-header" onclick="goTo('ranking-ligas')">
                 <div class="ranking-card-icon"><i class="ti ti-lock" style="color:var(--green-light)"></i></div>
                 <div class="ranking-card-info">
-                    <div class="ranking-card-title">Ligas privadas</div>
+                    <div class="ranking-card-title">LIGAS PRIVADAS</div>
                     <div class="ranking-card-sub">Compite con amigos en tu propia liga</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
@@ -294,7 +336,7 @@
             <div class="ranking-card-header" onclick="goTo('ranking-jugadores')">
                 <div class="ranking-card-icon"><i class="ti ti-user" style="color:var(--green-light)"></i></div>
                 <div class="ranking-card-info">
-                    <div class="ranking-card-title">Ranking de jugadores</div>
+                    <div class="ranking-card-title">RANKING DE JUGADORES</div>
                     <div class="ranking-card-sub">Rendimiento en detalle durante la temporada</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
@@ -306,7 +348,7 @@
             <div class="ranking-card-header" onclick="goTo('ranking-once')">
                 <div class="ranking-card-icon"><i class="ti ti-star" style="color:var(--green-light)"></i></div>
                 <div class="ranking-card-info">
-                    <div class="ranking-card-title">Once ideal</div>
+                    <div class="ranking-card-title">ONCE IDEAL</div>
                     <div class="ranking-card-sub">Los mejores de cada jornada</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
@@ -318,7 +360,7 @@
             <div class="ranking-card-header" onclick="goTo('ranking-rentable')">
                 <div class="ranking-card-icon"><i class="ti ti-coin" style="color:var(--green-light)"></i></div>
                 <div class="ranking-card-info">
-                    <div class="ranking-card-title">Once rentable</div>
+                    <div class="ranking-card-title">ONCE RENTABLE</div>
                     <div class="ranking-card-sub">Mejor relación puntos / precio</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
@@ -342,8 +384,8 @@
             <div class="ranking-card-header" onclick="goTo('ranking-comparador')">
                 <div class="ranking-card-icon"><i class="ti ti-bolt" style="color:var(--green-light)"></i></div>
                 <div class="ranking-card-info">
-                    <div class="ranking-card-title">Comparador</div>
-                    <div class="ranking-card-sub">Compara dos jugadores cara a cara</div>
+                    <div class="ranking-card-title">COMPARADOR</div>
+                    <div class="ranking-card-sub">Enfrenta dos jugadores</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
             </div>
@@ -354,8 +396,8 @@
             <div class="ranking-card-header" onclick="goTo('ranking-detalle')">
                 <div class="ranking-card-icon"><i class="ti ti-chart-bar" style="color:var(--green-light)"></i></div>
                 <div class="ranking-card-info">
-                    <div class="ranking-card-title">Al detalle</div>
-                    <div class="ranking-card-sub">Goles · Asistencias · Porterías a cero · Tarjetas</div>
+                    <div class="ranking-card-title">AL DETALLE</div>
+                    <div class="ranking-card-sub">Consulta goleadores, asistentes, amonestados y mucho más</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
             </div>
@@ -371,7 +413,7 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">Clasificación</span>
+        <span class="detail-title">CLASIFICACIÓN</span>
     </div>
     <main class="page-body">
         <div style="display:flex;gap:6px;margin-bottom:14px">
@@ -414,7 +456,7 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">Ligas privadas</span>
+        <span class="detail-title">LIGAS PRIVADAS</span>
     </div>
     <main class="page-body">
         <div id="rtab-ligas"></div>
@@ -428,7 +470,7 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">Ranking de jugadores</span>
+        <span class="detail-title">RANKING DE JUGADORES</span>
     </div>
     <main class="page-body">
         <div id="rtab-jugadores"></div>
@@ -442,16 +484,16 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">Al detalle</span>
+        <span class="detail-title">AL DETALLE</span>
     </div>
     <main class="page-body">
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
             <button class="ranking-subtab active" data-subtab="goles" onclick="cambiarSubtabDetalle('goles')">⚽ Goles</button>
-            <button class="ranking-subtab" data-subtab="asistencias" onclick="cambiarSubtabDetalle('asistencias')">👟 Asist.</button>
-            <button class="ranking-subtab" data-subtab="porterias" onclick="cambiarSubtabDetalle('porterias')">🔒 P.Cero</button>
-            <button class="ranking-subtab" data-subtab="amarillas" onclick="cambiarSubtabDetalle('amarillas')">🟨 Amar.</button>
+            <button class="ranking-subtab" data-subtab="asistencias" onclick="cambiarSubtabDetalle('asistencias')">👟 Asistencias</button>
+            <button class="ranking-subtab" data-subtab="porterias" onclick="cambiarSubtabDetalle('porterias')">🔒 Porterías a cero</button>
+            <button class="ranking-subtab" data-subtab="amarillas" onclick="cambiarSubtabDetalle('amarillas')">🟨 Amarillas</button>
             <button class="ranking-subtab" data-subtab="rojas" onclick="cambiarSubtabDetalle('rojas')">🟥 Rojas</button>
-            <button class="ranking-subtab" data-subtab="minutos" onclick="cambiarSubtabDetalle('minutos')">⏱️ Min.</button>
+            <button class="ranking-subtab" data-subtab="minutos" onclick="cambiarSubtabDetalle('minutos')">⏱️ Minutos</button>
         </div>
         <div id="detalle-container"></div>
     </main>
@@ -464,7 +506,7 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">Once ideal</span>
+        <span class="detail-title">ONCE IDEAL</span>
     </div>
     <main class="page-body">
         <div style="margin-bottom:14px">
@@ -481,7 +523,7 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">Once rentable</span>
+        <span class="detail-title">ONCE RENTABLE</span>
     </div>
     <main class="page-body">
         <div style="margin-bottom:14px">
@@ -498,7 +540,7 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">MVP de la jornada</span>
+        <span class="detail-title">MVP DE LA JORNADA</span>
     </div>
     <main class="page-body">
         <div style="margin-bottom:14px">
@@ -515,7 +557,7 @@
         <button class="detail-back" onclick="goTo('ranking')">
             <i class="ti ti-arrow-left"></i>
         </button>
-        <span class="detail-title">Comparador</span>
+        <span class="detail-title">COMPARADOR</span>
     </div>
     <main class="page-body">
         <div id="comparador-container"></div>

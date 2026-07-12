@@ -6,7 +6,7 @@ function actualizarSelectCapitan() {
   const sel = document.getElementById('capitan-select');
   if (!sel) return;
   const valorActual = sel.value;
-  sel.innerHTML = '<option value="">¡Escógelo bien!</option>';
+  sel.innerHTML = '<option value="">¡Elige bien!</option>';
   Object.values(seleccionados).forEach(j => {
     if (j.posicion === 'ENT') return;
     const opt = document.createElement('option');
@@ -22,12 +22,12 @@ async function loadLineup() {
   cambiosSinGuardar = false;
   const deadlineEl = document.getElementById('deadline-info');
   if (deadlineEl) {
-    const fecha = new Date(DEADLINE_JORNADA);
-    const fechaFormateada = fecha.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' });
+   const fecha = new Date(DEADLINE_JORNADA);
+   const fechaFormateada = fecha.toLocaleDateString('es-ES', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }).replace(/^\w/, c => c.toUpperCase());
     if (jornadadCerrada()) {
-      deadlineEl.innerHTML = '<span class="deadline-cerrado">La jornada comenzó el ' + fechaFormateada + '</span>';
+      deadlineEl.innerHTML = '<div class="card-label">Cierre de jornada</div><span class="deadline-cerrado">' + fechaFormateada + '</span>';
     } else {
-      deadlineEl.innerHTML = '<span class="deadline-abierto">CIERRE JORNADA: ' + fechaFormateada + 'h</span><span class="deadline-abierto-card" style="margin-top:6px;margin-bottom:8px" id="countdown-box"><span id="countdown-timer">Calculando...</span></span>';
+      deadlineEl.innerHTML = '<div class="card-label">Cierre de jornada</div><span class="deadline-abierto">' + fechaFormateada + 'h</span><span class="deadline-abierto-card" style="margin-top:6px;margin-bottom:8px" id="countdown-box"><span id="countdown-timer">Calculando...</span></span>';
       const actualizarCuenta = () => {
         const diff = new Date(DEADLINE_JORNADA) - new Date();
         if (diff <= 0) { document.getElementById('countdown-timer').textContent = '¡Plazo cerrado!'; clearInterval(window._countdownIntervalo); return; }
@@ -449,7 +449,7 @@ function renderPitch() {
   const stripes = document.getElementById('pitch-stripes');
   stripes.innerHTML = '';
   for (let i = 0; i < 10; i++) { const d = document.createElement('div'); d.className = 'pitch-stripe'; stripes.appendChild(d); }
-  const filas = [{ pos:'DEL', count:fwd, cls:'fwd' }, { pos:'MED', count:mid, cls:'mid' }, { pos:'DEF', count:def, cls:'def' }, { pos:'POR', count:1, cls:'gk' }, { pos:'ENT', count:1, cls:'ent' }];
+  const filas = [{ pos:'DEL', count:fwd, cls:'fwd' }, { pos:'MED', count:mid, cls:'mid' }, { pos:'DEF', count:def, cls:'def' }, { pos:'POR', count:1, cls:'gk' }];
   filas.forEach(fila => {
     const row = document.createElement('div'); row.className = 'pitch-row';
     for (let i = 0; i < fila.count; i++) {
@@ -471,6 +471,33 @@ function renderPitch() {
     }
     pitch.appendChild(row);
   });
+  renderCoachCard();
+}
+
+function renderCoachCard() {
+  const jugador = seleccionados['ENT-0'];
+  const avatar = document.getElementById('coach-avatar');
+  const nombre = document.getElementById('coach-name');
+  const club = document.getElementById('coach-club');
+  const card = document.getElementById('coach-card');
+  if (!card) return;
+
+  if (jugador) {
+    nombre.textContent = jugador.nombre;
+    club.textContent = jugador.club || '—';
+    if (jugador.foto_url) {
+      avatar.src = jugador.foto_url;
+      avatar.style.display = '';
+      avatar.onerror = () => { avatar.style.display = 'none'; };
+    } else {
+      avatar.style.display = 'none';
+    }
+  } else {
+    nombre.textContent = 'Elige entrenador';
+    club.textContent = '—';
+    avatar.style.display = 'none';
+  }
+  card.onclick = () => openModal('ENT-0', 'ENT', 'ent');
 }
 
 function openModal(slotId, posicion, cls) {
