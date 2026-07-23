@@ -216,11 +216,21 @@ async function mostrarHistorial(nombre, club, posicion) {
   modal.classList.add('open');
 
   const [{ data: partidosPublicados }, { data: todosPartidos }] = await Promise.all([
-    db.from('partidos').select('jornada').eq('publicado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`),
+    db.from('partidos').select('jornada, finalizado').or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`),
     db.from('partidos').select('jornada, resultado_local, resultado_visitante, finalizado').eq('finalizado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
   ]);
 
-  const jornadasPublicadas = (partidosPublicados || []).map(p => p.jornada);
+  // Solo jornadas donde TODOS los partidos están finalizados
+  const jornadasMap = (partidosPublicados || []).reduce((acc, p) => {
+    if (!acc[p.jornada]) acc[p.jornada] = { total: 0, finalizados: 0 };
+    acc[p.jornada].total++;
+    if (p.finalizado) acc[p.jornada].finalizados++;
+    return acc;
+  }, {});
+
+  const jornadasPublicadas = Object.entries(jornadasMap)
+    .filter(([_, v]) => v.total > 0 && v.total === v.finalizados)
+    .map(([jornada]) => parseInt(jornada));
 
   if (!jornadasPublicadas.length) {
     content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>';
