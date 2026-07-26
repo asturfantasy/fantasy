@@ -187,7 +187,38 @@ async function loadHome() {
     toggleBtn.classList.toggle('active', !visible);
   });
 
+  async function cargarColaboradores() {
+    const { data, error } = await db
+      .from('colaboradores')
+      .select('nombre, logo_url, web_url')
+      .eq('activo', true)
+      .order('orden', { ascending: true });
+
+    if (error) {
+      console.error('Error cargando colaboradores:', error);
+      return;
+    }
+
+    const seccion = document.getElementById('colaboradores-seccion');
+    const grid = document.getElementById('colaboradores-grid');
+    if (!grid || !seccion) return;
+
+    if (!data?.length) {
+      seccion.style.display = 'none';
+      return;
+    }
+
+    seccion.style.display = '';
+    grid.innerHTML = data.map(c => `
+      <a href="${c.web_url || '#'}" target="_blank" rel="noopener" class="colaborador-card">
+        ${c.logo_url ? `<img src="${c.logo_url}" alt="${c.nombre}">` : ''}
+        <span>${c.nombre}</span>
+      </a>
+    `).join('');
+  }
+
   cargarClasificacion();
+  cargarColaboradores();
 }
 
   function cambiarTabEquipo(tab) {

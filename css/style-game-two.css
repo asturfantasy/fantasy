@@ -1119,3 +1119,54 @@ html, body {
   height: 24px;
   object-fit: contain;
 }
+
+.colaboradores-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.colaborador-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  flex: 1 1 100%;
+}
+
+.colaborador-card span {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.colaborador-card img {
+  height: 68px;
+  width: auto;
+  max-width: 170px;
+  object-fit: contain;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+.colaborador-card:hover img {
+  opacity: 1;
+}
+
+@media (min-width: 480px) {
+  .colaborador-card {
+    flex: 1 1 calc(50% - 20px);
+  }
+}
+
+@media (min-width: 768px) {
+  .colaborador-card {
+    flex: 1 1 calc(33.333% - 20px);
+  }
+}
