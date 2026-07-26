@@ -107,7 +107,6 @@ async function loadHome() {
   renderTodos();
 
   //Clasificación clubes
-  // ── Clasificación competición ──
   let condicionActual = null;
   let ordenActual = 'pts';
 
@@ -164,8 +163,10 @@ async function loadHome() {
     });
   }
 
-  // Listeners de los botones (se enganchan una sola vez)
-  document.querySelectorAll('.filtro-btn').forEach(btn => {
+  // Listeners de los botones de filtro (clonados para evitar duplicados al repetir loadHome)
+  document.querySelectorAll('.filtro-btn').forEach(btnOld => {
+    const btn = btnOld.cloneNode(true);
+    btnOld.replaceWith(btn);
     btn.addEventListener('click', () => {
       const tipo = btn.dataset.tipo;
       const valor = btn.dataset.valor || null;
@@ -173,7 +174,20 @@ async function loadHome() {
       else cargarClasificacion(condicionActual, valor);
     });
   });
-   cargarClasificacion();
+
+  // Listener del botón de filtros (clonado por el mismo motivo)
+  const toggleBtnOld = document.getElementById('toggle-filtros');
+  const toggleBtn = toggleBtnOld.cloneNode(true);
+  toggleBtnOld.replaceWith(toggleBtn);
+  const panel = document.getElementById('filtros-panel');
+
+  toggleBtn.addEventListener('click', () => {
+    const visible = panel.style.display !== 'none';
+    panel.style.display = visible ? 'none' : 'flex';
+    toggleBtn.classList.toggle('active', !visible);
+  });
+
+  cargarClasificacion();
 }
 
   function cambiarTabEquipo(tab) {

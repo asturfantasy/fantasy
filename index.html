@@ -134,8 +134,13 @@
                 <span class="action-desc">Desglosados los criterios</span>
             </button>
         </div>
-        <div class="section-label" style="margin-top:20px;margin-bottom:12px"><strong>CLASIFICACIÓN</strong></div>
-        <div class="clasificacion-controles">
+        <div class="clasificacion-header" style="margin-top:20px;margin-bottom:12px">
+            <div class="section-label"><strong>CLASIFICACIÓN</strong></div>
+            <button id="toggle-filtros" class="filtro-icon-btn" aria-label="Filtros">
+                <i class="ti ti-filter"></i>
+            </button>
+        </div>
+        <div class="clasificacion-controles" id="filtros-panel" style="display:none">
             <div class="filtro-grupo" id="filtro-condicion-grupo">
                 <button class="filtro-btn active" data-tipo="condicion" data-valor="">General</button>
                 <button class="filtro-btn" data-tipo="condicion" data-valor="local">Local</button>

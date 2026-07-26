@@ -1019,16 +1019,40 @@ html, body {
 
 .lineup-btn-row { margin: 0 0 16px; }
 
+.clasificacion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+
+.filtro-icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.filtro-icon-btn:hover,
+.filtro-icon-btn.active {
+  border-color: var(--neon);
+  color: var(--neon);
+}
+
 .clasificacion-controles {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 20px;
   margin-bottom: 16px;
-}
-
-#tabla-clasificacion {
-  margin-top: 4px;
 }
 
 .filtro-grupo {
@@ -1067,7 +1091,7 @@ html, body {
 #tabla-clasificacion {
   width: 100%;
   border-collapse: collapse;
-    margin-top: 4px;
+  margin-top: 4px;
 }
 
 #tabla-clasificacion th,
