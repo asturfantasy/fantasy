@@ -13,7 +13,7 @@ async function loadConfig() {
   const { data: config } = await db.from('config_jornada').select('*').single();
   PRESUPUESTO = config.presupuesto;
   window.MENSAJE_AVISO = config.mensaje_aviso;
-  window.TITULO_JORNADA = config.titulo_jornada;
+  //window.TITULO_JORNADA = config.titulo_jornada;
   window.FECHA_FIN = config.fecha_fin;
 
   // Calcular jornada activa y visible desde tabla jornadas
@@ -39,7 +39,7 @@ async function loadConfig() {
     .from('partidos')
     .select('*')
     .eq('jornada', JORNADA_ACTIVA)
-    .order('created_at');
+    .order('orden');
 
   PARTIDOS = (partidos || []).map(p => ({
     local: { nombre: p.local_nombre, abrev: p.local_abrev, escudo_url: p.local_escudo_url },

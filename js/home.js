@@ -12,8 +12,10 @@ async function loadHome() {
   const enDirecto = ahora > new Date(DEADLINE_JORNADA) && ahora < new Date(window.FECHA_FIN);
   const bannerAviso = document.getElementById('card-mensaje-home');
   if (bannerAviso) { if (window.MENSAJE_AVISO) { bannerAviso.textContent = window.MENSAJE_AVISO; bannerAviso.style.display = 'block'; } else bannerAviso.style.display = 'none'; }
+  /*const tituloJornada = document.getElementById('titulo-jornada-home');
+  if (tituloJornada) tituloJornada.textContent = window.TITULO_JORNADA || '';*/
   const tituloJornada = document.getElementById('titulo-jornada-home');
-  if (tituloJornada) tituloJornada.textContent = window.TITULO_JORNADA || '';
+  if (tituloJornada) tituloJornada.textContent = 'Jornada ' + JORNADA_ACTIVA;
   const bannerDirecto = document.getElementById('banner-en-directo');
   if (bannerDirecto) bannerDirecto.style.display = enDirecto ? 'block' : 'none';
   const btnJ = document.getElementById('btn-jornada-visible');
@@ -106,67 +108,122 @@ async function loadHome() {
 
   renderTodos();
 
-  // ── Clasificación competición ──
-  if (document.getElementById('clasificacion-competicion-container')) return;
+  //Clasificación clubes
+  let condicionActual = null;
+  let ordenActual = 'pts';
 
-  const { data: clasif } = await db
-    .from('clasificacion_competicion')
-    .select('*')
-    .order('posicion', { ascending: true });
+  async function cargarClasificacion(condicion = condicionActual, orden = ordenActual) {
+    condicionActual = condicion;
+    ordenActual = orden;
 
-  if (clasif?.length) {
-    const total = clasif.length;
+    const { data, error } = await db.rpc('get_clasificacion_clubes', {
+      p_condicion: condicion,
+      p_orden: orden
+    });
+
+    if (error) {
+      console.error('Error cargando clasificación:', error);
+      return;
+    }
+
+    // Pinta las filas dentro del <tbody> fijo
+    const total = data.length;
     const getBg = (pos) => {
-      if (pos === 1) return 'rgba(0,100,50,0.4)';
-      if (pos <= 5) return 'rgba(0,150,80,0.15)';
-      if (pos > total - 3) return 'rgba(200,30,30,0.15)';
-      return pos % 2 === 0 ? 'var(--surface)' : 'transparent';
-    };
-    const getBorder = (pos) => {
-      if (pos === 1) return '1px solid rgba(0,180,90,0.4)';
-      if (pos <= 5) return '1px solid rgba(0,180,90,0.15)';
-      if (pos > total - 3) return '1px solid rgba(200,30,30,0.2)';
-      return '1px solid transparent';
+      if (pos === 1) return 'rgba(0,140,70,0.55)';        // verde oscuro, 1º
+      if (pos <= 5) return 'rgba(0,180,90,0.22)';          // verde claro, 2º-5º
+      if (pos > total - 3) return 'rgba(220,40,40,0.22)';  // rojo claro, últimos 3
+      return pos % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent'; // intercalado sutil
     };
 
-    const clasifHtml = `
-      <div id="clasificacion-competicion-container">
-        <div class="section-label" style="margin-top:20px;margin-bottom:12px"><strong>CLASIFICACIÓN</strong></div>
-        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border)">
-          <div style="display:grid;grid-template-columns:28px 1fr 28px 28px 28px 28px 36px;
-                      padding:6px 10px;font-family:var(--font-mono);font-size:9px;
-                      letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;
-                      border-bottom:1px solid var(--border);background:var(--surface)">
-            <span>#</span><span>Equipo</span><span style="text-align:center">PJ</span>
-            <span style="text-align:center">G</span><span style="text-align:center">E</span>
-            <span style="text-align:center">P</span><span style="text-align:right">Pts</span>
+    const tbody = document.getElementById('clasificacion-body');
+    tbody.innerHTML = data.map(c => `
+      <tr style="background:${getBg(c.posicion)}">
+        <td>${c.posicion}</td>
+        <td>
+          <div class="equipo-celda">
+            ${c.escudo_url ? `<img src="${c.escudo_url}" width="20" height="20" style="object-fit:contain">` : ''}
+            <span>${c.equipo}</span>
           </div>
-          ${clasif.map(c => `
-            <div style="display:grid;grid-template-columns:28px 1fr 28px 28px 28px 28px 36px;
-                        padding:8px 10px;align-items:center;cursor:pointer;
-                        background:${getBg(c.posicion)};
-                        border-bottom:${getBorder(c.posicion)}"
-                 onclick="abrirEquipoDesdeClasif('${c.abrev}', '${c.equipo.replace(/'/g, "\\'")}')">
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${c.posicion}</span>
-              <div style="display:flex;align-items:center;gap:6px">
-                ${c.escudo_url ? `<img src="${c.escudo_url}" width="18" height="18" style="object-fit:contain">` : ''}
-                <span style="font-family:var(--font-display);font-size:12px;font-weight:600;color:var(--text)">${c.equipo}</span>
-              </div>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.partidos}</span>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.ganados}</span>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.empatados}</span>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.perdidos}</span>
-              <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--neon);text-align:right">${c.puntos}</span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-    document.querySelector('#screen-home .page-body').insertAdjacentHTML('beforeend', clasifHtml);
+        </td>
+        <td>${c.pj}</td>
+        <td>${c.ganados}</td>
+        <td>${c.empatados}</td>
+        <td>${c.perdidos}</td>
+        <td>${c.gf}</td>
+        <td>${c.gc}</td>
+        <td>${c.dg}</td>
+        <td>${c.pts}</td>
+      </tr>
+    `).join('');
+
+    // Marca el botón activo en cada grupo
+    document.querySelectorAll('#filtro-condicion-grupo .filtro-btn').forEach(btn => {
+      btn.classList.toggle('active', (btn.dataset.valor || null) === condicionActual);
+    });
+    document.querySelectorAll('#filtro-orden-grupo .filtro-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.valor === ordenActual);
+    });
   }
+
+  // Listeners de los botones de filtro (clonados para evitar duplicados al repetir loadHome)
+  document.querySelectorAll('.filtro-btn').forEach(btnOld => {
+    const btn = btnOld.cloneNode(true);
+    btnOld.replaceWith(btn);
+    btn.addEventListener('click', () => {
+      const tipo = btn.dataset.tipo;
+      const valor = btn.dataset.valor || null;
+      if (tipo === 'condicion') cargarClasificacion(valor, ordenActual);
+      else cargarClasificacion(condicionActual, valor);
+    });
+  });
+
+  // Listener del botón de filtros (clonado por el mismo motivo)
+  const toggleBtnOld = document.getElementById('toggle-filtros');
+  const toggleBtn = toggleBtnOld.cloneNode(true);
+  toggleBtnOld.replaceWith(toggleBtn);
+  const panel = document.getElementById('filtros-panel');
+
+  toggleBtn.addEventListener('click', () => {
+    const visible = panel.style.display !== 'none';
+    panel.style.display = visible ? 'none' : 'flex';
+    toggleBtn.classList.toggle('active', !visible);
+  });
+
+  async function cargarColaboradores() {
+    const { data, error } = await db
+      .from('colaboradores')
+      .select('nombre, logo_url, web_url')
+      .eq('activo', true)
+      .order('orden', { ascending: true });
+
+    if (error) {
+      console.error('Error cargando colaboradores:', error);
+      return;
+    }
+
+    const seccion = document.getElementById('colaboradores-seccion');
+    const grid = document.getElementById('colaboradores-grid');
+    if (!grid || !seccion) return;
+
+    if (!data?.length) {
+      seccion.style.display = 'none';
+      return;
+    }
+
+    seccion.style.display = '';
+    grid.innerHTML = data.map(c => `
+      <a href="${c.web_url || '#'}" target="_blank" rel="noopener" class="colaborador-card">
+        ${c.logo_url ? `<img src="${c.logo_url}" alt="${c.nombre}">` : ''}
+        <span>${c.nombre}</span>
+      </a>
+    `).join('');
+  }
+
+  cargarClasificacion();
+  cargarColaboradores();
 }
 
-function cambiarTabEquipo(tab) {
+  function cambiarTabEquipo(tab) {
   document.getElementById('tab-plantilla').classList.toggle('active', tab === 'plantilla');
   document.getElementById('tab-resultados').classList.toggle('active', tab === 'resultados');
   document.getElementById('equipo-grid').style.display = tab === 'plantilla' ? '' : 'none';

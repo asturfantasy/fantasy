@@ -71,9 +71,9 @@
     </div>
     <div id="equipos-carrusel">
     </div>
-    <div id="banner-en-directo" style="display:none;background:#cc0000;color:white;text-align:center;padding:8px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px">
+    <!--<div id="banner-en-directo" style="display:none;background:#cc0000;color:white;text-align:center;padding:8px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px">
         <span style="animation:parpadeo 1.2s infinite">🔴</span> JORNADA EN DIRECTO
-    </div>
+    </div>-->
     <div class="matches-grid stats-wrapper">
         <div class="match-card" style="cursor:default;justify-content:space-around">
             <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
@@ -111,28 +111,44 @@
         <div id="matches-container" class="matches-grid">
             <div style="text-align:center;padding:32px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:12px">Cargando jornada...</div>
         </div>
-        <div class="section-label" style="margin-top:20px;margin-bottom:12px"><strong>HORA DE LA ACCIÓN</strong></div>
-        <div class="action-grid">
-            <button class="action-btn" data-target="lineup">
-                <i class="ti ti-clipboard-list" style="font-size:28px;color:var(--green-light)"></i>
-                <span class="action-label">ALINEACIÓN</span>
-                <span class="action-desc">Haz tu once</span>
+        <div class="clasificacion-header" style="margin-top:20px;margin-bottom:12px">
+            <div class="section-label"><strong>CLASIFICACIÓN</strong></div>
+            <button id="toggle-filtros" class="filtro-icon-btn" aria-label="Filtros">
+                <i class="ti ti-filter"></i>
             </button>
-            <button class="action-btn" data-target="myteam">
-                <i class="ti ti-shirt" style="font-size:28px;color:var(--green-light)"></i>
-                <span class="action-label">JORNADA</span>
-                <span class="action-desc">Consulta aquí tu puntuación</span>
-            </button>
-            <button class="action-btn" data-target="ranking">
-                <i class="ti ti-trophy" style="font-size:28px;color:var(--green-light)"></i>
-                <span class="action-label">RANKINGS</span>
-                <span class="action-desc">Todas las clasificaciones</span>
-            </button>
-            <button class="action-btn" data-target="criterios">
-                <i class="ti ti-star" style="font-size:28px;color:var(--green-light)"></i>
-                <span class="action-label">PUNTUACIÓN</span>
-                <span class="action-desc">Desglosados los criterios</span>
-            </button>
+        </div>
+        <div class="clasificacion-controles" id="filtros-panel" style="display:none">
+            <div class="filtro-grupo" id="filtro-condicion-grupo">
+                <button class="filtro-btn active" data-tipo="condicion" data-valor="">General</button>
+                <button class="filtro-btn" data-tipo="condicion" data-valor="local">Local</button>
+                <button class="filtro-btn" data-tipo="condicion" data-valor="visitante">Visitante</button>
+            </div>
+            <div class="filtro-grupo" id="filtro-orden-grupo">
+                <button class="filtro-btn active" data-tipo="orden" data-valor="pts">Puntos</button>
+                <button class="filtro-btn" data-tipo="orden" data-valor="gf">Goles a favor</button>
+                <button class="filtro-btn" data-tipo="orden" data-valor="gc">Goles en contra</button>
+            </div>
+        </div>
+        <table id="tabla-clasificacion">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Equipo</th>
+                <th>PJ</th>
+                <th>G</th>
+                <th>E</th>
+                <th>P</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DIF</th>
+                <th>PTS</th>
+            </tr>
+            </thead>
+            <tbody id="clasificacion-body"></tbody>
+        </table>
+        <div id="colaboradores-seccion">
+            <div class="section-label" style="margin-top:24px;margin-bottom:12px"><strong>COLABORADORES</strong></div>
+            <div class="colaboradores-grid" id="colaboradores-grid"></div>
         </div>
     </main>
 </div>
@@ -177,11 +193,11 @@
                 <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);text-align:right"><span id="export-formacion">—</span> · J<span id="export-jornada">—</span></div>
             </div>
             <div class="pitch-wrapper" style="padding:12px 0">
-                <a href="https://nexusclub.es" target="_blank" rel="noopener" class="pitch-ad-banner pitch-ad-top">
+                <a href="https://www.instagram.com/asturfantasy/" target="_blank" rel="noopener" class="pitch-ad-banner pitch-ad-top">
                     <div class="pitch-ad-track">
-                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
-                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
-                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                        <span class="pitch-ad-item">ANÚNCIATE AQUÍ</span>
+                        <span class="pitch-ad-item">ANÚNCIATE AQUÍ</span>
+                        <span class="pitch-ad-item">ANÚNCIATE AQUÍ</span>
                     </div>
                 </a>
 
@@ -191,11 +207,11 @@
                     <div class="pitch-center-circle"></div>
                 </div>
 
-                <a href="https://nexusclub.es" target="_blank" rel="noopener" class="pitch-ad-banner pitch-ad-bottom">
+                <a href="https://www.instagram.com/asturfantasy/" target="_blank" rel="noopener" class="pitch-ad-banner pitch-ad-bottom">
                     <div class="pitch-ad-track">
-                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
-                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
-                        <span class="pitch-ad-item"> NEXUS CLUB - Equipaciones con identidad</span>
+                        <span class="pitch-ad-item">ANÚNCIATE AQUÍ</span>
+                        <span class="pitch-ad-item">ANÚNCIATE AQUÍ</span>
+                        <span class="pitch-ad-item">ANÚNCIATE AQUÍ</span>
                     </div>
                 </a>
             </div>
@@ -398,6 +414,18 @@
                 <div class="ranking-card-info">
                     <div class="ranking-card-title">AL DETALLE</div>
                     <div class="ranking-card-sub">Consulta goleadores, asistentes, amonestados y mucho más</div>
+                </div>
+                <i class="ti ti-chevron-right ranking-card-chevron"></i>
+            </div>
+        </div>
+
+        <!-- TARJETA: PUNTUACIÓN -->
+        <div class="ranking-card" id="ranking-card-criterios">
+            <div class="ranking-card-header" onclick="goTo('criterios')">
+                <div class="ranking-card-icon"><i class="ti ti-star" style="color:var(--green-light)"></i></div>
+                <div class="ranking-card-info">
+                    <div class="ranking-card-title">PUNTUACIÓN</div>
+                    <div class="ranking-card-sub">Desglosados los criterios</div>
                 </div>
                 <i class="ti ti-chevron-right ranking-card-chevron"></i>
             </div>
