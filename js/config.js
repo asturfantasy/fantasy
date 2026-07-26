@@ -39,7 +39,7 @@ async function loadConfig() {
     .from('partidos')
     .select('*')
     .eq('jornada', JORNADA_ACTIVA)
-    .order('created_at');
+    .order('orden');
 
   PARTIDOS = (partidos || []).map(p => ({
     local: { nombre: p.local_nombre, abrev: p.local_abrev, escudo_url: p.local_escudo_url },

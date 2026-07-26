@@ -134,6 +134,35 @@
                 <span class="action-desc">Desglosados los criterios</span>
             </button>
         </div>
+        <div class="clasificacion-controles">
+            <div class="filtro-grupo" id="filtro-condicion-grupo">
+                <button class="filtro-btn active" data-tipo="condicion" data-valor="">General</button>
+                <button class="filtro-btn" data-tipo="condicion" data-valor="local">Local</button>
+                <button class="filtro-btn" data-tipo="condicion" data-valor="visitante">Visitante</button>
+            </div>
+            <div class="filtro-grupo" id="filtro-orden-grupo">
+                <button class="filtro-btn active" data-tipo="orden" data-valor="pts">Puntos</button>
+                <button class="filtro-btn" data-tipo="orden" data-valor="gf">Goles a favor</button>
+                <button class="filtro-btn" data-tipo="orden" data-valor="gc">Goles en contra</button>
+            </div>
+        </div>
+        <table id="tabla-clasificacion">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Equipo</th>
+                <th>PJ</th>
+                <th>G</th>
+                <th>E</th>
+                <th>P</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DIF</th>
+                <th>PTS</th>
+            </tr>
+            </thead>
+            <tbody id="clasificacion-body"></tbody>
+        </table>
     </main>
 </div>
 

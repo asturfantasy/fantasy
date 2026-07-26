@@ -106,67 +106,77 @@ async function loadHome() {
 
   renderTodos();
 
+  //Clasificación clubes
   // ── Clasificación competición ──
-  if (document.getElementById('clasificacion-competicion-container')) return;
+  let condicionActual = null;
+  let ordenActual = 'pts';
 
-  const { data: clasif } = await db
-    .from('clasificacion_competicion')
-    .select('*')
-    .order('posicion', { ascending: true });
+  async function cargarClasificacion(condicion = condicionActual, orden = ordenActual) {
+    condicionActual = condicion;
+    ordenActual = orden;
 
-  if (clasif?.length) {
-    const total = clasif.length;
+    const { data, error } = await db.rpc('get_clasificacion_clubes', {
+      p_condicion: condicion,
+      p_orden: orden
+    });
+
+    if (error) {
+      console.error('Error cargando clasificación:', error);
+      return;
+    }
+
+    // Pinta las filas dentro del <tbody> fijo
+    const total = data.length;
     const getBg = (pos) => {
-      if (pos === 1) return 'rgba(0,100,50,0.4)';
-      if (pos <= 5) return 'rgba(0,150,80,0.15)';
-      if (pos > total - 3) return 'rgba(200,30,30,0.15)';
-      return pos % 2 === 0 ? 'var(--surface)' : 'transparent';
-    };
-    const getBorder = (pos) => {
-      if (pos === 1) return '1px solid rgba(0,180,90,0.4)';
-      if (pos <= 5) return '1px solid rgba(0,180,90,0.15)';
-      if (pos > total - 3) return '1px solid rgba(200,30,30,0.2)';
-      return '1px solid transparent';
+      if (pos === 1) return 'rgba(0,140,70,0.55)';        // verde oscuro, 1º
+      if (pos <= 5) return 'rgba(0,180,90,0.22)';          // verde claro, 2º-5º
+      if (pos > total - 3) return 'rgba(220,40,40,0.22)';  // rojo claro, últimos 3
+      return pos % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent'; // intercalado sutil
     };
 
-    const clasifHtml = `
-      <div id="clasificacion-competicion-container">
-        <div class="section-label" style="margin-top:20px;margin-bottom:12px"><strong>CLASIFICACIÓN</strong></div>
-        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border)">
-          <div style="display:grid;grid-template-columns:28px 1fr 28px 28px 28px 28px 36px;
-                      padding:6px 10px;font-family:var(--font-mono);font-size:9px;
-                      letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;
-                      border-bottom:1px solid var(--border);background:var(--surface)">
-            <span>#</span><span>Equipo</span><span style="text-align:center">PJ</span>
-            <span style="text-align:center">G</span><span style="text-align:center">E</span>
-            <span style="text-align:center">P</span><span style="text-align:right">Pts</span>
+    const tbody = document.getElementById('clasificacion-body');
+    tbody.innerHTML = data.map(c => `
+      <tr style="background:${getBg(c.posicion)}">
+        <td>${c.posicion}</td>
+        <td>
+          <div class="equipo-celda">
+            ${c.escudo_url ? `<img src="${c.escudo_url}" width="20" height="20" style="object-fit:contain">` : ''}
+            <span>${c.equipo}</span>
           </div>
-          ${clasif.map(c => `
-            <div style="display:grid;grid-template-columns:28px 1fr 28px 28px 28px 28px 36px;
-                        padding:8px 10px;align-items:center;cursor:pointer;
-                        background:${getBg(c.posicion)};
-                        border-bottom:${getBorder(c.posicion)}"
-                 onclick="abrirEquipoDesdeClasif('${c.abrev}', '${c.equipo.replace(/'/g, "\\'")}')">
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${c.posicion}</span>
-              <div style="display:flex;align-items:center;gap:6px">
-                ${c.escudo_url ? `<img src="${c.escudo_url}" width="18" height="18" style="object-fit:contain">` : ''}
-                <span style="font-family:var(--font-display);font-size:12px;font-weight:600;color:var(--text)">${c.equipo}</span>
-              </div>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.partidos}</span>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.ganados}</span>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.empatados}</span>
-              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-align:center">${c.perdidos}</span>
-              <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--neon);text-align:right">${c.puntos}</span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-    document.querySelector('#screen-home .page-body').insertAdjacentHTML('beforeend', clasifHtml);
+        </td>
+        <td>${c.pj}</td>
+        <td>${c.ganados}</td>
+        <td>${c.empatados}</td>
+        <td>${c.perdidos}</td>
+        <td>${c.gf}</td>
+        <td>${c.gc}</td>
+        <td>${c.dg}</td>
+        <td>${c.pts}</td>
+      </tr>
+    `).join('');
+
+    // Marca el botón activo en cada grupo
+    document.querySelectorAll('#filtro-condicion-grupo .filtro-btn').forEach(btn => {
+      btn.classList.toggle('active', (btn.dataset.valor || null) === condicionActual);
+    });
+    document.querySelectorAll('#filtro-orden-grupo .filtro-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.valor === ordenActual);
+    });
   }
+
+  // Listeners de los botones (se enganchan una sola vez)
+  document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tipo = btn.dataset.tipo;
+      const valor = btn.dataset.valor || null;
+      if (tipo === 'condicion') cargarClasificacion(valor, ordenActual);
+      else cargarClasificacion(condicionActual, valor);
+    });
+  });
+   cargarClasificacion();
 }
 
-function cambiarTabEquipo(tab) {
+  function cambiarTabEquipo(tab) {
   document.getElementById('tab-plantilla').classList.toggle('active', tab === 'plantilla');
   document.getElementById('tab-resultados').classList.toggle('active', tab === 'resultados');
   document.getElementById('equipo-grid').style.display = tab === 'plantilla' ? '' : 'none';
