@@ -13,7 +13,7 @@ async function loadConfig() {
   const { data: config } = await db.from('config_jornada').select('*').single();
   PRESUPUESTO = config.presupuesto;
   window.MENSAJE_AVISO = config.mensaje_aviso;
-  window.TITULO_JORNADA = config.titulo_jornada;
+  //window.TITULO_JORNADA = config.titulo_jornada;
   window.FECHA_FIN = config.fecha_fin;
 
   // Calcular jornada activa y visible desde tabla jornadas

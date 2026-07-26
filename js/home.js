@@ -12,8 +12,10 @@ async function loadHome() {
   const enDirecto = ahora > new Date(DEADLINE_JORNADA) && ahora < new Date(window.FECHA_FIN);
   const bannerAviso = document.getElementById('card-mensaje-home');
   if (bannerAviso) { if (window.MENSAJE_AVISO) { bannerAviso.textContent = window.MENSAJE_AVISO; bannerAviso.style.display = 'block'; } else bannerAviso.style.display = 'none'; }
+  /*const tituloJornada = document.getElementById('titulo-jornada-home');
+  if (tituloJornada) tituloJornada.textContent = window.TITULO_JORNADA || '';*/
   const tituloJornada = document.getElementById('titulo-jornada-home');
-  if (tituloJornada) tituloJornada.textContent = window.TITULO_JORNADA || '';
+  if (tituloJornada) tituloJornada.textContent = 'Jornada ' + JORNADA_ACTIVA;
   const bannerDirecto = document.getElementById('banner-en-directo');
   if (bannerDirecto) bannerDirecto.style.display = enDirecto ? 'block' : 'none';
   const btnJ = document.getElementById('btn-jornada-visible');
