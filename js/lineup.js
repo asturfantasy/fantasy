@@ -243,7 +243,7 @@ async function loadLineup() {
 }
 
 async function exportarAlineacion() {
-  await new FontFace('Space Grotesk', 'url(https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gowFXNvNm8.woff2)').load()
+  await new FontFace('Space Grotesk', 'url(https://cdn.jsdelivr.net/fontsource/fonts/space-grotesk@latest/latin-700-normal.woff2)').load()
     .then(f => document.fonts.add(f))
     .catch(() => {});
 
