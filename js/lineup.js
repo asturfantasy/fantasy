@@ -243,9 +243,9 @@ async function loadLineup() {
 }
 
 async function exportarAlineacion() {
-  await new FontFace('Space Grotesk', 'url(https://cdn.jsdelivr.net/fontsource/fonts/space-grotesk@latest/latin-700-normal.woff2)').load()
+  /*await new FontFace('Space Grotesk', 'url(https://cdn.jsdelivr.net/fontsource/fonts/space-grotesk@latest/latin-700-normal.woff2)').load()
     .then(f => document.fonts.add(f))
-    .catch(() => {});
+    .catch(() => {});*/
 
   const { data: equipoData } = await db
     .from('equipos')
