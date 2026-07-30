@@ -113,7 +113,7 @@ async function abrirConsultaPuntos() {
         <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 8px;flex-shrink:0">
           ${p.finalizado
             ? '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:2px">' + p.resultado_local + ' - ' + p.resultado_visitante + '</div><div style="font-family:var(--font-mono);font-size:9px;color:var(--neon);text-transform:uppercase">Final</div>'
-            : '<div class="match-vs">' + (p.estadio || '') + '</div><div class="match-date">' + (p.fecha || '') + '</div>'}
+            : '<div class="match-vs">' + (p.estadio || '') + '</div><div class="match-date">' + (formatearFecha(p.fecha, p.hora) || '') + '</div>'}
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;text-align:center">
           <div class="crest" style="display:flex;align-items:center;justify-content:center">

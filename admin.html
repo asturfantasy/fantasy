@@ -722,7 +722,7 @@ async function eliminarJornada(jornada) {
     tbody.innerHTML = data.map(p =>
       '<tr><td><strong>' + p.local_nombre + '</strong></td><td>' + p.visitante_nombre + '</td>' +
       '<td style="color:var(--text-muted);font-size:12px">' + (p.estadio || '—') + '</td>' +
-      '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (p.fecha || '—') + '</td>' +
+      '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (formatearFecha(p.fecha, p.hora) || '—') + '</td>' +
       '<td>' + (p.finalizado ? '<span class="pill pill-green">' + p.resultado_local + ' - ' + p.resultado_visitante + '</span>' : '<span class="pill pill-amber">Pendiente</span>') + '</td>' +
       '<td style="display:flex;gap:6px">' +
         '<button class="btn btn-sm btn-primary" onclick="abrirModalResultado(\'' + p.id + '\')">' + (p.finalizado ? 'Editar' : 'Meter resultado') + '</button>' +
@@ -1409,7 +1409,7 @@ async function generarCardJornada(jornada) {
       ctx.fillText(p.estadio || 'Por confirmar', CENTRO, midY - 6);
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
       ctx.font = '13px sans-serif';
-      ctx.fillText(p.fecha || '', CENTRO, midY + 14);
+      ctx.fillText(formatearFecha(p.fecha, p.hora) || '', CENTRO, midY + 14);
     }
 
     // Línea separadora

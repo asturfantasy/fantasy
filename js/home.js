@@ -88,7 +88,7 @@ async function loadHome() {
     const visitanteImg = p.visitante.escudo_url ? '<img loading="lazy" src="' + p.visitante.escudo_url + '" alt="' + p.visitante.abrev + '" width="44" height="44" style="object-fit:contain">' : p.visitante.abrev;
     const centro = p.resultado?.finalizado
       ? '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:2px">' + p.resultado.local + ' - ' + p.resultado.visitante + '</div><div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--neon);text-transform:uppercase;margin-bottom:2px">Final</div><button onclick="mostrarPartido(\'' + p.local.abrev + '\',\'' + p.visitante.abrev + '\',\'' + p.local.nombre + '\',\'' + p.visitante.nombre + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:4px;width:100%">Puntos</button>'
-      : '<div class="match-vs">' + p.estadio + '</div><div class="match-date">' + p.fecha + '</div>';
+      : '<div class="match-vs">' + p.estadio + '</div><div class="match-date">' + formatearFecha(p.fecha, p.hora) + '</div>';
     return '<div class="match-card"><div class="match-team"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + localImg + '</div><div><div class="team-name">' + p.local.nombre + '</div></div></div><div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 8px;min-width:90px;max-width:110px">' + centro + '</div><div class="match-team right"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + visitanteImg + '</div><div style="text-align:right"><div class="team-name">' + p.visitante.nombre + '</div></div></div></div>';
   };
 
@@ -272,7 +272,7 @@ async function cargarResultadosEquipo(abrev) {
           <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:${colorResultado};
                       width:24px;text-align:center">${resultado}</div>
         ` : `
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${p.fecha || 'Por confirmar'}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${formatearFecha(p.fecha, p.hora) || 'Por confirmar'}</div>
         `}
       </div>
     `;
