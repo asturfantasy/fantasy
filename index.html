@@ -244,16 +244,33 @@
             GUARDAR ALINEACIÓN
         </button>
 
-        <div class="lineup-btn-row">
-            <button id="btn-clear-lineup" class="btn-clear">
-                <i class="ti ti-trash"></i>
-                VACIAR
+        <div style="height:60px"></div>
+    </div>
+
+    <div id="lineup-fab" style="position:fixed;right:16px;bottom:80px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div id="lineup-fab-menu" style="display:none;flex-direction:column;gap:6px;align-items:flex-end">
+            <button onclick="limpiarAlineacion()"
+                    style="background:rgba(20,20,20,0.95);color:var(--text);border:1px solid var(--border);
+                 border-radius:20px;padding:8px 14px;font-family:var(--font-display);font-size:12px;
+                 font-weight:600;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap">
+                <i class="ti ti-trash"></i> Vaciar alineación
             </button>
-            <button id="btn-export-png" class="btn-primary">
-                <i class="ti ti-download"></i>
-                EXPORTAR
+            <button onclick="exportarAlineacion()"
+                    style="background:rgba(20,20,20,0.95);color:var(--text);border:1px solid var(--border);
+                 border-radius:20px;padding:8px 14px;font-family:var(--font-display);font-size:12px;
+                 font-weight:600;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap">
+                <i class="ti ti-share"></i> Exportar alineación
             </button>
         </div>
+        <button id="lineup-fab-btn"
+                onclick="const m=document.getElementById('lineup-fab-menu');m.style.display=m.style.display==='none'?'flex':'none'"
+                style="width:44px;height:44px;border-radius:50%;background:rgba(20,20,20,0.95);
+               border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;
+               display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)">
+            <i class="ti ti-dots-vertical"></i>
+        </button>
+    </div>
+</div>
     </div>
 </div>
 
