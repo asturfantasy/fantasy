@@ -181,3 +181,15 @@ function goTo(screenId) {
   const screensPersistentes = ['home', 'lineup', 'myteam', 'ranking', 'criterios', 'perfil'];
   if (screensPersistentes.includes(screenId)) localStorage.setItem('lastScreen', screenId);
 }
+
+function formatearFecha(fechaStr, hora) {
+  if (!fechaStr) return 'Por confirmar';
+  if (!fechaStr.includes('-')) return fechaStr;
+  const [año, mes, dia] = fechaStr.split('-');
+  const fecha = new Date(año, mes - 1, dia);
+  const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const diaSemana = diasSemana[fecha.getDay()];
+  const linea1 = `${diaSemana} ${dia}/${mes}`;
+  const linea2 = hora ? `${hora}h` : '';
+  return linea2 ? `${linea1}\n${linea2}` : linea1;
+}

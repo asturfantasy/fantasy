@@ -44,7 +44,7 @@ async function loadConfig() {
   PARTIDOS = (partidos || []).map(p => ({
     local: { nombre: p.local_nombre, abrev: p.local_abrev, escudo_url: p.local_escudo_url },
     visitante: { nombre: p.visitante_nombre, abrev: p.visitante_abrev, escudo_url: p.visitante_escudo_url },
-    fecha: p.fecha,
+    fecha: formatearFecha(p.fecha, p.hora),
     estadio: p.estadio,
     resultado: { finalizado: p.finalizado, local: p.resultado_local, visitante: p.resultado_visitante }
   }));

@@ -302,7 +302,7 @@ async function exportarAlineacion() {
   ctx.font = 'bold 24px "Space Grotesk"';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`${nombreEquipo} · J${JORNADA_ACTIVA}`, 40, 88);
+  ctx.fillText(`${nombreEquipo} · Alineación J${JORNADA_ACTIVA}`, 40, 88);
 
   // Formación
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
@@ -400,7 +400,8 @@ async function exportarAlineacion() {
 
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.font = `${Math.floor(CARD_H * 0.16)}px monospace`;
-    ctx.fillText(j.posicion + ' · ' + j.club, txtX, y + CARD_H * 0.48);
+    //ctx.fillText(j.posicion + ' · ' + j.club, txtX, y + CARD_H * 0.48);
+    ctx.fillText(j.posicion + ' · ' + (j.valor || '—') + 'M', txtX, y + CARD_H * 0.48);
 
     if (esCap) {
       ctx.fillStyle = '#f59e0b';
@@ -435,10 +436,19 @@ async function exportarAlineacion() {
   ctx.textBaseline = 'middle';
   ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
 
-  const link = document.createElement('a');
-  link.download = `alineacion-j${JORNADA_ACTIVA}.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+  canvas.toBlob(async blob => {
+    const file = new File([blob], `alineacion-j${JORNADA_ACTIVA}.png`, { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: `Alineación J${JORNADA_ACTIVA} · AsturFantasy` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `alineacion-j${JORNADA_ACTIVA}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
 }
 
 function renderPitch() {
@@ -592,5 +602,15 @@ document.getElementById('btn-clear-lineup').addEventListener('click', async () =
   btn.disabled = false; btn.textContent = 'VACIAR ALINEACIÓN';
   renderPitch(); showToast('Alineación vaciada');
 });
+
+async function limpiarAlineacion() {
+  if (!currentUser || !confirm('¿Seguro que quieres vaciar tu alineación?')) return;
+  await db.from('mi_equipo').delete().eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
+  seleccionados = {}; capitan = null;
+  const sel = document.getElementById('capitan-select');
+  if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
+  renderPitch();
+  showToast('Alineación vaciada');
+}
 
 document.getElementById('btn-export-png')?.addEventListener('click', exportarAlineacion);
