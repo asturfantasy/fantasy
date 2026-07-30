@@ -126,18 +126,18 @@ async function loadHome() {
       return;
     }
 
-    // Pinta las filas dentro del <tbody> fijo
     const total = data.length;
     const getBg = (pos) => {
-      if (pos === 1) return 'rgba(0,140,70,0.55)';        // verde oscuro, 1º
-      if (pos <= 5) return 'rgba(0,180,90,0.22)';          // verde claro, 2º-5º
-      if (pos > total - 3) return 'rgba(220,40,40,0.22)';  // rojo claro, últimos 3
-      return pos % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent'; // intercalado sutil
+      if (pos === 1) return 'rgba(0,140,70,0.55)';
+      if (pos <= 5) return 'rgba(0,180,90,0.22)';
+      if (pos > total - 3) return 'rgba(220,40,40,0.22)';
+      return pos % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'transparent';
     };
 
     const tbody = document.getElementById('clasificacion-body');
     tbody.innerHTML = data.map(c => `
-      <tr style="background:${getBg(c.posicion)}">
+      <tr style="background:${getBg(c.posicion)};cursor:pointer"
+          onclick="abrirEquipoDesdeClasif('${c.abrev}', '${c.equipo.replace(/'/g, "\\'")}')">
         <td>${c.posicion}</td>
         <td>
           <div class="equipo-celda">
@@ -156,7 +156,6 @@ async function loadHome() {
       </tr>
     `).join('');
 
-    // Marca el botón activo en cada grupo
     document.querySelectorAll('#filtro-condicion-grupo .filtro-btn').forEach(btn => {
       btn.classList.toggle('active', (btn.dataset.valor || null) === condicionActual);
     });

@@ -436,10 +436,19 @@ async function exportarAlineacion() {
   ctx.textBaseline = 'middle';
   ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
 
-  const link = document.createElement('a');
-  link.download = `alineacion-j${JORNADA_ACTIVA}.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+  canvas.toBlob(async blob => {
+    const file = new File([blob], `alineacion-j${JORNADA_ACTIVA}.png`, { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: `Alineación J${JORNADA_ACTIVA} · AsturFantasy` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `alineacion-j${JORNADA_ACTIVA}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
 }
 
 function renderPitch() {
