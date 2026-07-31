@@ -482,6 +482,7 @@ function renderPitch() {
     pitch.appendChild(row);
   });
   renderCoachCard();
+  actualizarAvisoPenalizacion();
 }
 
 function renderCoachCard() {
@@ -569,7 +570,7 @@ document.getElementById('formation-select').addEventListener('change', () => {
 
 document.getElementById('capitan-select')?.addEventListener('change', e => { if (e.isTrusted) { capitan = e.target.value || null; cambiosSinGuardar = true; renderPitch(); } });
 
-document.getElementById('btn-save-lineup').addEventListener('click', async () => {
+/*document.getElementById('btn-save-lineup').addEventListener('click', async () => {
   if (!currentUser) { showToast('Debes iniciar sesión', true); return; }
   const formacion = document.getElementById('formation-select').value;
   const { def, mid, fwd } = FORMACIONES[formacion];
@@ -581,6 +582,35 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   Object.values(seleccionados).forEach(j => { clubCount[j.club] = (clubCount[j.club] || 0) + 1; });
   const clubExcedido = Object.entries(clubCount).find(([club, count]) => count > 2);
   if (clubExcedido) { showToast('Máximo 2 jugadores del mismo club (' + clubExcedido[0] + ')', true); return; }
+
+  const btn = document.getElementById('btn-save-lineup');
+  btn.disabled = true; btn.textContent = 'GUARDANDO...';
+  await db.from('mi_equipo').delete().eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
+  const { error } = await db.from('mi_equipo').insert(Object.values(seleccionados).map(jugador => ({ user_id: currentUser.id, jugador_id: jugador.id, jornada: JORNADA_ACTIVA, formacion, capitan: capitan === jugador.id })));
+  btn.disabled = false; btn.textContent = 'GUARDAR ALINEACIÓN';
+  if (error) showToast('Error al guardar: ' + error.message, true);
+  else { cambiosSinGuardar = false; showToast('Alineación guardada'); }
+});*/
+
+document.getElementById('btn-save-lineup').addEventListener('click', async () => {
+  if (!currentUser) { showToast('Debes iniciar sesión', true); return; }
+  const formacion = document.getElementById('formation-select').value;
+  const { def, mid, fwd } = FORMACIONES[formacion];
+
+  if (Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0) > PRESUPUESTO) { showToast('Has superado el presupuesto', true); return; }
+
+  // Comprobar máximo 2 jugadores por club
+  const clubCount = {};
+  Object.values(seleccionados).forEach(j => { clubCount[j.club] = (clubCount[j.club] || 0) + 1; });
+  const clubExcedido = Object.entries(clubCount).find(([club, count]) => count > 2);
+  if (clubExcedido) { showToast('Máximo 2 jugadores del mismo club (' + clubExcedido[0] + ')', true); return; }
+
+  const totalEsperado = 1 + def + mid + fwd + 1;
+  const huecos = totalEsperado - Object.keys(seleccionados).length;
+  if (huecos > 0 && Object.keys(seleccionados).length > 0) {
+    showToast(`¡Recuerde! ¡Su once aún no está completo!`, true);
+    await new Promise(r => setTimeout(r, 1500));
+  }
 
   const btn = document.getElementById('btn-save-lineup');
   btn.disabled = true; btn.textContent = 'GUARDANDO...';
@@ -611,6 +641,22 @@ async function limpiarAlineacion() {
   if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
   renderPitch();
   showToast('Alineación vaciada');
+}
+
+function actualizarAvisoPenalizacion() {
+  const formacion = document.getElementById('formation-select')?.value;
+  if (!formacion) return;
+  const { def, mid, fwd } = FORMACIONES[formacion];
+  const totalEsperado = 1 + def + mid + fwd + 1;
+  const huecos = totalEsperado - Object.keys(seleccionados).length;
+  const aviso = document.getElementById('aviso-penalizacion');
+  if (!aviso) return;
+  if (huecos > 0 && Object.keys(seleccionados).length > 0) {
+    aviso.style.display = 'block';
+    aviso.textContent = `Tiene ${huecos} puesto${huecos > 1 ? 's' : ''} pendientes de alinear - Cada uno vacío restará 4 pts`;
+  } else {
+    aviso.style.display = 'none';
+  }
 }
 
 document.getElementById('btn-export-png')?.addEventListener('click', exportarAlineacion);
