@@ -653,7 +653,7 @@ function actualizarAvisoPenalizacion() {
   if (!aviso) return;
   if (huecos > 0 && Object.keys(seleccionados).length > 0) {
     aviso.style.display = 'block';
-    aviso.textContent = `Tiene ${huecos} puesto${huecos > 1 ? 's' : ''} pendientes de alinear - Cada uno vacío restará 4 pts`;
+    aviso.textContent = `Su once está incompleto - Cada hueco vacío (${huecos}) restará 4 puntos`;
   } else {
     aviso.style.display = 'none';
   }
