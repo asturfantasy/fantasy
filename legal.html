@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal · AsturFantasy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style-game-two.css">
+  <style>
+    .tabs { display:flex;gap:4px;padding:16px 24px 0;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tab { padding:8px 16px;font-family:var(--font-mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color 0.2s,border-color 0.2s; }
+    .tab.active { color:var(--green-light);border-bottom-color:var(--green-light); }
+    .section { display:none; }
+    .section.active { display:block; }
+    main { max-width:720px;margin:0 auto;padding:40px 24px 80px; }
+    h1 { font-size:28px;font-weight:700;color:var(--text);margin-bottom:8px; }
+    .updated { font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:1px;margin-bottom:32px; }
+    h2 { font-size:13px;font-weight:700;color:var(--green-light);text-transform:uppercase;letter-spacing:2px;margin:32px 0 12px;font-family:var(--font-mono); }
+    p { font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:12px; }
+    ul { padding-left:20px;margin-bottom:12px; }
+    li { font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:4px; }
+    .card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin:24px 0; }
+    .logo { font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);text-decoration:none; }
+    .logo span { color:var(--green-light); }
+    .back { font-family:var(--font-mono);font-size:11px;color:var(--text-muted);text-decoration:none;letter-spacing:1px; }
+    .back:hover { color:var(--green-light); }
+    a { color:var(--green-light);text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    footer { text-align:center;padding:24px;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);border-top:1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">ASTUR<span>FANTASY</span></a>
+  <a href="/" class="back">← Volver</a>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('privacidad')">Privacidad</button>
+  <button class="tab" onclick="showTab('legal')">Aviso legal</button>
+  <button class="tab" onclick="showTab('terminos')">Términos de uso</button>
+  <button class="tab" onclick="showTab('cookies')">Cookies</button>
+</div>
+
+<main>
+
+  <!-- PRIVACIDAD -->
+  <div class="section active" id="tab-privacidad">
+    <h1>Política de privacidad</h1>
+    <div class="updated">Última actualización: julio 2026</div>
+
+    <div class="card">
+      <p><strong style="color:var(--text)">Responsable:</strong> Borja Rodríguez González<br>
+        <strong style="color:var(--text)">Email:</strong> <a href="mailto:asturfantasycontacto@gmail.com">asturfantasycontacto@gmail.com</a></p>
+    </div>
+
+    <h2>Qué datos recogemos</h2>
+    <p>Al registrarte mediante Google OAuth recogemos tu nombre, dirección de correo electrónico y foto de perfil proporcionados por Google. Adicionalmente almacenamos los datos que introduces en la plataforma: nombre de tu equipo, alineaciones, puntuaciones y preferencias.</p>
+
+    <h2>Para qué usamos tus datos</h2>
+    <ul>
+      <li>Identificarte como usuario de la plataforma</li>
+      <li>Gestionar tu equipo y participación en la fantasy</li>
+      <li>Mostrarte tu clasificación y estadísticas</li>
+    </ul>
+
+    <h2>Cuánto tiempo guardamos tus datos</h2>
+    <p>Tus datos se conservan mientras mantengas una cuenta activa. Puedes solicitar su eliminación en cualquier momento escribiendo a <a href="mailto:asturfantasycontacto@gmail.com">asturfantasycontacto@gmail.com</a>.</p>
+
+    <h2>Proveedores de servicios</h2>
+    <p>No vendemos ni cedemos tus datos a terceros. Utilizamos Supabase como proveedor de base de datos (alojado en la UE) y Google para la autenticación.</p>
+
+    <h2>Tus derechos</h2>
+    <p>Tienes derecho a acceder, rectificar, suprimir, limitar el tratamiento y portabilidad de tus datos. Para ejercerlos escribe a <a href="mailto:asturfantasycontacto@gmail.com">asturfantasycontacto@gmail.com</a>.</p>
+
+    <h2>Base legal</h2>
+    <p>El tratamiento se basa en tu consentimiento al registrarte en la plataforma.</p>
+  </div>
+
+  <!-- AVISO LEGAL -->
+  <div class="section" id="tab-legal">
+    <h1>Aviso legal</h1>
+    <div class="updated">Última actualización: julio 2025</div>
+
+    <div class="card">
+      <p><strong style="color:var(--text)">Titular:</strong> Borja Rodríguez González<br>
+        <strong style="color:var(--text)">Email:</strong> <a href="mailto:asturfantasycontacto@gmail.com">asturfantasycontacto@gmail.com</a><br>
+        <strong style="color:var(--text)">Dominio:</strong> asturfantasy.com</p>
+    </div>
+
+    <h2>Objeto</h2>
+    <p>AsturFantasy es una plataforma de fantasy fútbol gratuita centrada en la 3ª RFEF asturiana, sin ánimo de lucro.</p>
+
+    <h2>Propiedad intelectual</h2>
+    <p>Los contenidos, diseño y código de AsturFantasy son propiedad de Borja Rodríguez González. Queda prohibida su reproducción total o parcial sin autorización expresa.</p>
+
+    <h2>Responsabilidad</h2>
+    <p>AsturFantasy no se hace responsable de los errores u omisiones en los contenidos, ni de los daños derivados del uso de la plataforma.</p>
+
+    <h2>Legislación aplicable</h2>
+    <p>Este aviso legal se rige por la legislación española. Para cualquier controversia serán competentes los juzgados de Asturias.</p>
+  </div>
+
+  <!-- TÉRMINOS -->
+  <div class="section" id="tab-terminos">
+    <h1>Términos y condiciones</h1>
+    <div class="updated">Última actualización: julio 2025</div>
+
+    <h2>Acceso y registro</h2>
+    <p>El acceso a AsturFantasy es gratuito. Para participar es necesario registrarse mediante una cuenta de Google. El usuario debe ser mayor de 14 años.</p>
+
+    <h2>Uso de la plataforma</h2>
+    <p>El usuario se compromete a hacer un uso lícito y respetuoso de la plataforma, absteniéndose de cualquier conducta que pueda dañar los derechos de otros usuarios o de AsturFantasy.</p>
+
+    <h2>Puntuaciones y clasificaciones</h2>
+    <p>Las puntuaciones se calculan automáticamente según el sistema publicado en la plataforma. AsturFantasy se reserva el derecho a corregir errores en las puntuaciones.</p>
+
+    <h2>Modificaciones</h2>
+    <p>AsturFantasy se reserva el derecho a modificar estos términos en cualquier momento, notificándolo a los usuarios con antelación razonable.</p>
+
+    <h2>Cancelación de cuenta</h2>
+    <p>El usuario puede solicitar la eliminación de su cuenta escribiendo a <a href="mailto:asturfantasycontacto@gmail.com">asturfantasycontacto@gmail.com</a>.</p>
+  </div>
+
+  <!-- COOKIES -->
+  <div class="section" id="tab-cookies">
+    <h1>Política de cookies</h1>
+    <div class="updated">Última actualización: julio 2025</div>
+
+    <h2>¿Usamos cookies?</h2>
+    <p>AsturFantasy utiliza únicamente cookies técnicas necesarias para el funcionamiento de la plataforma, concretamente las generadas por Google OAuth para mantener tu sesión iniciada.</p>
+
+    <h2>¿Usamos cookies de publicidad o seguimiento?</h2>
+    <p>No utilizamos cookies de publicidad ni de seguimiento de terceros. Los banners publicitarios que puedan aparecer son enlaces externos y no instalan cookies en tu dispositivo.</p>
+
+    <h2>¿Cómo gestionar las cookies?</h2>
+    <p>Puedes configurar tu navegador para rechazar o eliminar las cookies, aunque esto puede afectar al funcionamiento de la plataforma e impedir el inicio de sesión.</p>
+  </div>
+
+</main>
+
+<footer>
+  asturfantasy.com · Borja Rodríguez González · <a href="mailto:asturfantasycontacto@gmail.com">asturfantasycontacto@gmail.com</a>
+</footer>
+
+<script>
+  function showTab(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

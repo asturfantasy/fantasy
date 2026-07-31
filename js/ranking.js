@@ -1134,6 +1134,41 @@ async function loadPerfil() {
       (l.desbloqueado ? '<i class="ti ti-check" style="color:var(--neon);font-size:18px"></i>' : (l.contador ? '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + l.contador + '</span>' : '<i class="ti ti-lock" style="color:var(--text-muted);font-size:16px"></i>')) +
     '</div>'
   ).join('');
+
+  const todosDesbloqueados = logros.every(l => l.desbloqueado);
+  const completados = logros.filter(l => l.desbloqueado).length;
+  const total = logros.length;
+
+  document.getElementById('perfil-logros').insertAdjacentHTML('afterend', `
+    <div style="margin-top:20px;background:linear-gradient(135deg,rgba(0,122,69,0.2),rgba(76,217,123,0.1));
+                border:1px solid var(--border-neon);border-radius:14px;padding:20px;text-align:center;
+                ${!todosDesbloqueados ? 'opacity:0.5;' : ''}">
+      <div style="font-size:36px;margin-bottom:8px">${todosDesbloqueados ? '👑' : '🔒'}</div>
+      <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text);margin-bottom:4px">
+        ${todosDesbloqueados ? '¡Leyenda AsturFantasy!' : 'Insignia Leyenda'}
+      </div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:16px">
+        ${todosDesbloqueados ? 'Has desbloqueado todos los logros' : `${completados}/${total} logros completados`}
+      </div>
+      <button onclick="${todosDesbloqueados ? 'reclamarLeyenda()' : ''}"
+        style="background:var(--green-brand);color:white;border:none;border-radius:10px;
+               padding:10px 24px;font-family:var(--font-display);font-weight:700;
+               font-size:13px;cursor:${todosDesbloqueados ? 'pointer' : 'not-allowed'};
+               opacity:${todosDesbloqueados ? '1' : '0.5'}">
+        🏆 Reclamar insignia
+      </button>
+    </div>
+  `);
+}
+
+async function reclamarLeyenda() {
+  const { data: eq } = await db.from('equipos').select('nombre_equipo').eq('user_id', currentUser.id).single();
+  const nombreEquipo = eq?.nombre_equipo || 'Sin nombre';
+  const email = currentUser?.email || 'Sin email';
+  const nombre = currentUser?.user_metadata?.full_name || 'Sin nombre';
+
+  const mailto = `mailto:asturfantasycontacto@gmail.com?subject=Reclamación insignia Leyenda&body=Usuario: ${nombre}%0AEmail: ${email}%0AEquipo: ${nombreEquipo}`;
+  window.open(mailto);
 }
 
 async function compartirPerfil() {
