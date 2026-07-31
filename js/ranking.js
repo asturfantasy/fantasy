@@ -1139,8 +1139,11 @@ async function loadPerfil() {
   const completados = logros.filter(l => l.desbloqueado).length;
   const total = logros.length;
 
+  const existente = document.getElementById('insignia-leyenda');
+  if (existente) existente.remove();
+
   document.getElementById('perfil-logros').insertAdjacentHTML('afterend', `
-    <div style="margin-top:20px;background:linear-gradient(135deg,rgba(0,122,69,0.2),rgba(76,217,123,0.1));
+    <div id="insignia-leyenda" style="margin-top:20px;background:linear-gradient(135deg,rgba(0,122,69,0.2),rgba(76,217,123,0.1));
                 border:1px solid var(--border-neon);border-radius:14px;padding:20px;text-align:center;
                 ${!todosDesbloqueados ? 'opacity:0.5;' : ''}">
       <div style="font-size:36px;margin-bottom:8px">${todosDesbloqueados ? '👑' : '🔒'}</div>
@@ -1155,7 +1158,7 @@ async function loadPerfil() {
                padding:10px 24px;font-family:var(--font-display);font-weight:700;
                font-size:13px;cursor:${todosDesbloqueados ? 'pointer' : 'not-allowed'};
                opacity:${todosDesbloqueados ? '1' : '0.5'}">
-        🏆 Reclamar insignia
+        Reclamar
       </button>
     </div>
   `);
