@@ -1174,7 +1174,7 @@ async function reclamarLeyenda() {
   window.open(mailto);
 }
 
-async function compartirPerfil() {
+/*async function compartirPerfil() {
   const btn = document.getElementById('btn-compartir-perfil');
   btn.disabled = true; btn.textContent = 'GENERANDO...';
 
@@ -1255,6 +1255,214 @@ async function compartirPerfil() {
     showToast('Error al compartir');
   }
   btn.disabled = false; btn.textContent = 'COMPARTIR PERFIL';
+}*/
+
+async function compartirPerfil() {
+  const btn = document.getElementById('btn-compartir-perfil');
+  btn.disabled = true; btn.textContent = 'GENERANDO...';
+
+  const nombreEquipo = document.getElementById('perfil-nombre-equipo').textContent;
+  const clubFav = document.getElementById('perfil-club-fav').textContent;
+  const stats = [...document.querySelectorAll('#perfil-stats > div')].map(s => ({
+    label: s.querySelector('[style*="letter-spacing"]').textContent,
+    value: s.querySelector('[style*="font-size:16px"]').textContent,
+    sub: s.querySelectorAll('div')[2]?.textContent || ''
+  }));
+  const logros = [...document.querySelectorAll('#perfil-logros > div')].map(l => ({
+    icono: l.querySelector('div:first-child').textContent,
+    titulo: l.querySelectorAll('div')[1]?.querySelector('div')?.textContent || '',
+    desbloqueado: l.style.opacity !== '0.4'
+  }));
+
+  const todosItems = [
+    ...logros,
+    { icono: '⚽', titulo: stats[4]?.value || '—', desbloqueado: true, sub: stats[4]?.label || '' },
+    { icono: '🤝', titulo: stats[5]?.value || '—', desbloqueado: true, sub: stats[5]?.label || '' }
+  ];
+
+  const statsGrid = stats.slice(0, 4);
+
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  // ── Header ──
+  ctx.font = 'bold 32px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 50);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 50);
+
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('Perfil', SIZE - 40, 50);
+
+  const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradH.addColorStop(0, 'transparent');
+  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradH;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 75);
+  ctx.lineTo(SIZE, 75);
+  ctx.stroke();
+
+  // ── Nombre equipo ──
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 26px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(nombreEquipo, 40, 108);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '12px monospace';
+  ctx.fillText(clubFav, 40, 132);
+
+  // ── Stats (primeras 4) en 2x2 ──
+  const STAT_Y = 155;
+  const STAT_COLS = 2;
+  const STAT_W = (SIZE - 80) / STAT_COLS;
+  const STAT_H = 80;
+
+  statsGrid.forEach((s, i) => {
+    const col = i % STAT_COLS;
+    const row = Math.floor(i / STAT_COLS);
+    const sx = 40 + col * STAT_W;
+    const sy = STAT_Y + row * (STAT_H + 8);
+
+    ctx.fillStyle = '#1a2420';
+    ctx.beginPath();
+    ctx.roundRect(sx, sy, STAT_W - 10, STAT_H, 10);
+    ctx.fill();
+
+    ctx.fillStyle = '#4cd97b';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.value, sx + (STAT_W - 10) / 2, sy + STAT_H * 0.4);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '9px monospace';
+    ctx.fillText(s.label.toUpperCase(), sx + (STAT_W - 10) / 2, sy + STAT_H * 0.72);
+
+    if (s.sub) {
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.font = '9px monospace';
+      ctx.fillText(s.sub, sx + (STAT_W - 10) / 2, sy + STAT_H * 0.88);
+    }
+  });
+
+  // Línea separadora
+  const SEP_Y = STAT_Y + 2 * (STAT_H + 8) + 16;
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(40, SEP_Y);
+  ctx.lineTo(SIZE - 40, SEP_Y);
+  ctx.stroke();
+
+  // ── Logros label ──
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('LOGROS', 40, SEP_Y + 12);
+
+  // ── Cuadrícula 4 cols con logros + jugador más usado + agradecido ──
+  const LOGROS_Y = SEP_Y + 32;
+  const COLS = 4;
+  const ROWS = Math.ceil(todosItems.length / COLS);
+  const AVAILABLE = SIZE - 80;
+  const CELL_W = Math.floor(AVAILABLE / COLS) - 6;
+  const AVAILABLE_H = SIZE - LOGROS_Y - 60;
+  const CELL_H = Math.floor(AVAILABLE_H / ROWS) - 6;
+
+  todosItems.forEach((l, i) => {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const x = 40 + col * (CELL_W + 6);
+    const y = LOGROS_Y + row * (CELL_H + 6);
+
+    ctx.fillStyle = l.desbloqueado ? 'rgba(0,122,69,0.3)' : 'rgba(255,255,255,0.04)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, CELL_W, CELL_H, 8);
+    ctx.fill();
+
+    if (l.desbloqueado) {
+      ctx.strokeStyle = 'rgba(76,217,123,0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, CELL_W, CELL_H, 8);
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = l.desbloqueado ? 1 : 0.25;
+    ctx.font = `${Math.floor(CELL_H * 0.32)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(l.icono, x + CELL_W / 2, y + CELL_H * 0.38);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = l.desbloqueado ? '#ffffff' : 'rgba(255,255,255,0.25)';
+    ctx.font = `bold ${Math.floor(CELL_H * 0.1)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const palabras = l.titulo.split(' ');
+    const mitad = Math.ceil(palabras.length / 2);
+    const linea1 = palabras.slice(0, mitad).join(' ');
+    const linea2 = palabras.slice(mitad).join(' ');
+    ctx.fillText(linea1, x + CELL_W / 2, y + CELL_H * 0.65);
+    if (linea2) ctx.fillText(linea2, x + CELL_W / 2, y + CELL_H * 0.78);
+
+    if (l.sub) {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = `${Math.floor(CELL_H * 0.09)}px monospace`;
+      ctx.fillText(l.sub, x + CELL_W / 2, y + CELL_H * 0.88);
+    }
+  });
+
+  // ── Footer ──
+  const footerY = SIZE - 50;
+  const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+  gradF.addColorStop(0, 'transparent');
+  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradF;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, footerY);
+  ctx.lineTo(SIZE, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 25);
+
+  btn.disabled = false; btn.textContent = 'COMPARTIR PERFIL';
+
+  canvas.toBlob(async blob => {
+    const file = new File([blob], nombreEquipo + '_perfil.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: nombreEquipo + ' · AsturFantasy' });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreEquipo + '_perfil.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
 }
 
 async function loadRankingOnce() {
