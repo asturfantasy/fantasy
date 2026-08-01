@@ -54,6 +54,35 @@ async function loadHome() {
     }
   }
 
+  // Comprobar si el equipo supera el presupuesto en la jornada activa
+  if (currentUser && JORNADA_ACTIVA) {
+    const { data: miEquipoJ } = await db
+      .from('mi_equipo')
+      .select('jugador_id')
+      .eq('user_id', currentUser.id)
+      .eq('jornada', JORNADA_ACTIVA);
+
+    if (miEquipoJ?.length) {
+      const ids = miEquipoJ.map(e => e.jugador_id);
+      const { data: jugadoresJ } = await db
+        .from('jugadores')
+        .select('valor')
+        .in('id', ids)
+        .eq('jornada', JORNADA_ACTIVA);
+
+      const costeTotal = (jugadoresJ || []).reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0);
+
+      const avisoPresupuesto = document.getElementById('aviso-presupuesto-home');
+      if (avisoPresupuesto) {
+        if (costeTotal > PRESUPUESTO) {
+          avisoPresupuesto.style.display = 'block';
+        } else {
+          avisoPresupuesto.style.display = 'none';
+        }
+      }
+    }
+  }
+
   // ── Carrusel de equipos ──
   const carrusel = document.getElementById('equipos-carrusel');
   if (carrusel && PARTIDOS.length) {
