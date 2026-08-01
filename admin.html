@@ -1298,6 +1298,16 @@ document.getElementById('btn-compartir-clasificacion').addEventListener('click',
   generarCardClasificacion();
 });
 
+function formatearFecha(fechaStr, hora) {
+  if (!fechaStr) return 'Por confirmar';
+  if (!fechaStr.includes('-')) return fechaStr;
+  const [año, mes, dia] = fechaStr.split('-');
+  const fecha = new Date(año, mes - 1, dia);
+  const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const diaSemana = diasSemana[fecha.getDay()];
+  return hora ? `${diaSemana} ${dia}/${mes} · ${hora}h` : `${diaSemana} ${dia}/${mes}/${año}`;
+}
+
 async function generarCardJornada(jornada) {
   const { data: partidos } = await db.from('partidos').select('*').eq('jornada', jornada).order('orden', { ascending: true });
   if (!partidos?.length) { showToast('Sin partidos para esta jornada', true); return; }
@@ -1448,9 +1458,7 @@ async function generarCardJornada(jornada) {
 
   async function generarCardClasificacion() {
   const { data: clasif } = await db
-    .from('clasificacion_competicion')
-    .select('*')
-    .order('posicion', { ascending: true });
+  .rpc('get_clasificacion_clubes', { p_condicion: null, p_orden: 'puntos' });
 
   if (!clasif?.length) { showToast('Sin datos de clasificación', true); return; }
 
@@ -1552,7 +1560,7 @@ async function generarCardJornada(jornada) {
     ctx.fillStyle = c.posicion === 1 ? '#007a45' : c.posicion > total - 3 ? '#dc2626' : '#ffffff';
     ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(c.puntos + ' pts', x + cardW - 12, y + CARD_H / 2);
+    ctx.fillText(c.pts + ' pts', x + cardW - 12, y + CARD_H / 2);
   };
 
   for (let i = 0; i < colIzq.length; i++) {
