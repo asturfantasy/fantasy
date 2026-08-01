@@ -105,6 +105,20 @@ async function main() {
       return;
     }
 
+    // Obtener todos los jugadores de jornadaActiva para cruzar nombre+club
+    const idsActiva = [...new Set(equipos.map(e => e.jugador_id))];
+    const { data: jugadoresActiva } = await supabase
+      .from('jugadores')
+      .select('id, nombre, club, posicion')
+      .in('id', idsActiva)
+      .eq('jornada', jornadaActiva);
+
+    // Obtener todos los jugadores de jornadaSiguiente
+    const { data: jugadoresSiguiente } = await supabase
+      .from('jugadores')
+      .select('id, nombre, club, valor')
+      .eq('jornada', jornadaSiguiente);
+
     // Borrar equipos existentes en jornadaSiguiente
     await supabase.from('mi_equipo').delete().eq('jornada', jornadaSiguiente);
 
@@ -116,32 +130,35 @@ async function main() {
     });
 
     for (const [userId, equipo] of Object.entries(equiposPorUser)) {
-      const ids = equipo.map(e => e.jugador_id);
+      // Para cada jugador del equipo, buscar su equivalente en jornadaSiguiente por nombre+club
+      let costeTotal = 0;
+      const equipoConvertido = [];
 
-      // Obtener valores actualizados en jornadaSiguiente
-      const { data: jugadoresJ } = await supabase
-        .from('jugadores')
-        .select('id, valor')
-        .in('id', ids)
-        .eq('jornada', jornadaSiguiente);
+      for (const e of equipo) {
+        const jugActiva = jugadoresActiva?.find(j => j.id === e.jugador_id);
+        if (!jugActiva) continue;
 
-      const costeTotal = (jugadoresJ || []).reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0);
+        const jugSiguiente = jugadoresSiguiente?.find(j => j.nombre === jugActiva.nombre && j.club === jugActiva.club);
+        if (!jugSiguiente) continue;
+
+        costeTotal += parseFloat(jugSiguiente.valor) || 0;
+        equipoConvertido.push({ ...e, jugador_id_siguiente: jugSiguiente.id, valor: jugSiguiente.valor });
+      }
 
       if (costeTotal > presupuesto) {
-        console.log('Usuario ' + userId + ' supera presupuesto (' + costeTotal + 'M) → equipo aleatorio');
+        console.log('Usuario ' + userId + ' supera presupuesto (' + costeTotal.toFixed(1) + 'M) → equipo aleatorio');
         await generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, equipo[0]?.formacion);
       } else {
-        // Copiar equipo
         await supabase.from('mi_equipo').insert(
-          equipo.map(e => ({
+          equipoConvertido.map(e => ({
             user_id: e.user_id,
-            jugador_id: e.jugador_id,
+            jugador_id: e.jugador_id_siguiente,
             jornada: jornadaSiguiente,
             formacion: e.formacion,
             capitan: e.capitan
           }))
         );
-        console.log('Usuario ' + userId + ' copiado correctamente (' + costeTotal + 'M)');
+        console.log('Usuario ' + userId + ' copiado correctamente (' + costeTotal.toFixed(1) + 'M)');
       }
     }
 
