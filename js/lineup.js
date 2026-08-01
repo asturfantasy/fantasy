@@ -608,7 +608,7 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   const totalEsperado = 1 + def + mid + fwd + 1;
   const huecos = totalEsperado - Object.keys(seleccionados).length;
   if (huecos > 0 && Object.keys(seleccionados).length > 0) {
-    showToast(`¡Recuerde! ¡Su once aún no está completo!`, true);
+    showToast(`¡Recuerda! ¡El once aún no está completo!`, true);
     await new Promise(r => setTimeout(r, 1500));
   }
 
@@ -653,7 +653,7 @@ function actualizarAvisoPenalizacion() {
   if (!aviso) return;
   if (huecos > 0 && Object.keys(seleccionados).length > 0) {
     aviso.style.display = 'block';
-    aviso.textContent = `Su once está incompleto - Cada hueco vacío (${huecos}) restará 4 puntos`;
+    aviso.textContent = `El once está incompleto - Cada hueco vacío (${huecos}) restará 4 puntos`;
   } else {
     aviso.style.display = 'none';
   }
