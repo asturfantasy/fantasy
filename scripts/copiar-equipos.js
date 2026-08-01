@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-async function generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, formacion = '4-3-3') {
+async function generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, formacion = '3-4-3') {
   const { data: jugadores } = await supabase
     .from('jugadores')
     .select('id, posicion, valor, club, activo')
@@ -17,7 +17,7 @@ async function generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, for
   const porPos = { POR: [], DEF: [], MED: [], DEL: [], ENT: [] };
   jugadores.forEach(j => { if (porPos[j.posicion]) porPos[j.posicion].push(j); });
 
-  const necesarios = { POR: 1, DEF: 4, MED: 3, DEL: 3, ENT: 1 };
+  const necesarios = { POR: 1, DEF: 3, MED: 4, DEL: 3, ENT: 1 };
   const selAuto = [];
   const usados = new Set();
   const clubCount = {};
