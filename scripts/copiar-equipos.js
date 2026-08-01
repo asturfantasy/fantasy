@@ -68,22 +68,26 @@ async function generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, for
 
 async function main() {
   try {
-    const { data: config } = await supabase
-      .from('config_jornada')
-      .select('jornada_activa, deadline, presupuesto')
-      .eq('id', 1)
+    const presupuesto = 100;
+    const ahora = new Date();
+
+    // Obtener la última jornada cuyo deadline ya pasó
+    const { data: jornadaData } = await supabase
+      .from('jornadas')
+      .select('jornada, deadline')
+      .lt('deadline', ahora.toISOString())
+      .order('jornada', { ascending: false })
+      .limit(1)
       .single();
 
-    const jornadaActiva = config?.jornada_activa;
-    const deadline = config?.deadline;
-    const presupuesto = parseFloat(config?.presupuesto) || 100;
+    if (!jornadaData) { console.log('Sin jornadas con deadline pasado'); return; }
 
-    if (!jornadaActiva || !deadline) { console.log('Sin config'); return; }
+    const jornadaActiva = jornadaData.jornada;
+    const deadline = jornadaData.deadline;
 
-    const ahora = new Date();
-    const deadlineDate = new Date(deadline);
-    if (ahora < deadlineDate) { console.log('Deadline no pasado:', deadline); return; }
+    console.log('Jornada activa:', jornadaActiva, 'Deadline:', deadline);
 
+    // Comprobar si ya se copió esta jornada
     const { data: yaCopiada } = await supabase
       .from('jornadas_copiadas')
       .select('id')
@@ -94,6 +98,7 @@ async function main() {
 
     const jornadaSiguiente = jornadaActiva + 1;
 
+    // Obtener equipos de jornadaActiva
     const { data: equipos } = await supabase
       .from('mi_equipo')
       .select('*')
@@ -105,7 +110,7 @@ async function main() {
       return;
     }
 
-    // Obtener todos los jugadores de jornadaActiva para cruzar nombre+club
+    // Obtener jugadores de jornadaActiva para cruzar nombre+club
     const idsActiva = [...new Set(equipos.map(e => e.jugador_id))];
     const { data: jugadoresActiva } = await supabase
       .from('jugadores')
@@ -113,7 +118,7 @@ async function main() {
       .in('id', idsActiva)
       .eq('jornada', jornadaActiva);
 
-    // Obtener todos los jugadores de jornadaSiguiente
+    // Obtener jugadores de jornadaSiguiente
     const { data: jugadoresSiguiente } = await supabase
       .from('jugadores')
       .select('id, nombre, club, valor')
@@ -130,7 +135,6 @@ async function main() {
     });
 
     for (const [userId, equipo] of Object.entries(equiposPorUser)) {
-      // Para cada jugador del equipo, buscar su equivalente en jornadaSiguiente por nombre+club
       let costeTotal = 0;
       const equipoConvertido = [];
 
