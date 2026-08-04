@@ -641,6 +641,7 @@ async function limpiarAlineacion() {
   if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
   renderPitch();
   showToast('Alineación vaciada');
+  actualizarPresupuesto();
 }
 
 function actualizarAvisoPenalizacion() {
