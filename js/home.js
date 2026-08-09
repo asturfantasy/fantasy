@@ -224,27 +224,52 @@ async function loadHome() {
       .eq('activo', true)
       .order('orden', { ascending: true });
 
-    if (error) {
-      console.error('Error cargando colaboradores:', error);
-      return;
-    }
-
     const seccion = document.getElementById('colaboradores-seccion');
-    const grid = document.getElementById('colaboradores-grid');
-    if (!grid || !seccion) return;
+    const track = document.getElementById('colaboradores-track');
+    const dots = document.getElementById('colaboradores-dots');
+    if (!track || !seccion) return;
 
-    if (!data?.length) {
-      seccion.style.display = 'none';
-      return;
-    }
+    if (error || !data?.length) { seccion.style.display = 'none'; return; }
 
     seccion.style.display = '';
-    grid.innerHTML = data.map(c => `
-      <a href="${c.web_url || '#'}" target="_blank" rel="noopener" class="colaborador-card">
-        ${c.logo_url ? `<img src="${c.logo_url}" alt="${c.nombre}">` : ''}
-        <span>${c.nombre}</span>
+    let current = 0;
+    let autoPlay;
+
+    const W = track.parentElement.offsetWidth || 340;
+
+    track.style.width = (W * data.length) + 'px';
+    track.innerHTML = data.map(c => `
+      <a href="${c.web_url || '#'}" target="_blank" rel="noopener"
+         style="flex-shrink:0;width:${W}px;height:80px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:12px">
+        ${c.logo_url
+          ? `<img loading="lazy" src="${c.logo_url}" alt="${c.nombre}" style="height:60px;width:auto;max-width:80%;object-fit:contain;opacity:0.9">`
+          : `<span style="font-family:var(--font-display);font-size:13px;color:var(--text-muted)">${c.nombre}</span>`
+        }
       </a>
     `).join('');
+
+    dots.innerHTML = data.map((_, i) => `
+      <div class="collab-dot" data-i="${i}" style="width:6px;height:6px;border-radius:50%;background:${i === 0 ? 'var(--neon)' : 'var(--border)'};cursor:pointer;transition:background 0.2s"></div>
+    `).join('');
+
+    const goTo = (i) => {
+      current = (i + data.length) % data.length;
+      track.style.transform = `translateX(-${current * W}px)`;
+      document.querySelectorAll('.collab-dot').forEach((d, idx) => {
+        d.style.background = idx === current ? 'var(--neon)' : 'var(--border)';
+      });
+    };
+
+    document.querySelectorAll('.collab-dot').forEach(d => {
+      d.addEventListener('click', () => { goTo(parseInt(d.dataset.i)); resetAuto(); });
+    });
+
+    let startX = 0;
+    track.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+    track.addEventListener('touchend', e => {
+      const diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) goTo(diff > 0 ? current + 1 : current - 1);
+    });
   }
 
   cargarClasificacion();

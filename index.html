@@ -169,8 +169,11 @@
             <tbody id="clasificacion-body"></tbody>
         </table>
         <div id="colaboradores-seccion">
-            <div class="section-label" style="margin-top:24px;margin-bottom:12px"><strong>COLABORADORES</strong></div>
-            <div class="colaboradores-grid" id="colaboradores-grid"></div>
+            <div class="section-label" style="margin-top:24px;margin-bottom:8px"><strong>COLABORADORES</strong></div>
+            <div style="position:relative;overflow:hidden;border-radius:12px">
+                <div id="colaboradores-track" style="display:flex;transition:transform 0.4s ease;will-change:transform"></div>
+            </div>
+            <div id="colaboradores-dots" style="display:flex;justify-content:center;gap:6px;margin-top:10px"></div>
         </div>
     </main>
 </div>
@@ -326,6 +329,7 @@
         </div>
         <div id="myteam-empty" class="empty-state" style="display:none"><p>No participaste en esta jornada</p></div>
         <div id="myteam-grid" class="squad-grid"></div>
+        <div id="myteam-partidos"></div>
     </main>
 </div>
 
