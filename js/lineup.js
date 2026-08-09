@@ -538,7 +538,12 @@ function openModal(slotId, posicion, cls) {
     const filtrados = jugadoresPorPos[posicion].filter(j => (j.nombre.toLowerCase().includes(filtro.toLowerCase()) || j.club.toLowerCase().includes(filtro.toLowerCase())) && (!soloDisp || (j.valor || 0) <= disponible));
     document.getElementById('modal-players').innerHTML = filtrados.map(j => {
       const usado = usados.has(j.id);
-      const clubLleno = !usado && (clubsCount[j.club] || 0) >= 2;
+      const jugadorActual = seleccionados[slotId];
+      const clubsCountSinActual = { ...clubsCount };
+      if (jugadorActual) {
+        clubsCountSinActual[jugadorActual.club] = Math.max(0, (clubsCountSinActual[jugadorActual.club] || 0) - 1);
+      }
+      const clubLleno = !usado && (clubsCountSinActual[j.club] || 0) >= 2;
       const noD = j.activo === 0 || j.activo === '0';
       const bR = noD ? '3px solid rgba(220,38,38,0.9)' : '1px solid var(--border)';
       const esc = '<div style="position:relative;width:36px;height:36px;flex-shrink:0">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="36" height="36" style="object-fit:cover;border-radius:50%;border:' + bR + '" onerror="this.style.display=\'none\'">' : '<div style="width:36px;height:36px;border-radius:50%;background:' + colores[cls] + ';color:' + textoCols[cls] + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;border:' + bR + '">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="13" height="13" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + '</div>';
