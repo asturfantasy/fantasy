@@ -84,6 +84,48 @@ async function cargarMyTeam(jornada) {
     '</div>';
   }).join('');
 
+  // ── Partidos de la jornada ──
+  const { data: partidos } = await db
+    .from('partidos')
+    .select('*')
+    .eq('jornada', jornada)
+    .order('orden', { ascending: true });
+
+  if (partidos?.length) {
+    const contenedor = document.getElementById('myteam-partidos');
+    if (contenedor) {
+      contenedor.innerHTML = `
+        <div class="section-label" style="margin-top:20px;margin-bottom:12px"><strong>PUNTUACIONES  J${jornada}</strong></div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+          ${partidos.map(p => {
+            const localImg = p.local_escudo_url ? `<img loading="lazy" src="${p.local_escudo_url}" width="28" height="28" style="object-fit:contain">` : p.local_abrev;
+            const visitanteImg = p.visitante_escudo_url ? `<img loading="lazy" src="${p.visitante_escudo_url}" width="28" height="28" style="object-fit:contain">` : p.visitante_abrev;
+            return `
+              <div style="background:var(--surface);border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer"
+                   onclick="mostrarPartido('${p.local_abrev}','${p.visitante_abrev}','${p.local_nombre}','${p.visitante_nombre}',${p.jornada})">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:4px">
+                  ${localImg}
+                  <div style="flex:1;font-family:var(--font-display);font-size:10px;font-weight:600;color:var(--text);text-align:center;line-height:1.2">${p.local_abrev}</div>
+                  <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:${p.finalizado ? 'var(--neon)' : 'var(--text-muted)'};white-space:nowrap">
+                    ${p.finalizado ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                      <span>${p.resultado_local}-${p.resultado_visitante}</span>
+                      <button onclick="event.stopPropagation();mostrarPartido('${p.local_abrev}','${p.visitante_abrev}','${p.local_nombre}','${p.visitante_nombre}',${p.jornada})"
+                        style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:2px 8px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:1px;text-transform:uppercase">
+                        PUNTOS
+                      </button>
+                    </div>` : 'vs'}
+                  </div>
+                  <div style="flex:1;font-family:var(--font-display);font-size:10px;font-weight:600;color:var(--text);text-align:center;line-height:1.2">${p.visitante_abrev}</div>
+                  ${visitanteImg}
+                </div>
+                ${!p.finalizado ? `<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted)">${formatearFecha(p.fecha, p.hora)}</div>` : ''}
+              </div>`;
+          }).join('')}
+        </div>
+      `;
+    }
+  }
+
   const { data: ed } = await db.from('equipos').select('nombre_equipo').eq('user_id', currentUser.id).single();
   const inp = document.getElementById('input-nombre-equipo');
   if (inp && ed?.nombre_equipo) inp.value = ed.nombre_equipo;

@@ -621,18 +621,6 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   else { cambiosSinGuardar = false; showToast('Alineación guardada'); }
 });
 
-document.getElementById('btn-clear-lineup').addEventListener('click', async () => {
-  if (!currentUser || !confirm('¿Seguro que quieres vaciar tu alineación?')) return;
-  const btn = document.getElementById('btn-clear-lineup');
-  btn.disabled = true; btn.textContent = 'VACIANDO...';
-  await db.from('mi_equipo').delete().eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
-  seleccionados = {}; capitan = null;
-  const sel = document.getElementById('capitan-select');
-  if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
-  btn.disabled = false; btn.textContent = 'VACIAR ALINEACIÓN';
-  renderPitch(); showToast('Alineación vaciada');
-});
-
 async function limpiarAlineacion() {
   if (!currentUser || !confirm('¿Seguro que quieres vaciar tu alineación?')) return;
   await db.from('mi_equipo').delete().eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
