@@ -100,9 +100,9 @@
                   color:var(--text)" id="stat-posicion">—</div>
                 <div id="stat-posicion-delta"></div>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;
+            <div class="stat-puntos-clickable" style="display:flex;flex-direction:column;align-items:center;gap:4px;
                 border-left:1px solid var(--border);border-right:1px solid var(--border);
-                padding:0 20px">
+                padding:0 20px;cursor:pointer" onclick="goTo('myteam')">
                 <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;
                   text-transform:uppercase;color:var(--text-muted)">Pts J<span id="stat-jornada-label" style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase">—</span></div>
                 <div style="font-family:var(--font-display);font-weight:700;font-size:22px;
@@ -186,6 +186,11 @@
         <span class="jornada-num" id="lineup-jornada">—</span>
     </div>
     <div class="lineup-content">
+        <div class="lineup-partidos-wrapper">
+            <div id="lineup-partidos" style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+       display:flex;gap:8px;padding:8px 0;margin-bottom:0"></div>
+        </div>
+        <div class="lineup-partidos-dots" id="lineup-partidos-dots"></div>
         <div class="jornada-info-row">
             <div class="deadline-card">
                 <i class="ti ti-clock"></i>
@@ -241,29 +246,29 @@
                     </div>
                 </a>
             </div>
-            <div class="coach-card" id="coach-card" style="cursor:pointer">
-                <img class="coach-card-avatar" id="coach-avatar" src="" alt="" style="display:none">
-                <div class="coach-card-info">
-                    <div class="coach-card-label">Entrenador</div>
-                    <div class="coach-card-name" id="coach-name">Elige entrenador</div>
-                    <div class="coach-card-club" id="coach-club">—</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+                <div class="coach-card" id="coach-card" style="cursor:pointer;margin:0">
+                    <img class="coach-card-avatar" id="coach-avatar" src="" alt="" style="display:none">
+                    <div class="coach-card-info">
+                        <div class="coach-card-label">Entrenador</div>
+                        <div class="coach-card-name" id="coach-name">Elige entrenador</div>
+                        <div class="coach-card-club" id="coach-club">—</div>
+                    </div>
+                </div>
+                <div id="capitan-wrapper" style="margin:0">
+                    <div class="capitan-card" style="height:100%">
+                        <div class="capitan-card-icon"><i class="ti ti-star-filled"></i></div>
+                        <div class="capitan-card-body">
+                            <div class="capitan-card-titulo">Capitán · Puntúa doble</div>
+                            <select id="capitan-select">
+                                <option value="">Elige tu capitán</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none;width:100%;margin:4px 0">CONSULTA TU EQUIPO</button>
-
-        <div id="capitan-wrapper">
-            <div class="capitan-card">
-                <div class="capitan-card-icon"><i class="ti ti-star-filled"></i></div>
-                <div class="capitan-card-body">
-                    <div class="capitan-card-titulo">Capitán · Puntúa doble</div>
-                    <select id="capitan-select">
-                        <option value="">Elige tu capitán</option>
-                    </select>
-                </div>
-            </div>
-        </div>
+            <button id="btn-consultar-equipo" class="btn-primary" data-target="myteam" style="display:none;width:100%;margin:4px 0">CONSULTA TU EQUIPO</button>
 
         <button id="btn-save-lineup" class="btn-primary" style="width:100%">
             <i class="ti ti-check"></i>
