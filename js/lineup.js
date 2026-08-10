@@ -17,6 +17,16 @@ function actualizarSelectCapitan() {
   else capitan = null;
 }
 
+function actualizarPresupuesto() {
+  const coste = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
+  const disp = PRESUPUESTO - coste;
+  const el = document.getElementById('presupuesto-valor');
+  if (el) {
+    el.textContent = disp.toFixed(1) + 'M';
+    el.className = disp < 0 ? 'alerta' : disp < 10 ? 'aviso' : '';
+  }
+}
+
 async function loadLineup() {
   document.getElementById('lineup-jornada').textContent = JORNADA_ACTIVA;
   cambiosSinGuardar = false;
@@ -237,6 +247,42 @@ async function loadLineup() {
       //avisoEl.style.display = 'block';
     } else {
       avisoEl.style.display = 'none';
+    }
+  }
+  // ── Carrusel partidos jornada ──
+  const { data: partidos } = await db
+    .from('partidos')
+    .select('local_abrev, visitante_abrev, local_escudo_url, visitante_escudo_url, resultado_local, resultado_visitante, finalizado, fecha, hora')
+    .eq('jornada', JORNADA_ACTIVA)
+    .order('orden', { ascending: true });
+
+  const lineupPartidos = document.getElementById('lineup-partidos');
+  if (lineupPartidos && partidos?.length) {
+    lineupPartidos.innerHTML = partidos.map(p => `
+      <div style="flex-shrink:0;background:var(--surface);border-radius:10px;padding:8px 10px;
+                  display:flex;flex-direction:column;align-items:center;gap:4px;min-width:80px">
+        <div style="display:flex;align-items:center;gap:6px">
+          ${p.local_escudo_url ? `<img src="${p.local_escudo_url}" width="22" height="22" style="object-fit:contain">` : ''}
+          ${p.visitante_escudo_url ? `<img src="${p.visitante_escudo_url}" width="22" height="22" style="object-fit:contain">` : ''}
+        </div>
+        ${!p.finalizado && p.fecha ? `<div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);text-align:center">${formatearFecha(p.fecha, p.hora)}</div>` : ''}
+        ${p.finalizado ? `<div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--neon)">${p.resultado_local}-${p.resultado_visitante}</div>` : ''}
+      </div>
+    `).join('');
+
+    const dotsContainer = document.getElementById('lineup-partidos-dots');
+    if (dotsContainer && partidos?.length) {
+      dotsContainer.innerHTML = partidos.map((_, i) =>
+        `<span class="${i === 0 ? 'active' : ''}"></span>`
+      ).join('');
+
+      lineupPartidos.addEventListener('scroll', () => {
+        const itemW = lineupPartidos.scrollWidth / partidos.length;
+        const idx = Math.round(lineupPartidos.scrollLeft / itemW);
+        dotsContainer.querySelectorAll('span').forEach((s, i) => {
+          s.classList.toggle('active', i === idx);
+        });
+      });
     }
   }
   setTimeout(() => { renderPitch(); actualizarPresupuesto(); }, 100);
