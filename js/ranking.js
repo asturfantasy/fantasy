@@ -1755,8 +1755,9 @@ async function cargarRentable(jornada) {
   const container = document.getElementById('rentable-container');
   container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
   const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).neq('posicion', 'ENT').gt('valor', 0).gt('puntos', 0).order('puntos', { ascending: false });
-  const { data: entData } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).eq('posicion', 'ENT').gt('puntos', 0).order('puntos', { ascending: false }).limit(1);
-  const entrenador = entData?.length ? [{ ...entData[0], rentabilidad: entData[0].puntos / (entData[0].valor || 1) }] : [];
+  const { data: entData } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).eq('posicion', 'ENT').gt('valor', 0).gt('puntos', 0);
+  const entOrdenado = (entData || []).map(j => ({ ...j, rentabilidad: j.puntos / j.valor })).sort((a, b) => b.rentabilidad - a.rentabilidad);
+  const entrenador = entOrdenado.length ? [entOrdenado[0]] : [];
   if (error || !data?.length) { container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>'; return; }
   const conRentabilidad = data.map(j => ({ ...j, rentabilidad: j.puntos / j.valor }));
   const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
