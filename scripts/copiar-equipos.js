@@ -71,7 +71,6 @@ async function main() {
     const presupuesto = 100;
     const ahora = new Date();
 
-    // Obtener la última jornada cuyo deadline ya pasó
     const { data: jornadaData } = await supabase
       .from('jornadas')
       .select('jornada, deadline')
@@ -87,7 +86,6 @@ async function main() {
 
     console.log('Jornada activa:', jornadaActiva, 'Deadline:', deadline);
 
-    // Comprobar si ya se copió esta jornada
     const { data: yaCopiada } = await supabase
       .from('jornadas_copiadas')
       .select('id')
@@ -98,7 +96,6 @@ async function main() {
 
     const jornadaSiguiente = jornadaActiva + 1;
 
-    // Obtener equipos de jornadaActiva
     const { data: equipos } = await supabase
       .from('mi_equipo')
       .select('*')
@@ -110,24 +107,20 @@ async function main() {
       return;
     }
 
-    // Obtener jugadores de jornadaActiva para cruzar nombre+club
     const idsActiva = [...new Set(equipos.map(e => e.jugador_id))];
     const { data: jugadoresActiva } = await supabase
       .from('jugadores')
-      .select('id, nombre, club, posicion')
+      .select('id, nombre, club, posicion, valor')
       .in('id', idsActiva)
       .eq('jornada', jornadaActiva);
 
-    // Obtener jugadores de jornadaSiguiente
     const { data: jugadoresSiguiente } = await supabase
       .from('jugadores')
       .select('id, nombre, club, valor')
       .eq('jornada', jornadaSiguiente);
 
-    // Borrar equipos existentes en jornadaSiguiente
     await supabase.from('mi_equipo').delete().eq('jornada', jornadaSiguiente);
 
-    // Agrupar por usuario
     const equiposPorUser = {};
     equipos.forEach(e => {
       if (!equiposPorUser[e.user_id]) equiposPorUser[e.user_id] = [];
@@ -145,8 +138,8 @@ async function main() {
         const jugSiguiente = jugadoresSiguiente?.find(j => j.nombre === jugActiva.nombre && j.club === jugActiva.club);
         if (!jugSiguiente) continue;
 
-        costeTotal += parseFloat(jugSiguiente.valor) || 0;
-        equipoConvertido.push({ ...e, jugador_id_siguiente: jugSiguiente.id, valor: jugSiguiente.valor });
+        costeTotal += parseFloat(jugActiva.valor) || 0;
+        equipoConvertido.push({ ...e, jugador_id_siguiente: jugSiguiente.id });
       }
 
       if (costeTotal > presupuesto) {
@@ -168,6 +161,31 @@ async function main() {
 
     await supabase.from('jornadas_copiadas').insert({ jornada: jornadaActiva });
     console.log('Proceso completado para J' + jornadaActiva + ' → J' + jornadaSiguiente);
+
+    // ── Crear jornada N+2 si no existe ──
+    const jornadaN2 = jornadaSiguiente + 1;
+    const { data: jugJ_N2 } = await supabase
+      .from('jugadores')
+      .select('id')
+      .eq('jornada', jornadaN2)
+      .limit(1);
+
+    if (!jugJ_N2?.length) {
+      const { data: partJ_N2 } = await supabase
+        .from('partidos')
+        .select('jornada')
+        .eq('jornada', jornadaN2)
+        .limit(1);
+
+      if (partJ_N2?.length) {
+        await supabase.rpc('crear_jornada', { jornada_nueva: jornadaN2 });
+        console.log('J' + jornadaN2 + ' creada automáticamente');
+      } else {
+        console.log('No hay partidos para J' + jornadaN2 + ', no se crea');
+      }
+    } else {
+      console.log('J' + jornadaN2 + ' ya existe');
+    }
 
   } catch (err) {
     console.error('Error:', err.message);
