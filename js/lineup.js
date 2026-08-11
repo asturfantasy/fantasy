@@ -193,7 +193,7 @@ async function loadLineup() {
           Object.values(selAuto).forEach(j => { clubsEnSel[j.club] = (clubsEnSel[j.club] || 0) + 1; });
 
           const candidatos = (jugadoresPorPos[pos] || [])
-            .filter(j => !usadosAuto.has(j.id) && j.activo !== 0 && j.activo !== '0'
+            .filter(j => !usadosAuto.has(j.id) && Number(j.activo) === 1
               && (clubsEnSel[j.club] || 0) < 2)
             .sort(() => Math.random() - 0.5);
 
@@ -514,11 +514,20 @@ function renderPitch() {
       const slot = document.createElement('div'); slot.className = 'player-slot'; slot.dataset.slot = slotId;
       if (jugador) {
         const esCap = capitan !== null && String(capitan) === String(jugador.id);
-        const noDisp = jugador.activo === 0 || jugador.activo === '0';
-        const overlay = noDisp ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(220,38,38,0.5);z-index:1;pointer-events:none"></div>' : '';
-        const contenido = jugador.foto_url ? '<img loading="lazy" src="' + jugador.foto_url + '" alt="' + jugador.nombre + '" width="46" height="46" style="object-fit:cover;border-radius:50%" onerror="this.style.display=\'none\'">' : jugador.nombre.substring(0,3).toUpperCase();
-        const escudito = jugador.escudo_url ? '<img loading="lazy" src="' + jugador.escudo_url + '" alt="' + jugador.club + '" width="16" height="16" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2);z-index:2">' : '';
-        slot.innerHTML = '<div class="player-circle ' + fila.cls + (esCap ? ' es-capitan' : '') + '" style="overflow:visible;position:relative;' + (noDisp ? 'border:3px solid rgba(220,38,38,0.9);' : '') + '">' + contenido + overlay + escudito + (esCap ? '<span class="cap-badge">C</span>' : '') + '</div><div class="player-name">' + jugador.nombre + '</div><div class="pos-badge">' + (esCap ? '⭐ Cap.' : jugador.club) + '</div>';
+                const estadoVal = Number(jugador.activo);
+                const sancionado = estadoVal === 0;
+                const duda = estadoVal === 2;
+                const lesionado = estadoVal === 3;
+                const overlay = sancionado
+                          ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(220,38,38,0.5);z-index:1;pointer-events:none"></div>'
+                          : duda
+                          ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(255,140,0,0.45);z-index:1;pointer-events:none"></div>'
+                          : lesionado
+                          ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(220,38,38,0.5);z-index:1;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:16px">➕</div>'
+                          : '';
+                const contenido = jugador.foto_url ? '<img loading="lazy" src="' + jugador.foto_url + '" alt="' + jugador.nombre + '" width="46" height="46" style="object-fit:cover;border-radius:50%" onerror="this.style.display=\'none\'">' : jugador.nombre.substring(0,3).toUpperCase();
+                const escudito = jugador.escudo_url ? '<img loading="lazy" src="' + jugador.escudo_url + '" alt="' + jugador.club + '" width="16" height="16" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2);z-index:2">' : '';
+                slot.innerHTML = '<div class="player-circle ' + fila.cls + (esCap ? ' es-capitan' : '') + '" style="overflow:visible;position:relative;' + (sancionado ? 'border:3px solid rgba(220,38,38,0.9);' : duda ? 'border:3px solid rgba(255,140,0,0.9);' : lesionado ? 'border:3px solid rgba(220,38,38,0.9);' : '') + '">' + contenido + overlay + escudito + (esCap ? '<span class="cap-badge">C</span>' : '') + '</div><div class="player-name">' + jugador.nombre + '</div><div class="pos-badge">' + (esCap ? '⭐ Cap.' : jugador.club) + '</div>';
       } else {
         slot.innerHTML = '<div class="player-circle ' + fila.cls + ' empty">+</div><div class="player-name" style="color:rgba(255,255,255,.3)">' + fila.pos + '</div><div class="pos-badge">–</div>';
       }
@@ -590,9 +599,19 @@ function openModal(slotId, posicion, cls) {
         clubsCountSinActual[jugadorActual.club] = Math.max(0, (clubsCountSinActual[jugadorActual.club] || 0) - 1);
       }
       const clubLleno = !usado && (clubsCountSinActual[j.club] || 0) >= 2;
-      const noD = j.activo === 0 || j.activo === '0';
-      const bR = noD ? '3px solid rgba(220,38,38,0.9)' : '1px solid var(--border)';
-      const esc = '<div style="position:relative;width:36px;height:36px;flex-shrink:0">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="36" height="36" style="object-fit:cover;border-radius:50%;border:' + bR + '" onerror="this.style.display=\'none\'">' : '<div style="width:36px;height:36px;border-radius:50%;background:' + colores[cls] + ';color:' + textoCols[cls] + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;border:' + bR + '">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="13" height="13" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + '</div>';
+            const estadoVal = Number(j.activo);
+            const sancionado = estadoVal === 0;
+            const duda = estadoVal === 2;
+            const lesionado = estadoVal === 3;
+            const bR = sancionado ? '3px solid rgba(220,38,38,0.9)' : duda ? '3px solid rgba(255,140,0,0.9)' : lesionado ? '3px solid rgba(220,38,38,0.9)' : '1px solid var(--border)';
+                  const badgeEstado = sancionado
+                    ? ''
+                    : duda
+                    ? ''
+                    : lesionado
+                    ? '<span title="Lesionado" style="position:absolute;top:-3px;left:-3px;font-size:12px;background:var(--bg2);border-radius:50%;line-height:1">➕</span>'
+                    : '';
+            const esc = '<div style="position:relative;width:36px;height:36px;flex-shrink:0">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="36" height="36" style="object-fit:cover;border-radius:50%;border:' + bR + '" onerror="this.style.display=\'none\'">' : '<div style="width:36px;height:36px;border-radius:50%;background:' + colores[cls] + ';color:' + textoCols[cls] + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;border:' + bR + '">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="13" height="13" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + badgeEstado + '</div>';
       return '<div class="modal-player" data-id="' + j.id + '" data-slot="' + slotId + '" style="opacity:' + (usado || clubLleno ? '0.3' : '1') + ';pointer-events:' + (usado || clubLleno ? 'none' : 'auto') + '">' + esc + '<div><div class="modal-player-name">' + j.nombre + '</div><div class="modal-player-meta">' + j.club + ' · ' + j.posicion + (j.rival ? ' · vs ' + j.rival + ' (' + (j.es_local ? '🏠' : '✈️') + ')' : '') + '</div></div><div style="text-align:right"><div class="modal-player-pts">' + (j.puntos_total || 0) + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">' + (j.valor || 0) + 'M' + (j.cambio_valor > 0 ? ' <span style="color:#4cd97b;font-size:9px">▲</span>' : j.cambio_valor < 0 ? ' <span style="color:#f05e5e;font-size:9px">▼</span>' : '') + '</div></div></div>';
       }).join('');
     document.querySelectorAll('.modal-player').forEach(el => {
