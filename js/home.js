@@ -321,7 +321,7 @@ async function cargarResultadosEquipo(abrev) {
         ${rivalEscudo ? `<img src="${rivalEscudo}" width="24" height="24" style="object-fit:contain">` : ''}
         <div style="flex:1;font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text)">${rival}</div>
         ${p.finalizado ? `
-          <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text)">${golesA} - ${golesC}</div>
+          <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text)">${p.resultado_local} - ${p.resultado_visitante}</div>
           <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:${colorResultado};
                       width:24px;text-align:center">${resultado}</div>
         ` : `
