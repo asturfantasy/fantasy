@@ -59,6 +59,8 @@ db.auth.onAuthStateChange((event, session) => {
       .eq('user_id', currentUser.id).single();
     if (!equipoData?.nombre_equipo) {
       document.getElementById('modal-nombre-equipo').classList.add('open');
+    } else if (!equipoData?.equipo_favorito) {
+      document.getElementById('modal-equipo-favorito').classList.add('open');
     } else {
       goTo('home');
     }

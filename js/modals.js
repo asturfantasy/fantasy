@@ -60,7 +60,14 @@ document.getElementById('btn-guardar-equipo-favorito')?.addEventListener('click'
 document.getElementById('btn-guardar-nombre-inicio')?.addEventListener('click', async () => {
   const nombre = document.getElementById('input-nombre-equipo-inicio').value.trim();
   if (!nombre) { showToast('Introduce un nombre', true); return; }
-  await db.from('equipos').upsert({ user_id: currentUser.id, nombre_equipo: nombre }, { onConflict: 'user_id' });
+  const btn = document.getElementById('btn-guardar-nombre-inicio');
+  btn.disabled = true;
+  const { error } = await db.from('equipos').upsert({ user_id: currentUser.id, nombre_equipo: nombre }, { onConflict: 'user_id' });
+  btn.disabled = false;
+  if (error) {
+    showToast(error.message.includes('equipos_nombre_equipo_unique') ? 'Ese nombre ya está en uso, prueba otro' : 'Error al guardar: ' + error.message, true);
+    return;
+  }
   document.getElementById('modal-nombre-equipo').classList.remove('open');
   document.getElementById('modal-equipo-favorito').classList.add('open');
 });
