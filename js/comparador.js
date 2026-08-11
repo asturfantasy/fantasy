@@ -143,19 +143,9 @@ async function calcStatsEntrenador(nombre, club) {
       .or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
       .single();
 
-    const rivalAbrev = partido ? (partido.local_abrev === club ? partido.visitante_abrev : partido.local_abrev) : null;
-
-    const [{ data: jugClub }, { data: jugRival }] = await Promise.all([
-      db.from('jugadores').select('gol, penalti_marcado').eq('club', club).eq('jornada', j.jornada).neq('posicion', 'ENT'),
-      rivalAbrev ? db.from('jugadores').select('gol_pp').eq('club', rivalAbrev).eq('jornada', j.jornada).neq('posicion', 'ENT') : Promise.resolve({ data: [] })
-    ]);
-
-    if (jugClub?.length) {
-      goles_favor += jugClub.reduce((a, x) => a + (x.gol || 0) + (x.penalti_marcado || 0), 0);
-      goles_favor += (jugRival || []).reduce((a, x) => a + (x.gol_pp || 0), 0);
-    }
     if (partido) {
       const esLocal = partido.local_abrev === club;
+      goles_favor  += esLocal ? (partido.resultado_local || 0) : (partido.resultado_visitante || 0);
       goles_contra += esLocal ? (partido.resultado_visitante || 0) : (partido.resultado_local || 0);
     }
   }
