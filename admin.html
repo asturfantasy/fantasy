@@ -169,6 +169,7 @@
         <div class="nav-section-label">Datos</div>
         <div class="nav-item" data-panel="clasificacion"><i class="ti ti-trophy"></i> Clasificación</div>
         <div class="nav-item" data-panel="stats"><i class="ti ti-chart-bar"></i> Estadísticas</div>
+        <div class="nav-item" data-panel="masusados"><i class="ti ti-photo"></i> Más usados</div>
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Sistema</div>
@@ -357,6 +358,23 @@
         </div>
       </div>
 
+      <!-- MÁS USADOS -->
+      <div class="panel" id="panel-masusados">
+        <div class="page-header"><div class="page-title">📸 Más usados</div></div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Jugador, capitán y entrenador más elegidos de la jornada</div>
+            <select id="masusados-jornada" class="form-input" style="width:140px"></select>
+          </div>
+          <div class="section-body">
+            <div id="masusados-preview" style="margin-bottom:16px"></div>
+            <button id="btn-generar-mas-usados" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="generarPublicacionMasUsados(parseInt(document.getElementById('masusados-jornada').value))">
+              <i class="ti ti-photo"></i> Generar publicación (PNG 1:1)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- LA MINA -->
       <div class="panel" id="panel-mina">
         <div class="page-header"><div class="page-title">⛏️ La Mina</div></div>
@@ -538,6 +556,7 @@
       if (item.dataset.panel === 'notificaciones') cargarNotificaciones();
       if (item.dataset.panel === 'clasificacion') cargarClasificacion();
       if (item.dataset.panel === 'stats') cargarStats();
+      if (item.dataset.panel === 'masusados') inicializarMasUsados();
     });
   });
 
@@ -973,6 +992,277 @@ async function generarEquipos(jornada) {
     showToast('Error de conexión', true);
   }
   btn.disabled = false; btn.innerHTML = '<i class="ti ti-users"></i> Generar equipos J' + jornadaSiguiente;
+}
+
+/* ── PUBLICACIÓN: JUGADOR / CAPITÁN / ENTRENADOR MÁS USADOS ── */
+async function inicializarMasUsados() {
+  const { data: jornadas } = await db.from('partidos').select('jornada').order('jornada', { ascending: false });
+  const jornadasUnicas = [...new Set((jornadas || []).map(p => p.jornada))];
+  const select = document.getElementById('masusados-jornada');
+  select.innerHTML = jornadasUnicas.map(j => '<option value="' + j + '">Jornada ' + j + '</option>').join('');
+  select.onchange = () => cargarPreviewMasUsados(parseInt(select.value));
+  if (jornadasUnicas.length) cargarPreviewMasUsados(jornadasUnicas[0]);
+}
+
+async function obtenerMasUsados(jornada) {
+  const { data, error } = await db.from('mi_equipo')
+    .select('jugador_id, capitan, jugadores(nombre, club, posicion, foto_url, escudo_url, valor)')
+    .eq('jornada', jornada);
+
+  if (error || !data?.length) return null;
+
+  const conteoTotal = {};
+  const conteoCapitan = {};
+  const conteoEntrenador = {};
+
+  data.forEach(row => {
+    const j = row.jugadores;
+    if (!j) return;
+    const id = row.jugador_id;
+    if (!conteoTotal[id]) conteoTotal[id] = { count: 0, j };
+    conteoTotal[id].count++;
+
+    if (row.capitan) {
+      if (!conteoCapitan[id]) conteoCapitan[id] = { count: 0, j };
+      conteoCapitan[id].count++;
+    }
+    if (j.posicion === 'ENT') {
+      if (!conteoEntrenador[id]) conteoEntrenador[id] = { count: 0, j };
+      conteoEntrenador[id].count++;
+    }
+  });
+
+  const elegirGanador = (conteo) => {
+    const lista = Object.values(conteo);
+    if (!lista.length) return null;
+    lista.sort((a, b) => b.count - a.count || (b.j.valor || 0) - (a.j.valor || 0));
+    return lista[0];
+  };
+
+  return {
+    jugador: elegirGanador(conteoTotal),
+    capitan: elegirGanador(conteoCapitan),
+    entrenador: elegirGanador(conteoEntrenador)
+  };
+}
+
+async function cargarPreviewMasUsados(jornada) {
+  const cont = document.getElementById('masusados-preview');
+  cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+
+  const res = await obtenerMasUsados(jornada);
+  if (!res) { cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin alineaciones para esta jornada</div>'; return; }
+
+  const filas = [
+    { etiqueta: 'Jugador más alineado', dato: res.jugador },
+    { etiqueta: 'Capitán más elegido', dato: res.capitan },
+    { etiqueta: 'Entrenador más usado', dato: res.entrenador }
+  ];
+
+  cont.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
+    filas.map((f, i) => {
+      const d = f.dato;
+      return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;' + (i < filas.length - 1 ? 'border-bottom:1px solid var(--surface)' : '') + '">' +
+        '<div style="width:110px;flex-shrink:0;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.5px">' + f.etiqueta.toUpperCase() + '</div>' +
+        (d ? (
+          '<div style="flex:1;font-size:14px;font-weight:700">' + d.j.nombre + '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">' + d.j.posicion + ' · ' + d.j.club + ' · ' + (d.j.valor || 0) + 'M</div>' +
+          '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--neon);white-space:nowrap">' + d.count + ' equipo' + (d.count === 1 ? '' : 's') + '</div>'
+        ) : '<div style="flex:1;color:var(--text-muted);font-size:13px">Sin datos</div>') +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+async function generarPublicacionMasUsados(jornada) {
+  if (!jornada) { showToast('Selecciona una jornada', true); return; }
+  const btn = document.getElementById('btn-generar-mas-usados');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Generando...';
+
+  try {
+    const res = await obtenerMasUsados(jornada);
+    if (!res || !res.jugador) { showToast('Sin datos suficientes para generar la publicación', true); return; }
+    await dibujarPublicacionMasUsados(jornada, res.jugador, res.capitan, res.entrenador);
+    showToast('✓ Publicación generada');
+  } catch (e) {
+    showToast('Error al generar: ' + e.message, true);
+  }
+
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-photo"></i> Generar publicación (PNG 1:1)';
+}
+
+async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador) {
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  // ── Header ──
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 54);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 54);
+
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#007a45';
+  ctx.fillText(`MÁS USADOS · J${jornada}`, SIZE - 40, 54);
+
+  const lineaSep = (y) => {
+    const grad = ctx.createLinearGradient(0, 0, SIZE, 0);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+    grad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(SIZE, y);
+    ctx.stroke();
+  };
+  lineaSep(90);
+
+  // ── 3 filas apiladas, cada una centrada horizontalmente ──
+  const filas = [
+    { etiqueta: 'JUGADOR MÁS ALINEADO', dato: jugador },
+    { etiqueta: 'CAPITÁN MÁS ELEGIDO', dato: capitan },
+    { etiqueta: 'ENTRENADOR MÁS USADO', dato: entrenador }
+  ];
+
+  const alturaFila = (SIZE - 90 - 70) / 3;
+  const r = 90;
+  const gap = 40;
+
+  for (let i = 0; i < filas.length; i++) {
+    const { etiqueta, dato } = filas[i];
+    const yCentro = 90 + alturaFila * i + alturaFila / 2;
+
+    // Calcular el ancho del bloque de texto para poder centrar el conjunto
+    let textoAncho = 0;
+    if (dato) {
+      ctx.font = 'bold 44px sans-serif';
+      textoAncho = Math.max(textoAncho, ctx.measureText(dato.j.nombre).width);
+      ctx.font = '20px monospace';
+      const linea2 = `${dato.j.posicion} · ${dato.j.club} · ${dato.j.valor || 0}M · en ${dato.count} equipo${dato.count === 1 ? '' : 's'}`;
+      textoAncho = Math.max(textoAncho, ctx.measureText(linea2).width);
+      ctx.font = 'bold 16px monospace';
+      textoAncho = Math.max(textoAncho, ctx.measureText(etiqueta).width);
+    } else {
+      ctx.font = 'bold 44px sans-serif';
+      textoAncho = ctx.measureText('Sin datos').width;
+    }
+
+    const anchoTotal = r * 2 + gap + textoAncho;
+    const cx = (SIZE - anchoTotal) / 2 + r;
+    const tx = cx + r + gap;
+
+    // Círculo con foto
+    ctx.beginPath();
+    ctx.arc(cx, yCentro, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#007a45';
+    ctx.fill();
+
+    if (dato) {
+      const fotoImg = await cargarImg(dato.j.foto_url);
+      if (fotoImg) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, yCentro, r, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(fotoImg, cx - r, yCentro - r, r * 2, r * 2);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 42px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(dato.j.nombre.substring(0,2).toUpperCase(), cx, yCentro);
+      }
+      const escudoImg = await cargarImg(dato.j.escudo_url);
+      if (escudoImg) {
+        const er = 26;
+        const ex = cx + r - er + 4;
+        const ey = yCentro + r - er + 4;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(ex, ey, er, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.clip();
+        ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
+        ctx.restore();
+      }
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = 'bold 32px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('—', cx, yCentro);
+    }
+
+    // Textos a la derecha del círculo, alineados a la izquierda dentro del bloque ya centrado
+    ctx.textAlign = 'left';
+
+    ctx.fillStyle = '#007a45';
+    ctx.font = 'bold 16px monospace';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(etiqueta, tx, yCentro - 40);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText(dato ? dato.j.nombre : 'Sin datos', tx, yCentro + 6);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '20px monospace';
+    ctx.fillText(
+      dato ? `${dato.j.posicion} · ${dato.j.club} · ${dato.j.valor || 0}M · en ${dato.count} equipo${dato.count === 1 ? '' : 's'}` : '',
+      tx, yCentro + 40
+    );
+
+    if (i < filas.length - 1) lineaSep(90 + alturaFila * (i + 1));
+  }
+
+  // ── Footer ──
+  const footerY = SIZE - 52;
+  lineaSep(footerY);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
+
+  return new Promise(resolveDone => {
+    canvas.toBlob(async blob => {
+      const file = new File([blob], `mas_usados_J${jornada}.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Más usados J${jornada} · AsturFantasy` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mas_usados_J${jornada}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      resolveDone();
+    });
+  });
 }
 
   /* ── CLASIFICACIÓN ── */
