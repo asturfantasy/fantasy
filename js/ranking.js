@@ -2,6 +2,33 @@
    js/ranking.js  —  Clasificación, jugadores, once y rentable
    ============================================================ */
 
+/**
+ * Renderiza una tabla mostrando primero PAGE filas, con un botón
+ * "Ver más" al final que va cargando de PAGE en PAGE hasta agotar
+ * el array. filasArray debe venir ya en el orden final deseado.
+ */
+function renderConVerMas(tbodyEl, filasArray, renderRowFn, colspan) {
+  if (!tbodyEl) return;
+  const PAGE = 25;
+  let mostrados = PAGE;
+
+  function render() {
+    const visibles = filasArray.slice(0, mostrados);
+    let html = visibles.map((r, i) => renderRowFn(r, i)).join('');
+    if (mostrados < filasArray.length) {
+      const restantes = filasArray.length - mostrados;
+      html += '<tr><td colspan="' + colspan + '" style="text-align:center;padding:14px">' +
+        '<button class="btn-ver-mas" style="background:var(--surface);color:var(--neon);border:1px solid var(--border-neon);border-radius:20px;padding:8px 20px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:12px">' +
+        'Ver más (' + restantes + ' restantes)</button></td></tr>';
+    }
+    tbodyEl.innerHTML = html;
+    const btn = tbodyEl.querySelector('.btn-ver-mas');
+    if (btn) btn.addEventListener('click', () => { mostrados += PAGE; render(); });
+  }
+
+  render();
+}
+
 function toggleRankingCard(id) {
   const detail = document.getElementById('detail-' + id);
   const chevron = document.getElementById('chevron-' + id);
@@ -75,13 +102,13 @@ async function loadRankingClasificacion() {
   const { data: general } = await db.from('clasificacion_general_auto').select('*');
   const tbodyG = document.getElementById('ranking-general-body');
   if (!general?.length) {
-    tbodyG.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>';
-  } else {
-    tbodyG.innerHTML = general.map((r, i) => {
-      const esYo = r.user_id === currentUser?.id;
-      return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
-    }).join('');
-  }
+      tbodyG.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>';
+    } else {
+      renderConVerMas(tbodyG, general, (r, i) => {
+        const esYo = r.user_id === currentUser?.id;
+        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+      }, 3);
+    }
 
   // Semanal
   const cargarSemanal = async (jornadaSel) => {
@@ -89,15 +116,15 @@ async function loadRankingClasificacion() {
     const tbody = document.getElementById('ranking-body');
     const cerrada = jornadaSel < JORNADA_ACTIVA;
     if (!semanal?.length) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ' + jornadaSel + '</td></tr>';
-    } else {
-      tbody.innerHTML = semanal.map((r, i) => {
-        const esYo = r.user_id === currentUser?.id;
-        const clickable = cerrada ? 'cursor:pointer' : '';
-        const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo + '\',' + jornadaSel + ')"' : '';
-        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
-      }).join('');
-    }
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ' + jornadaSel + '</td></tr>';
+        } else {
+          renderConVerMas(tbody, semanal, (r, i) => {
+            const esYo = r.user_id === currentUser?.id;
+            const clickable = cerrada ? 'cursor:pointer' : '';
+            const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo + '\',' + jornadaSel + ')"' : '';
+            return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+          }, 3);
+        }
   };
 
   const selectSemanal = document.getElementById('semanal-jornada-select');
@@ -125,14 +152,16 @@ async function loadRankingClasificacion() {
     const userIdsFav = new Set((equiposFav || []).map(e => e.user_id));
     const penaFiltrada = (penaAll || []).filter(r => userIdsFav.has(r.user_id));
     const tbodyP = document.getElementById('ranking-pena-body');
-    if (tbodyP) {
-      tbodyP.innerHTML = !penaFiltrada.length
-        ? '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Solo tú en esta peña de momento</td></tr>'
-        : penaFiltrada.map((r, i) => {
-            const esYo = r.user_id === currentUser?.id;
-            return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
-          }).join('');
-    }
+        if (tbodyP) {
+          if (!penaFiltrada.length) {
+            tbodyP.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Solo tú en esta peña de momento</td></tr>';
+          } else {
+            renderConVerMas(tbodyP, penaFiltrada, (r, i) => {
+              const esYo = r.user_id === currentUser?.id;
+              return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+            }, 3);
+          }
+        }
   }
 }
 
