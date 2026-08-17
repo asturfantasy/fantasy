@@ -169,6 +169,7 @@
         <div class="nav-section-label">Datos</div>
         <div class="nav-item" data-panel="clasificacion"><i class="ti ti-trophy"></i> Clasificación</div>
         <div class="nav-item" data-panel="stats"><i class="ti ti-chart-bar"></i> Estadísticas</div>
+        <div class="nav-item" data-panel="masusados"><i class="ti ti-photo"></i> Más usados</div>
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Sistema</div>
@@ -357,6 +358,23 @@
         </div>
       </div>
 
+      <!-- MÁS USADOS -->
+      <div class="panel" id="panel-masusados">
+        <div class="page-header"><div class="page-title">📸 Más usados</div></div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Jugador, capitán y entrenador más elegidos de la jornada</div>
+            <select id="masusados-jornada" class="form-input" style="width:140px"></select>
+          </div>
+          <div class="section-body">
+            <div id="masusados-preview" style="margin-bottom:16px"></div>
+            <button id="btn-generar-mas-usados" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="generarPublicacionMasUsados(parseInt(document.getElementById('masusados-jornada').value))">
+              <i class="ti ti-photo"></i> Generar publicación (PNG 1:1)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- LA MINA -->
       <div class="panel" id="panel-mina">
         <div class="page-header"><div class="page-title">⛏️ La Mina</div></div>
@@ -376,30 +394,22 @@
       </div>
 
       <!-- EDICIÓN MANUAL -->
+      <!-- EDICIÓN MANUAL -->
       <div class="panel" id="panel-edicion">
-        <div class="page-header"><div class="page-title">Edición manual de jugadores</div></div>
+        <div class="page-header"><div class="page-title">✏️ Edición manual de jugadores</div></div>
         <div class="section">
-          <div class="section-head"><div class="section-title">Buscar jugador</div></div>
-          <div class="section-body">
-            <div class="form-grid" style="margin-bottom:14px">
-              <div class="form-group"><div class="form-label">Jornada</div><input class="form-input" id="ed-jornada" type="number" placeholder="36" /></div>
-              <div class="form-group"><div class="form-label">Buscar jugador</div><input class="form-input" id="ed-buscar" type="text" placeholder="Nombre del jugador..." oninput="buscarJugadorEdicion()" /></div>
-            </div>
-            <div id="ed-resultados"></div>
-          </div>
-        </div>
-        <div class="section" id="ed-form-section" style="display:none">
           <div class="section-head">
-            <div class="section-title" id="ed-jugador-titulo">—</div>
-            <button class="btn btn-primary" onclick="guardarEdicion()"><i class="ti ti-device-floppy"></i> Guardar</button>
+            <div class="section-title">Estadísticas por equipo (fallback si falla el procesado automático)</div>
           </div>
           <div class="section-body">
-            <div class="form-grid">
-              <div class="form-group"><div class="form-label">Asistencias</div><input class="form-input" id="ed-asistencia" type="number" min="0" value="0" /></div>
-              <div class="form-group"><div class="form-label">Penaltis marcados / parados (portero)</div><input class="form-input" id="ed-penalti-marcado" type="number" min="0" value="0" /></div>
-              <div class="form-group"><div class="form-label">Penaltis fallados (-3 pts cada uno)</div><input class="form-input" id="ed-penalti-fallado" type="number" min="0" value="0" /></div>
-              <div class="form-group"><div class="form-label">Puntos tras guardar</div><input class="form-input" id="ed-puntos-actuales" type="text" disabled style="opacity:0.5" /></div>
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+              <select id="edm-jornada" class="form-input" style="width:160px"></select>
+              <select id="edm-club" class="form-input" style="width:200px"><option value="">Selecciona un club...</option></select>
             </div>
+            <div id="edm-tabla" style="overflow-x:auto"></div>
+            <button id="btn-guardar-edm" class="btn btn-primary" style="width:100%;margin-top:14px;padding:12px;font-size:14px;display:none">
+              <i class="ti ti-device-floppy"></i> Guardar estadísticas del equipo
+            </button>
           </div>
         </div>
       </div>
@@ -541,11 +551,12 @@
       if (item.dataset.panel === 'procesado') comprobarAPI();
       if (item.dataset.panel === 'publicar') cargarPublicar();
       if (item.dataset.panel === 'config') cargarAdmins();
-      if (item.dataset.panel === 'edicion') { document.getElementById('ed-jornada').value = document.getElementById('cfg-jornada-activa').value || ''; }
+      if (item.dataset.panel === 'edicion') inicializarEdicionManual();
       if (item.dataset.panel === 'mina') inicializarMina();
       if (item.dataset.panel === 'notificaciones') cargarNotificaciones();
       if (item.dataset.panel === 'clasificacion') cargarClasificacion();
       if (item.dataset.panel === 'stats') cargarStats();
+      if (item.dataset.panel === 'masusados') inicializarMasUsados();
     });
   });
 
@@ -983,6 +994,277 @@ async function generarEquipos(jornada) {
   btn.disabled = false; btn.innerHTML = '<i class="ti ti-users"></i> Generar equipos J' + jornadaSiguiente;
 }
 
+/* ── PUBLICACIÓN: JUGADOR / CAPITÁN / ENTRENADOR MÁS USADOS ── */
+async function inicializarMasUsados() {
+  const { data: jornadas } = await db.from('partidos').select('jornada').order('jornada', { ascending: false });
+  const jornadasUnicas = [...new Set((jornadas || []).map(p => p.jornada))];
+  const select = document.getElementById('masusados-jornada');
+  select.innerHTML = jornadasUnicas.map(j => '<option value="' + j + '">Jornada ' + j + '</option>').join('');
+  select.onchange = () => cargarPreviewMasUsados(parseInt(select.value));
+  if (jornadasUnicas.length) cargarPreviewMasUsados(jornadasUnicas[0]);
+}
+
+async function obtenerMasUsados(jornada) {
+  const { data, error } = await db.from('mi_equipo')
+    .select('jugador_id, capitan, jugadores(nombre, club, posicion, foto_url, escudo_url, valor)')
+    .eq('jornada', jornada);
+
+  if (error || !data?.length) return null;
+
+  const conteoTotal = {};
+  const conteoCapitan = {};
+  const conteoEntrenador = {};
+
+  data.forEach(row => {
+    const j = row.jugadores;
+    if (!j) return;
+    const id = row.jugador_id;
+    if (!conteoTotal[id]) conteoTotal[id] = { count: 0, j };
+    conteoTotal[id].count++;
+
+    if (row.capitan) {
+      if (!conteoCapitan[id]) conteoCapitan[id] = { count: 0, j };
+      conteoCapitan[id].count++;
+    }
+    if (j.posicion === 'ENT') {
+      if (!conteoEntrenador[id]) conteoEntrenador[id] = { count: 0, j };
+      conteoEntrenador[id].count++;
+    }
+  });
+
+  const elegirGanador = (conteo) => {
+    const lista = Object.values(conteo);
+    if (!lista.length) return null;
+    lista.sort((a, b) => b.count - a.count || (b.j.valor || 0) - (a.j.valor || 0));
+    return lista[0];
+  };
+
+  return {
+    jugador: elegirGanador(conteoTotal),
+    capitan: elegirGanador(conteoCapitan),
+    entrenador: elegirGanador(conteoEntrenador)
+  };
+}
+
+async function cargarPreviewMasUsados(jornada) {
+  const cont = document.getElementById('masusados-preview');
+  cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+
+  const res = await obtenerMasUsados(jornada);
+  if (!res) { cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin alineaciones para esta jornada</div>'; return; }
+
+  const filas = [
+    { etiqueta: 'Jugador más alineado', dato: res.jugador },
+    { etiqueta: 'Capitán más elegido', dato: res.capitan },
+    { etiqueta: 'Entrenador más usado', dato: res.entrenador }
+  ];
+
+  cont.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
+    filas.map((f, i) => {
+      const d = f.dato;
+      return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;' + (i < filas.length - 1 ? 'border-bottom:1px solid var(--surface)' : '') + '">' +
+        '<div style="width:110px;flex-shrink:0;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.5px">' + f.etiqueta.toUpperCase() + '</div>' +
+        (d ? (
+          '<div style="flex:1;font-size:14px;font-weight:700">' + d.j.nombre + '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">' + d.j.posicion + ' · ' + d.j.club + ' · ' + (d.j.valor || 0) + 'M</div>' +
+          '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--neon);white-space:nowrap">' + d.count + ' equipo' + (d.count === 1 ? '' : 's') + '</div>'
+        ) : '<div style="flex:1;color:var(--text-muted);font-size:13px">Sin datos</div>') +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+async function generarPublicacionMasUsados(jornada) {
+  if (!jornada) { showToast('Selecciona una jornada', true); return; }
+  const btn = document.getElementById('btn-generar-mas-usados');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Generando...';
+
+  try {
+    const res = await obtenerMasUsados(jornada);
+    if (!res || !res.jugador) { showToast('Sin datos suficientes para generar la publicación', true); return; }
+    await dibujarPublicacionMasUsados(jornada, res.jugador, res.capitan, res.entrenador);
+    showToast('✓ Publicación generada');
+  } catch (e) {
+    showToast('Error al generar: ' + e.message, true);
+  }
+
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-photo"></i> Generar publicación (PNG 1:1)';
+}
+
+async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador) {
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  // ── Header ──
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 54);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 54);
+
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#007a45';
+  ctx.fillText(`MÁS USADOS · J${jornada}`, SIZE - 40, 54);
+
+  const lineaSep = (y) => {
+    const grad = ctx.createLinearGradient(0, 0, SIZE, 0);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+    grad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(SIZE, y);
+    ctx.stroke();
+  };
+  lineaSep(90);
+
+  // ── 3 filas apiladas, cada una centrada horizontalmente ──
+  const filas = [
+    { etiqueta: 'JUGADOR MÁS ALINEADO', dato: jugador },
+    { etiqueta: 'CAPITÁN MÁS ELEGIDO', dato: capitan },
+    { etiqueta: 'ENTRENADOR MÁS USADO', dato: entrenador }
+  ];
+
+  const alturaFila = (SIZE - 90 - 70) / 3;
+  const r = 90;
+  const gap = 40;
+
+  for (let i = 0; i < filas.length; i++) {
+    const { etiqueta, dato } = filas[i];
+    const yCentro = 90 + alturaFila * i + alturaFila / 2;
+
+    // Calcular el ancho del bloque de texto para poder centrar el conjunto
+    let textoAncho = 0;
+    if (dato) {
+      ctx.font = 'bold 44px sans-serif';
+      textoAncho = Math.max(textoAncho, ctx.measureText(dato.j.nombre).width);
+      ctx.font = '20px monospace';
+      const linea2 = `${dato.j.posicion} · ${dato.j.club} · ${dato.j.valor || 0}M · en ${dato.count} equipo${dato.count === 1 ? '' : 's'}`;
+      textoAncho = Math.max(textoAncho, ctx.measureText(linea2).width);
+      ctx.font = 'bold 16px monospace';
+      textoAncho = Math.max(textoAncho, ctx.measureText(etiqueta).width);
+    } else {
+      ctx.font = 'bold 44px sans-serif';
+      textoAncho = ctx.measureText('Sin datos').width;
+    }
+
+    const anchoTotal = r * 2 + gap + textoAncho;
+    const cx = (SIZE - anchoTotal) / 2 + r;
+    const tx = cx + r + gap;
+
+    // Círculo con foto
+    ctx.beginPath();
+    ctx.arc(cx, yCentro, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#007a45';
+    ctx.fill();
+
+    if (dato) {
+      const fotoImg = await cargarImg(dato.j.foto_url);
+      if (fotoImg) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, yCentro, r, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(fotoImg, cx - r, yCentro - r, r * 2, r * 2);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 42px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(dato.j.nombre.substring(0,2).toUpperCase(), cx, yCentro);
+      }
+      const escudoImg = await cargarImg(dato.j.escudo_url);
+      if (escudoImg) {
+        const er = 26;
+        const ex = cx + r - er + 4;
+        const ey = yCentro + r - er + 4;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(ex, ey, er, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.clip();
+        ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
+        ctx.restore();
+      }
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = 'bold 32px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('—', cx, yCentro);
+    }
+
+    // Textos a la derecha del círculo, alineados a la izquierda dentro del bloque ya centrado
+    ctx.textAlign = 'left';
+
+    ctx.fillStyle = '#007a45';
+    ctx.font = 'bold 16px monospace';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(etiqueta, tx, yCentro - 40);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText(dato ? dato.j.nombre : 'Sin datos', tx, yCentro + 6);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '20px monospace';
+    ctx.fillText(
+      dato ? `${dato.j.posicion} · ${dato.j.club} · ${dato.j.valor || 0}M · en ${dato.count} equipo${dato.count === 1 ? '' : 's'}` : '',
+      tx, yCentro + 40
+    );
+
+    if (i < filas.length - 1) lineaSep(90 + alturaFila * (i + 1));
+  }
+
+  // ── Footer ──
+  const footerY = SIZE - 52;
+  lineaSep(footerY);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
+
+  return new Promise(resolveDone => {
+    canvas.toBlob(async blob => {
+      const file = new File([blob], `mas_usados_J${jornada}.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Más usados J${jornada} · AsturFantasy` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mas_usados_J${jornada}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      resolveDone();
+    });
+  });
+}
+
   /* ── CLASIFICACIÓN ── */
   async function cargarClasificacion() {
     const { data } = await db.from('clasificacion_general_auto').select('*');
@@ -1057,71 +1339,148 @@ async function generarEquipos(jornada) {
     else { showToast(valor ? 'Colaborador asignado' : 'Rol eliminado'); cargarAdmins(); }
   }
 
-  /* ── EDICIÓN MANUAL ── */
-  let edJugadorSeleccionado = null;
+  /* ── EDICIÓN MANUAL (fallback si falla el procesado automático) ── */
+  const EDM_CAMPOS = [
+  { key: 'minutos', label: 'MIN', w: '50px', tipo: 'num' },
+  { key: 'rol', label: 'ROL', w: '90px', tipo: 'select' },
+  { key: 'gol', label: 'GOL', w: '46px', tipo: 'num' },
+  { key: 'asistencia', label: 'AST', w: '46px', tipo: 'num' },
+  { key: 'penalti_marcado', label: 'PEN', w: '46px', tipo: 'num' },
+  { key: 'penalti_fallado', label: 'PEN F/P', w: '58px', tipo: 'num' },
+  { key: 'gol_pp', label: 'G.PP', w: '46px', tipo: 'num' },
+  { key: 'amarilla', label: 'AM', w: '40px', tipo: 'num' },
+  { key: 'doble_amarilla', label: 'DA', w: '40px', tipo: 'num' },
+  { key: 'roja', label: 'ROJA', w: '46px', tipo: 'num' },
+  { key: 'goles_encajados', label: 'G.ENC', w: '50px', tipo: 'num' }
+];
 
-  async function buscarJugadorEdicion() {
-    const buscar = document.getElementById('ed-buscar').value.trim();
-    const jornada = parseInt(document.getElementById('ed-jornada').value);
-    const container = document.getElementById('ed-resultados');
-    if (!buscar || buscar.length < 2 || !jornada) { container.innerHTML = ''; return; }
+  async function inicializarEdicionManual() {
+    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa')?.value) || 1;
+    const selectJornada = document.getElementById('edm-jornada');
+
+    const { data: config } = await db.from('config_jornada').select('jornada_activa').eq('id', 1).single();
+    const jornada = config?.jornada_activa || jornadaActiva;
+
+    selectJornada.innerHTML = '<option value="' + jornada + '">Jornada ' + jornada + '</option>';
+    selectJornada.value = jornada;
+    selectJornada.disabled = true;
+
+    const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornada);
+    const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
+    const selectClub = document.getElementById('edm-club');
+    selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
+      clubes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    selectJornada.onchange = () => cargarEdicionManual();
+    selectClub.onchange = () => cargarEdicionManual();
+    document.getElementById('edm-tabla').innerHTML = '';
+    document.getElementById('btn-guardar-edm').style.display = 'none';
+  }
+
+  async function cargarEdicionManual() {
+    const jornada = parseInt(document.getElementById('edm-jornada').value);
+    const club = document.getElementById('edm-club').value;
+    const tabla = document.getElementById('edm-tabla');
+    const btnGuardar = document.getElementById('btn-guardar-edm');
+
+    if (!club) { tabla.innerHTML = ''; btnGuardar.style.display = 'none'; return; }
+
+    tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+
     const { data } = await db.from('jugadores')
-      .select('id, nombre, club, posicion, asistencia, penalti_marcado, penalti_fallado, lne, total_jornada')
+      .select('id, nombre, posicion, minutos, rol, gol, asistencia, penalti_marcado, penalti_fallado, gol_pp, amarilla, doble_amarilla, roja, goles_encajados, total_jornada')
       .eq('jornada', jornada)
-      .ilike('nombre', `%${buscar}%`)
-      .limit(8);
-    if (!data?.length) { container.innerHTML = '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);padding:8px">Sin resultados</div>'; return; }
-    window._edJugadores = {};
-    data.forEach(j => { window._edJugadores[j.id] = j; });
-    container.innerHTML = data.map(j => [
-      '<div data-jugid="' + j.id + '" class="ed-result-item" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:6px;background:var(--surface)">',
-        '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + j.nombre + '</div>',
-        '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.posicion + ' · ' + j.club + '</div></div>',
-        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">Asist: <strong>' + (j.asistencia||0) + '</strong> · PenM: <strong>' + (j.penalti_marcado||0) + '</strong> · PenF: <strong>' + (j.penalti_fallado||0) + '</strong></div>',
-        '<div style="font-size:16px;font-weight:700;color:var(--neon)">' + (j.total_jornada||0) + ' pts</div>',
-      '</div>'
-    ].join('')).join('');
-    container.querySelectorAll('.ed-result-item').forEach(el => {
-      el.addEventListener('click', () => seleccionarJugadorEdicion(el.dataset.jugid));
+      .eq('club', club)
+      .neq('posicion', 'ENT')
+      .order('posicion')
+      .order('nombre');
+
+    if (!data?.length) { tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin jugadores para esta jornada</div>'; btnGuardar.style.display = 'none'; return; }
+
+    const orden = ['POR','DEF','MED','DEL'];
+const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion) || a.nombre.localeCompare(b.nombre));
+const cols = '1fr 50px ' + EDM_CAMPOS.map(c => c.w).join(' ') + ' 60px';
+
+const esValorado = j => (j.minutos || 0) > 0 || (j.total_jornada || 0) !== 0;
+const puntuados = sorted.filter(esValorado).length;
+const total = sorted.length;
+
+tabla.innerHTML =
+  '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px">' +
+    '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">Puntuados:</div>' +
+    '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:' + (puntuados === total ? 'var(--neon)' : 'var(--amber)') + '">' + puntuados + ' / ' + total + '</div>' +
+    '<div style="flex:1;background:var(--surface);border-radius:4px;height:6px;overflow:hidden">' +
+      '<div style="height:100%;width:' + Math.round((puntuados/total)*100) + '%;background:' + (puntuados === total ? 'var(--neon)' : 'var(--amber)') + ';border-radius:4px;transition:width 0.3s"></div>' +
+    '</div>' +
+    '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + Math.round((puntuados/total)*100) + '%</div>' +
+  '</div>' +
+  '<div style="min-width:760px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
+    '<div style="display:grid;grid-template-columns:' + cols + ';padding:8px 16px;border-bottom:1px solid var(--border)">' +
+      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
+      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">POS</div>' +
+      EDM_CAMPOS.map(c => '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">' + c.label + '</div>').join('') +
+      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">PTS</div>' +
+    '</div>' +
+    sorted.map(j => {
+      const valorado = esValorado(j);
+      return '<div style="display:grid;grid-template-columns:' + cols + ';align-items:center;padding:8px 16px;border-bottom:1px solid var(--surface);background:' + (valorado ? 'rgba(0,217,126,0.06)' : 'transparent') + '">' +
+        '<div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">' +
+          '<span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;display:inline-block;background:' + (valorado ? 'var(--neon)' : 'var(--border)') + '"></span>' +
+          j.nombre +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
+        EDM_CAMPOS.map(c => {
+          if (c.tipo === 'select') {
+            const val = j[c.key] || '';
+            return '<select class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="select" ' +
+              'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-family:var(--font-mono);font-size:10px;text-align:center">' +
+              '<option value=""' + (val === '' ? ' selected' : '') + '>—</option>' +
+              '<option value="titular"' + (val === 'titular' ? ' selected' : '') + '>Titular</option>' +
+              '<option value="suplente"' + (val === 'suplente' ? ' selected' : '') + '>Suplente</option>' +
+            '</select>';
+          }
+          return '<input type="number" min="0" class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="num" value="' + (j[c.key] || 0) + '" ' +
+            'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 4px;font-family:var(--font-mono);font-size:11px;text-align:center">';
+        }).join('') +
+        '<div style="font-size:12px;font-weight:700;color:var(--neon);text-align:center" data-pts-jugid="' + j.id + '">' + (j.total_jornada || 0) + '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+
+    btnGuardar.style.display = 'flex';
+  }
+
+  document.getElementById('btn-guardar-edm')?.addEventListener('click', async () => {
+    if (!confirm('¿Seguro que quieres guardar las estadísticas de este equipo?')) return;
+    const jornada = parseInt(document.getElementById('edm-jornada').value);
+    const btn = document.getElementById('btn-guardar-edm');
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Guardando...';
+
+    const porJugador = {};
+    document.querySelectorAll('.edm-input').forEach(inp => {
+      const id = inp.dataset.jugid;
+      if (!porJugador[id]) porJugador[id] = {};
+      porJugador[id][inp.dataset.field] = inp.dataset.tipo === 'select' ? (inp.value || null) : (parseInt(inp.value) || 0);
     });
-  }
 
-  function seleccionarJugadorEdicion(id) {
-    const jugador = window._edJugadores[id];
-    if (!jugador) return;
-    edJugadorSeleccionado = jugador;
-    document.getElementById('ed-form-section').style.display = 'block';
-    document.getElementById('ed-jugador-titulo').textContent = jugador.nombre + ' · J' + document.getElementById('ed-jornada').value + ' · ' + jugador.club;
-    document.getElementById('ed-asistencia').value = jugador.asistencia || 0;
-    document.getElementById('ed-penalti-marcado').value = jugador.penalti_marcado || 0;
-    document.getElementById('ed-penalti-fallado').value = jugador.penalti_fallado || 0;
-    document.getElementById('ed-puntos-actuales').value = (jugador.total_jornada || 0) + ' pts';
-    document.getElementById('ed-resultados').innerHTML = '';
-    document.getElementById('ed-buscar').value = jugador.nombre;
-  }
-
-  async function guardarEdicion() {
-    if (!edJugadorSeleccionado) return;
-    const jornada = parseInt(document.getElementById('ed-jornada').value);
-    const asistencia = parseInt(document.getElementById('ed-asistencia').value) || 0;
-    const penalti_marcado = parseInt(document.getElementById('ed-penalti-marcado').value) || 0;
-    const penalti_fallado = parseInt(document.getElementById('ed-penalti-fallado').value) || 0;
-    const btn = document.querySelector('#ed-form-section .btn-primary');
-    btn.disabled = true; btn.textContent = 'Guardando...';
-    const { error, data: updated } = await db.from('jugadores')
-      .update({ asistencia, penalti_marcado, penalti_fallado })
-      .eq('id', edJugadorSeleccionado.id)
-      .eq('jornada', jornada)
-      .select('total_jornada')
-      .single();
-    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar';
-    if (error) {
-      showToast('Error: ' + error.message, true);
-    } else {
-      showToast('✓ ' + edJugadorSeleccionado.nombre + ' actualizado');
-      if (updated) document.getElementById('ed-puntos-actuales').value = updated.total_jornada + ' pts';
+    let errores = 0;
+    for (const [id, cambios] of Object.entries(porJugador)) {
+      const { error, data: updated } = await db.from('jugadores')
+        .update(cambios)
+        .eq('id', id)
+        .eq('jornada', jornada)
+        .select('total_jornada')
+        .single();
+      if (error) { errores++; continue; }
+      const ptsEl = document.querySelector('[data-pts-jugid="' + id + '"]');
+      if (ptsEl && updated) ptsEl.textContent = updated.total_jornada;
     }
-  }
+
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar estadísticas del equipo';
+    if (errores) showToast('Algunos errores al guardar (' + errores + ')', true);
+    else { showToast('✓ Estadísticas guardadas correctamente'); cargarEdicionManual(); }
+  });
+
 
   /* ── LA MINA ── */
   let minaJugadores = [];
