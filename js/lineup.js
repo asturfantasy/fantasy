@@ -173,8 +173,9 @@ async function loadLineup() {
       }
 
       if (!equipoGenerado) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        const presupuestoMin = PRESUPUESTO * 0.40;
+              if (window._generandoEquipoAuto) { return; }
+              window._generandoEquipoAuto = true;
+              const presupuestoMin = PRESUPUESTO * 0.40;
         const presupuestoMax = PRESUPUESTO * 0.99;
         const formacion = '4-3-3';
         document.getElementById('formation-select').value = formacion;
@@ -235,6 +236,7 @@ async function loadLineup() {
           );
           showToast('Equipo generado automáticamente — ¡puedes modificarlo!');
         }
+        window._generandoEquipoAuto = false;
       }
     }
   }
