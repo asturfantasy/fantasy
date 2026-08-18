@@ -170,6 +170,7 @@
         <div class="nav-item" data-panel="clasificacion"><i class="ti ti-trophy"></i> Clasificación</div>
         <div class="nav-item" data-panel="stats"><i class="ti ti-chart-bar"></i> Estadísticas</div>
         <div class="nav-item" data-panel="masusados"><i class="ti ti-photo"></i> Más usados</div>
+        <div class="nav-item" data-panel="aficion"><i class="ti ti-shield"></i> Afición por club</div>
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Sistema</div>
@@ -375,6 +376,22 @@
         </div>
       </div>
 
+      <!-- AFICIÓN POR CLUB -->
+      <div class="panel" id="panel-aficion">
+        <div class="page-header"><div class="page-title">🛡️ Afición por club</div></div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Ranking de clubes por número de aficionados en AsturFantasy</div>
+          </div>
+          <div class="section-body">
+            <div id="aficion-preview" style="margin-bottom:16px"></div>
+            <button id="btn-generar-aficion" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="generarPublicacionAficion()">
+              <i class="ti ti-photo"></i> Generar publicación (PNG 1:1)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- LA MINA -->
       <div class="panel" id="panel-mina">
         <div class="page-header"><div class="page-title">⛏️ La Mina</div></div>
@@ -557,6 +574,7 @@
       if (item.dataset.panel === 'clasificacion') cargarClasificacion();
       if (item.dataset.panel === 'stats') cargarStats();
       if (item.dataset.panel === 'masusados') inicializarMasUsados();
+      if (item.dataset.panel === 'aficion') cargarPreviewAficion();
     });
   });
 
@@ -619,10 +637,25 @@
     deadline = new Date(config.deadline);
   }
 
-  const [{ data: equipos }, { data: alineaciones }, { data: clasificacion }] = await Promise.all([
-    db.from('equipos').select('user_id'),
-    db.from('mi_equipo').select('user_id').eq('jornada', jornadaActiva),
-    db.from('clasificacion_automatica').select('puntos').eq('jornada', jornadaVisible)
+    async function traerTodo(query) {
+    let datos = [];
+    let desde = 0;
+    const TAMANO_PAGINA = 1000;
+    while (true) {
+      const { data: pagina, error } = await query.range(desde, desde + TAMANO_PAGINA - 1);
+      if (error) return [];
+      if (!pagina?.length) break;
+      datos = datos.concat(pagina);
+      if (pagina.length < TAMANO_PAGINA) break;
+      desde += TAMANO_PAGINA;
+    }
+    return datos;
+  }
+
+  const [equipos, alineaciones, clasificacion] = await Promise.all([
+    traerTodo(db.from('equipos').select('user_id')),
+    traerTodo(db.from('mi_equipo').select('user_id').eq('jornada', jornadaActiva)),
+    traerTodo(db.from('clasificacion_automatica').select('puntos').eq('jornada', jornadaVisible))
   ]);
 
   document.getElementById('titulo-jornada').textContent = jornadaActiva;
@@ -994,6 +1027,247 @@ async function generarEquipos(jornada) {
   btn.disabled = false; btn.innerHTML = '<i class="ti ti-users"></i> Generar equipos J' + jornadaSiguiente;
 }
 
+/* ── AFICIÓN POR CLUB ── */
+const NOMBRES_CLUB = {
+  COV: 'CD Covadonga', MOS: 'CD Mosconia', SPO: 'Sporting Atlético', EIS: 'EI San Martín',
+  LEA: 'CD Lealtad', UPL: 'UP Langreo', LEN: 'LEntregu CF', UCC: 'UC Ceares',
+  PRA: 'CD Praviano', SIE: 'Club Siero', COL: 'CD Colunga', LLA: 'CD Llanes',
+  STA: 'Avilés Stadium CF', IND: 'UD Gijón Industrial', CAU: 'Caudal Deportivo',
+  AST: 'Astur CF', AND: 'Andés CF', CON: 'Condal CF'
+};
+const ESCUDO_BASE = 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/';
+
+async function obtenerAficionPorClub() {
+  let data = [];
+  let desde = 0;
+  const TAMANO_PAGINA = 1000;
+  while (true) {
+    const { data: pagina, error } = await db.from('equipos')
+      .select('equipo_favorito')
+      .not('equipo_favorito', 'is', null)
+      .range(desde, desde + TAMANO_PAGINA - 1);
+    if (error) return [];
+    if (!pagina?.length) break;
+    data = data.concat(pagina);
+    if (pagina.length < TAMANO_PAGINA) break;
+    desde += TAMANO_PAGINA;
+  }
+  if (!data.length) return [];
+  const conteo = {};
+  data.forEach(e => { conteo[e.equipo_favorito] = (conteo[e.equipo_favorito] || 0) + 1; });
+  return Object.entries(conteo)
+    .map(([club, count]) => ({ club, count, nombre: NOMBRES_CLUB[club] || club }))
+    .sort((a, b) => b.count - a.count);
+}
+
+async function cargarPreviewAficion() {
+  const cont = document.getElementById('aficion-preview');
+  cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+
+  const lista = await obtenerAficionPorClub();
+  if (!lista.length) { cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos todavía</div>'; return; }
+
+  const total = lista.reduce((a, c) => a + c.count, 0);
+  const medallas = ['🥇', '🥈', '🥉'];
+
+  cont.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
+    lista.map((c, i) => {
+      const pct = ((c.count / total) * 100).toFixed(1);
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;' + (i < lista.length - 1 ? 'border-bottom:1px solid var(--surface)' : '') + '">' +
+        '<div style="width:26px;font-size:14px;text-align:center">' + (medallas[i] || (i + 1)) + '</div>' +
+        '<div style="flex:1;font-size:14px;font-weight:600">' + c.nombre + '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + pct + '%</div>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--neon);width:36px;text-align:right">' + c.count + '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+async function generarPublicacionAficion() {
+  const btn = document.getElementById('btn-generar-aficion');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Generando...';
+
+  try {
+    const lista = await obtenerAficionPorClub();
+    if (!lista.length) { showToast('Sin datos suficientes', true); return; }
+    await dibujarPublicacionAficion(lista);
+    showToast('✓ Publicación generada');
+  } catch (e) {
+    showToast('Error al generar: ' + e.message, true);
+  }
+
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-photo"></i> Generar publicación (PNG 1:1)';
+}
+
+async function dibujarPublicacionAficion(lista) {
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#101715';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  const cargarImg = (url) => new Promise(res => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 54);
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 54);
+
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#007a45';
+  ctx.fillText('PEÑAS', SIZE - 40, 54);
+
+  const lineaSep = (y) => {
+    const grad = ctx.createLinearGradient(0, 0, SIZE, 0);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+    grad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(SIZE, y);
+    ctx.stroke();
+  };
+  lineaSep(90);
+
+  // ── Lista de clubes en dos columnas (hasta 18) ──
+  const top = lista.slice(0, 18);
+  const total = lista.reduce((a, c) => a + c.count, 0);
+  const areaInicio = 110;
+  const areaFin = SIZE - 70;
+  const porColumna = 9;
+  const alturaFila = (areaFin - areaInicio) / porColumna;
+  const maxCount = top[0].count;
+
+  const margen = 40;
+  const gapColumnas = 24;
+  const anchoColumna = (SIZE - margen * 2 - gapColumnas) / 2;
+  const colX = [margen, margen + anchoColumna + gapColumnas];
+
+  for (let i = 0; i < top.length; i++) {
+    const c = top[i];
+    const col = Math.floor(i / porColumna);
+    const fila = i % porColumna;
+    const yCentro = areaInicio + alturaFila * fila + alturaFila / 2;
+    const esPodio = i < 3;
+    const r = esPodio ? 24 : 19;
+    const cx = colX[col] + r + 6;
+
+    // Círculo con escudo
+    ctx.beginPath();
+    ctx.arc(cx, yCentro, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#007a45';
+    ctx.fill();
+
+    const escudoImg = await cargarImg(ESCUDO_BASE + c.club + '.png');
+    if (escudoImg) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, yCentro, r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.drawImage(escudoImg, cx - r, yCentro - r, r * 2, r * 2);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(c.club, cx, yCentro);
+    }
+
+    // Número de posición
+    ctx.fillStyle = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : 'rgba(255,255,255,0.4)';
+    ctx.font = 'bold ' + (esPodio ? 16 : 13) + 'px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(i + 1), cx - r - 8, yCentro);
+
+    // Nombre del club (recortado con … si no cabe)
+    const tx = cx + r + 12;
+    const nombreMaxWidth = anchoColumna - (tx - colX[col]) - 56;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = (esPodio ? 'bold 17px' : '600 15px') + ' sans-serif';
+    ctx.textAlign = 'left';
+    let nombreTxt = c.nombre;
+    while (ctx.measureText(nombreTxt).width > nombreMaxWidth && nombreTxt.length > 4) {
+      nombreTxt = nombreTxt.slice(0, -1);
+    }
+    if (nombreTxt !== c.nombre) nombreTxt = nombreTxt.trimEnd() + '…';
+    ctx.fillText(nombreTxt.toUpperCase(), tx, yCentro);
+
+    // Número de aficionados a la derecha de la columna
+    ctx.fillStyle = esPodio ? '#4cd97b' : '#ffffff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(c.count), colX[col] + anchoColumna, yCentro);
+
+    if (fila < porColumna - 1) {
+      const grad = ctx.createLinearGradient(colX[col], 0, colX[col] + anchoColumna, 0);
+      grad.addColorStop(0, 'transparent');
+      grad.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+      grad.addColorStop(1, 'transparent');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(colX[col], areaInicio + alturaFila * (fila + 1));
+      ctx.lineTo(colX[col] + anchoColumna, areaInicio + alturaFila * (fila + 1));
+      ctx.stroke();
+    }
+  }
+
+  // Línea vertical separando las dos columnas
+  const gradV = ctx.createLinearGradient(0, areaInicio, 0, areaFin);
+  gradV.addColorStop(0, 'transparent');
+  gradV.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradV.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradV;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(SIZE / 2, areaInicio);
+  ctx.lineTo(SIZE / 2, areaFin);
+  ctx.stroke();
+
+  const footerY = SIZE - 52;
+  lineaSep(footerY);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '14px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(total + ' aficionados repartidos entre los clubes de la 3ª RFEF · asturfantasy.com', SIZE / 2, footerY + 26);
+
+  return new Promise(resolveDone => {
+    canvas.toBlob(async blob => {
+      const file = new File([blob], 'aficion_por_club.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Afición por club · AsturFantasy' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'aficion_por_club.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      resolveDone();
+    });
+  });
+}
+
 /* ── PUBLICACIÓN: JUGADOR / CAPITÁN / ENTRENADOR MÁS USADOS ── */
 async function inicializarMasUsados() {
   const { data: jornadas } = await db.from('partidos').select('jornada').order('jornada', { ascending: false });
@@ -1005,11 +1279,24 @@ async function inicializarMasUsados() {
 }
 
 async function obtenerMasUsados(jornada) {
-  const { data, error } = await db.from('mi_equipo')
-    .select('jugador_id, capitan, jugadores(nombre, club, posicion, foto_url, escudo_url, valor)')
-    .eq('jornada', jornada);
+  let data = [];
+  let desde = 0;
+  const TAMANO_PAGINA = 1000;
+  while (true) {
+    const { data: pagina, error } = await db.from('mi_equipo')
+      .select('jugador_id, capitan, jugadores(nombre, club, posicion, foto_url, escudo_url, valor)')
+      .eq('jornada', jornada)
+      .range(desde, desde + TAMANO_PAGINA - 1);
 
-  if (error || !data?.length) return null;
+    if (error) return null;
+    if (!pagina?.length) break;
+
+    data = data.concat(pagina);
+    if (pagina.length < TAMANO_PAGINA) break;
+    desde += TAMANO_PAGINA;
+  }
+
+  if (!data.length) return null;
 
   const conteoTotal = {};
   const conteoCapitan = {};
