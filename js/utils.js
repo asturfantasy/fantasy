@@ -15,7 +15,7 @@ let toastTimeout = null;
 const CLUBES_INFO = {
   COV: { nombre: 'CD Covadonga',         escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/COV.png' },
   MOS: { nombre: 'CD Mosconia',          escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/MOS.png' },
-  EIS: { nombre: 'Sporting Atlético', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SPO.png' },
+  SPO: { nombre: 'Sporting Atlético', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/SPO.png' },
   EIS: { nombre: 'EI San Martín', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/EIS.png' },
   LEA: { nombre: 'CD Lealtad', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/LEA.png' },
   UPL: { nombre: 'UP Langreo', escudo: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/clubes/UPL.png' },
