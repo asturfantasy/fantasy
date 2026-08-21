@@ -207,12 +207,10 @@
           </div>
           <div class="section-body">
             <div class="form-grid" style="margin-bottom:14px">
-              <div class="form-group"><div class="form-label">Presupuesto (M)</div><input class="form-input" id="cfg-presupuesto" type="number" step="0.5" /></div>
-              <div class="form-group"><div class="form-label">Título jornada</div><input class="form-input" id="cfg-titulo" type="text" placeholder="Ej: Jornada 36 · Playoffs" /></div>
+              <div class="form-group"><div class="form-label">Presupuesto (M)</div><input class="form-input" id="cfg-presupuesto" type="number" step="0.5" readonly style="opacity:0.6;cursor:not-allowed" /></div>
             </div>
             <div class="form-grid" style="margin-bottom:14px">
               <div class="form-group"><div class="form-label">Mensaje aviso (opcional)</div><input class="form-input" id="cfg-mensaje" type="text" placeholder="Aviso visible en el home..." /></div>
-              <div class="form-group"><div class="form-label">Fecha fin jornada</div><input class="form-input" id="cfg-fecha-fin" type="datetime-local" /></div>
             </div>
           </div>
         </div>
@@ -534,6 +532,27 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0bWNsbXF6YXNrdHNobHp3Y3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDUwMjAsImV4cCI6MjA5NDEyMTAyMH0.Z1X05a8EFzCA58iGjXymIBBTs01V5uY7XgIfb8yqiqk';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const API_URL = '/api';
+  /**
+ * Trae TODAS las filas de una tabla, paginando en tandas de 1000
+ * (el límite por defecto de Supabase). Necesario para cualquier
+ * consulta sin filtrar por usuario que pueda superar 1000 filas
+ * (equipos, mi_equipo por jornada, jugadores, clasificacion_automatica...).
+ * Uso: const { data, error } = await fetchAllRows(db.from('tabla').select('col').eq(...));
+ */
+async function fetchAllRows(query) {
+  let resultado = [];
+  let desde = 0;
+  const TAMANO_PAGINA = 1000;
+  while (true) {
+    const { data, error } = await query.range(desde, desde + TAMANO_PAGINA - 1);
+    if (error) return { data: null, error };
+    if (!data?.length) break;
+    resultado = resultado.concat(data);
+    if (data.length < TAMANO_PAGINA) break;
+    desde += TAMANO_PAGINA;
+  }
+  return { data: resultado, error: null };
+}
 </script>
 <script>
   let adminUser = null;
@@ -682,20 +701,15 @@
   }
 
   document.getElementById('cfg-presupuesto').value = config.presupuesto;
-  document.getElementById('cfg-titulo').value = config.titulo_jornada || '';
-  document.getElementById('cfg-mensaje').value = config.mensaje_aviso || '';
-  document.getElementById('cfg-fecha-fin').value = config.fecha_fin ? new Date(config.fecha_fin).toISOString().slice(0, 16) : '';
+    document.getElementById('cfg-mensaje').value = config.mensaje_aviso || '';
   document.getElementById('proc-jornada').value = jornadaActiva;
 }
 
   document.getElementById('btn-guardar-config').addEventListener('click', async () => {
   const btn = document.getElementById('btn-guardar-config');
   btn.disabled = true; btn.textContent = 'Guardando...';
-  const { error } = await db.from('config_jornada').update({
-    presupuesto: parseFloat(document.getElementById('cfg-presupuesto').value),
-    titulo_jornada: document.getElementById('cfg-titulo').value,
-    mensaje_aviso: document.getElementById('cfg-mensaje').value || null,
-    fecha_fin: document.getElementById('cfg-fecha-fin').value ? new Date(document.getElementById('cfg-fecha-fin').value).toISOString() : null
+    const { error } = await db.from('config_jornada').update({
+    mensaje_aviso: document.getElementById('cfg-mensaje').value || null
   }).eq('id', 1);
   btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar cambios';
   if (error) showToast('Error: ' + error.message, true);
@@ -1638,27 +1652,41 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
   { key: 'amarilla', label: 'AM', w: '40px', tipo: 'num' },
   { key: 'doble_amarilla', label: 'DA', w: '40px', tipo: 'num' },
   { key: 'roja', label: 'ROJA', w: '46px', tipo: 'num' },
-  { key: 'goles_encajados', label: 'G.ENC', w: '50px', tipo: 'num' }
+  { key: 'goles_encajados', label: 'G.ENC', w: '50px', tipo: 'num' },
+  { key: 'activo', label: 'ESTADO', w: '100px', tipo: 'select' }
 ];
 
   async function inicializarEdicionManual() {
-    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa')?.value) || 1;
+    const jornadaActivaConfig = parseInt(document.getElementById('cfg-jornada-activa')?.value) || 1;
     const selectJornada = document.getElementById('edm-jornada');
 
+    const { data: jornadasData } = await fetchAllRows(db.from('jugadores').select('jornada'));
+    const jornadasDisponibles = [...new Set((jornadasData || []).map(j => j.jornada))].sort((a, b) => a - b);
+
     const { data: config } = await db.from('config_jornada').select('jornada_activa').eq('id', 1).single();
-    const jornada = config?.jornada_activa || jornadaActiva;
+    const jornadaPorDefecto = config?.jornada_activa || jornadaActivaConfig;
 
-    selectJornada.innerHTML = '<option value="' + jornada + '">Jornada ' + jornada + '</option>';
-    selectJornada.value = jornada;
-    selectJornada.disabled = true;
+    selectJornada.innerHTML = jornadasDisponibles.map(j =>
+      '<option value="' + j + '"' + (j === jornadaPorDefecto ? ' selected' : '') + '>Jornada ' + j + '</option>'
+    ).join('');
+    selectJornada.disabled = false;
 
+    const jornada = jornadaPorDefecto;
     const { data: clubesData } = await db.from('jugadores').select('club').eq('jornada', jornada);
     const clubes = [...new Set((clubesData || []).map(j => j.club))].sort();
     const selectClub = document.getElementById('edm-club');
     selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
       clubes.map(c => `<option value="${c}">${c}</option>`).join('');
 
-    selectJornada.onchange = () => cargarEdicionManual();
+    selectJornada.onchange = () => {
+      db.from('jugadores').select('club').eq('jornada', parseInt(selectJornada.value)).then(({ data }) => {
+        const clubesNuevos = [...new Set((data || []).map(j => j.club))].sort();
+        selectClub.innerHTML = '<option value="">Selecciona un club...</option>' +
+          clubesNuevos.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('edm-tabla').innerHTML = '';
+        document.getElementById('btn-guardar-edm').style.display = 'none';
+      });
+    };
     selectClub.onchange = () => cargarEdicionManual();
     document.getElementById('edm-tabla').innerHTML = '';
     document.getElementById('btn-guardar-edm').style.display = 'none';
@@ -1675,7 +1703,7 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
     tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
 
     const { data } = await db.from('jugadores')
-      .select('id, nombre, posicion, minutos, rol, gol, asistencia, penalti_marcado, penalti_fallado, gol_pp, amarilla, doble_amarilla, roja, goles_encajados, total_jornada')
+      .select('id, nombre, posicion, minutos, rol, activo, gol, asistencia, penalti_marcado, penalti_fallado, gol_pp, amarilla, doble_amarilla, roja, goles_encajados, total_jornada')
       .eq('jornada', jornada)
       .eq('club', club)
       .neq('posicion', 'ENT')
@@ -1717,18 +1745,28 @@ tabla.innerHTML =
         '</div>' +
         '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
         EDM_CAMPOS.map(c => {
-          if (c.tipo === 'select') {
-            const val = j[c.key] || '';
-            return '<select class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="select" ' +
-              'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-family:var(--font-mono);font-size:10px;text-align:center">' +
-              '<option value=""' + (val === '' ? ' selected' : '') + '>—</option>' +
-              '<option value="titular"' + (val === 'titular' ? ' selected' : '') + '>Titular</option>' +
-              '<option value="suplente"' + (val === 'suplente' ? ' selected' : '') + '>Suplente</option>' +
-            '</select>';
-          }
-          return '<input type="number" min="0" class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="num" value="' + (j[c.key] || 0) + '" ' +
-            'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 4px;font-family:var(--font-mono);font-size:11px;text-align:center">';
-        }).join('') +
+  if (c.key === 'activo') {
+    const val = String(j[c.key] ?? 1);
+    return '<select class="edm-input" data-jugid="' + j.id + '" data-field="activo" data-tipo="activo" ' +
+      'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-family:var(--font-mono);font-size:10px;text-align:center">' +
+      '<option value="1"' + (val === '1' ? ' selected' : '') + '>✅ Activo</option>' +
+      '<option value="0"' + (val === '0' ? ' selected' : '') + '>🚫 Sancionado</option>' +
+      '<option value="2"' + (val === '2' ? ' selected' : '') + '>❓ Duda</option>' +
+      '<option value="3"' + (val === '3' ? ' selected' : '') + '>🤕 Lesionado</option>' +
+    '</select>';
+  }
+  if (c.tipo === 'select') {
+    const val = j[c.key] || '';
+    return '<select class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="select" ' +
+      'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-family:var(--font-mono);font-size:10px;text-align:center">' +
+      '<option value=""' + (val === '' ? ' selected' : '') + '>—</option>' +
+      '<option value="titular"' + (val === 'titular' ? ' selected' : '') + '>Titular</option>' +
+      '<option value="suplente"' + (val === 'suplente' ? ' selected' : '') + '>Suplente</option>' +
+    '</select>';
+  }
+  return '<input type="number" min="0" class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="num" value="' + (j[c.key] || 0) + '" ' +
+    'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 4px;font-family:var(--font-mono);font-size:11px;text-align:center">';
+}).join('') +
         '<div style="font-size:12px;font-weight:700;color:var(--neon);text-align:center" data-pts-jugid="' + j.id + '">' + (j.total_jornada || 0) + '</div>' +
       '</div>';
     }).join('') +
@@ -1747,7 +1785,11 @@ tabla.innerHTML =
     document.querySelectorAll('.edm-input').forEach(inp => {
       const id = inp.dataset.jugid;
       if (!porJugador[id]) porJugador[id] = {};
-      porJugador[id][inp.dataset.field] = inp.dataset.tipo === 'select' ? (inp.value || null) : (parseInt(inp.value) || 0);
+      if (inp.dataset.tipo === 'activo') {
+  porJugador[id][inp.dataset.field] = parseInt(inp.value);
+} else {
+  porJugador[id][inp.dataset.field] = inp.dataset.tipo === 'select' ? (inp.value || null) : (parseInt(inp.value) || 0);
+}
     });
 
     let errores = 0;
