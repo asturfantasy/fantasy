@@ -521,7 +521,7 @@ function renderPitch() {
                 const duda = estadoVal === 2;
                 const lesionado = estadoVal === 3;
                 const overlay = sancionado
-                          ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(220,38,38,0.5);z-index:1;pointer-events:none"></div>'
+          ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(220,38,38,0.5);z-index:1;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:16px">🚫</div>'
                           : duda
                           ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(255,140,0,0.45);z-index:1;pointer-events:none"></div>'
                           : lesionado
@@ -607,7 +607,7 @@ function openModal(slotId, posicion, cls) {
             const lesionado = estadoVal === 3;
             const bR = sancionado ? '3px solid rgba(220,38,38,0.9)' : duda ? '3px solid rgba(255,140,0,0.9)' : lesionado ? '3px solid rgba(220,38,38,0.9)' : '1px solid var(--border)';
                   const badgeEstado = sancionado
-                    ? ''
+                          ? '<span title="Sancionado" style="position:absolute;top:-3px;left:-3px;font-size:12px;background:var(--bg2);border-radius:50%;line-height:1">🚫</span>'
                     : duda
                     ? ''
                     : lesionado
