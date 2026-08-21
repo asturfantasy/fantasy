@@ -1,0 +1,54 @@
+# ============================================================
+# .github/workflows/prueba-carga.yml
+# Lanza una prueba de carga con k6 desde los servidores de
+# GitHub (no desde tu ordenador), para eliminar cualquier
+# limitación de tu propia conexión doméstica del resultado.
+#
+# Se ejecuta SOLO manualmente (nunca automático), desde la
+# pestaña "Actions" de tu repo → "Prueba de carga" → botón
+# "Run workflow". No corre solo, ni con cron, ni con push.
+# ============================================================
+
+name: Prueba de carga
+
+on:
+  workflow_dispatch:
+    inputs:
+      usuarios:
+        description: 'Número de usuarios virtuales (pico)'
+        required: false
+        default: '1000'
+      duracion_subida:
+        description: 'Tiempo para llegar al pico (ej: 300s)'
+        required: false
+        default: '300s'
+
+jobs:
+  prueba-carga:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Ejecutar prueba de carga
+        env:
+          K6_USUARIOS: ${{ github.event.inputs.usuarios }}
+          K6_DURACION_SUBIDA: ${{ github.event.inputs.duracion_subida }}
+        run: |
+          k6 run scripts/prueba_carga.js
+
+      - name: Subir el resumen como resultado descargable
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-prueba-carga
+          path: summary.json
+          if-no-files-found: ignore
