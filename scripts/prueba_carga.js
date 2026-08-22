@@ -6,7 +6,9 @@
 // conexión doméstica del resultado.
 //
 // Sigue simulando las pantallas reales: Jugadores, Clasificación,
-// y las 2 consultas públicas de Home. NO toca login, NO escribe
+// y las 2 consultas públicas de Home — ahora ya optimizadas con
+// funciones RPC (obtener_posicion_general, obtener_media_puntos)
+// en vez de traer la tabla entera. NO toca login, NO escribe
 // nada, NO consulta resultados de partido.
 //
 // El número de usuarios y la duración de subida se pueden ajustar
@@ -24,6 +26,11 @@ const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const headers = {
   apikey: ANON_KEY,
   Authorization: `Bearer ${ANON_KEY}`,
+};
+
+const headersRpc = {
+  ...headers,
+  'Content-Type': 'application/json',
 };
 
 // Lee los parámetros de las variables de entorno (puestas por el
@@ -69,18 +76,25 @@ export default function () {
 
   sleep(Math.random() * 1.5 + 0.5);
 
-  // 3. Home — réplica fiel de las 2 consultas públicas de loadHome()
-  let r3a = http.get(
-    `${SUPABASE_URL}/rest/v1/clasificacion_general_auto?select=*`,
-    { headers }
+  // 3. Home — réplica fiel de las 2 consultas públicas de loadHome(),
+  // ya optimizadas: llaman a las funciones RPC en vez de traer la
+  // tabla entera. Se usa un user_id inventado a propósito: la función
+  // igualmente tiene que recorrer y ordenar toda la tabla con
+  // ROW_NUMBER() para buscarlo, así que mide el mismo coste real de
+  // cómputo del servidor, aunque no encuentre coincidencia.
+  let r3a = http.post(
+    `${SUPABASE_URL}/rest/v1/rpc/obtener_posicion_general`,
+    JSON.stringify({ p_user_id: '00000000-0000-0000-0000-000000000000' }),
+    { headers: headersRpc }
   );
-  check(r3a, { 'home clasificacion_general_auto: 200': (r) => r.status === 200 });
+  check(r3a, { 'home obtener_posicion_general: 200': (r) => r.status === 200 });
 
-  let r3b = http.get(
-    `${SUPABASE_URL}/rest/v1/clasificacion_automatica?select=puntos&jornada=eq.1`,
-    { headers }
+  let r3b = http.post(
+    `${SUPABASE_URL}/rest/v1/rpc/obtener_media_puntos`,
+    JSON.stringify({ p_jornada: 1 }),
+    { headers: headersRpc }
   );
-  check(r3b, { 'home clasificacion_automatica: 200': (r) => r.status === 200 });
+  check(r3b, { 'home obtener_media_puntos: 200': (r) => r.status === 200 });
 
   sleep(Math.random() * 2 + 1);
 }

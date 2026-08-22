@@ -25,18 +25,17 @@ async function loadHome() {
     document.getElementById('stat-jornada-label').textContent = JORNADA_VISIBLE;
     document.getElementById('stat-media-label').textContent = 'jornada ' + JORNADA_VISIBLE;
     const [{ data: clGeneral }, { data: clSemanal }, { data: mediaData }] = await Promise.all([
-      db.from('clasificacion_general_auto').select('*'),
+      db.rpc('obtener_posicion_general', { p_user_id: currentUser.id }),
       db.from('clasificacion_automatica').select('puntos').eq('jornada', JORNADA_VISIBLE).eq('user_id', currentUser.id).single(),
-      db.from('clasificacion_automatica').select('puntos').eq('jornada', JORNADA_VISIBLE)
+      db.rpc('obtener_media_puntos', { p_jornada: JORNADA_VISIBLE })
     ]);
     if (clGeneral?.length) {
-      const miPos = clGeneral.findIndex(r => r.user_id === currentUser.id);
       const posEl = document.getElementById('stat-posicion');
-      if (posEl) posEl.textContent = miPos >= 0 ? (miPos + 1) + 'º' : '—';
+      if (posEl) posEl.textContent = clGeneral[0]?.posicion ? clGeneral[0].posicion + 'º' : '—';
     }
     if (clSemanal?.puntos !== undefined) {
       document.getElementById('stat-puntos').textContent = clSemanal.puntos;
-      const media = mediaData?.length ? Math.round(mediaData.reduce((acc, r) => acc + r.puntos, 0) / mediaData.length) : 0;
+      const media = mediaData || 0;
       document.getElementById('stat-media').textContent = media;
       if (JORNADA_VISIBLE > 0) {
         const { data: ganadorData } = await db.from('clasificacion_automatica')
