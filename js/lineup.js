@@ -579,7 +579,9 @@ function openModal(slotId, posicion, cls) {
   const textoCols = { gk:'#0d1117', def:'white', mid:'#0d1117', fwd:'white', ent:'white' };
   const getDisp = () => (PRESUPUESTO - Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0)).toFixed(1);
   let soloDisp = false;
-  list.innerHTML = '<div style="padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">PRESUPUESTO</span><span id="modal-presupuesto" style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--neon)">' + getDisp() + 'M</span></div><input id="modal-search" type="text" placeholder="Buscar jugador..." style="width:100%;padding:7px 10px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);margin-bottom:6px"><button id="btn-vaciar-posicion" style="width:100%;padding:7px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--font-display);font-weight:600;font-size:12px;cursor:pointer;">🗑 Vaciar posición</button><button id="btn-filtro-presupuesto" style="width:100%;padding:7px;background:var(--neon);color:#0d1117;border:none;border-radius:6px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;margin-top:5px;">Dentro del presupuesto</button></div><div id="modal-players"></div>';
+  const clubesUnicos = [...new Set(jugadoresPorPos[posicion].map(j => j.club))].sort();
+  const opcionesClub = '<option value="">Todos los clubes</option>' + clubesUnicos.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+  list.innerHTML = '<div style="padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">PRESUPUESTO</span><span id="modal-presupuesto" style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--neon)">' + getDisp() + 'M</span></div><div style="display:flex;gap:6px;margin-bottom:6px"><input id="modal-search" type="text" placeholder="Buscar jugador..." style="flex:1;padding:7px 10px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"><select id="modal-filtro-club" style="width:110px;padding:7px 6px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">' + opcionesClub + '</select></div><button id="btn-vaciar-posicion" style="width:100%;padding:7px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--font-display);font-weight:600;font-size:12px;cursor:pointer;">🗑 Vaciar posición</button><button id="btn-filtro-presupuesto" style="width:100%;padding:7px;background:var(--neon);color:#0d1117;border:none;border-radius:6px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;margin-top:5px;">Dentro del presupuesto</button></div><div id="modal-players"></div>';
   document.getElementById('btn-vaciar-posicion').addEventListener('click', () => { delete seleccionados[slotId]; capitan = null; closeModal(); renderPitch(); actualizarSelectCapitan(); actualizarPresupuesto(); });
   document.getElementById('btn-filtro-presupuesto').addEventListener('click', () => {
     soloDisp = !soloDisp;
@@ -592,7 +594,8 @@ function openModal(slotId, posicion, cls) {
     const disponible = parseFloat(getDisp());
     const mp = document.getElementById('modal-presupuesto');
     if (mp) { mp.textContent = disponible.toFixed(1) + 'M'; mp.style.color = disponible < 0 ? 'var(--red)' : disponible < 10 ? 'var(--amber)' : 'var(--neon)'; }
-    const filtrados = jugadoresPorPos[posicion].filter(j => (j.nombre.toLowerCase().includes(filtro.toLowerCase()) || j.club.toLowerCase().includes(filtro.toLowerCase())) && (!soloDisp || (j.valor || 0) <= disponible));
+    const clubSeleccionado = document.getElementById('modal-filtro-club')?.value || '';
+    const filtrados = jugadoresPorPos[posicion].filter(j => (j.nombre.toLowerCase().includes(filtro.toLowerCase()) || j.club.toLowerCase().includes(filtro.toLowerCase())) && (!clubSeleccionado || j.club === clubSeleccionado) && (!soloDisp || (j.valor || 0) <= disponible));
     document.getElementById('modal-players').innerHTML = filtrados.map(j => {
       const usado = usados.has(j.id);
       const jugadorActual = seleccionados[slotId];
@@ -622,6 +625,7 @@ function openModal(slotId, posicion, cls) {
   };
   renderLista();
   document.getElementById('modal-search').addEventListener('input', e => renderLista(e.target.value));
+  document.getElementById('modal-filtro-club').addEventListener('change', () => renderLista(document.getElementById('modal-search').value));
   document.getElementById('modal-list').scrollTop = 0;
   document.getElementById('modal-overlay').classList.add('open');
 }
