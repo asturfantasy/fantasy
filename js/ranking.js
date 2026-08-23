@@ -29,6 +29,48 @@ function renderConVerMas(tbodyEl, filasArray, renderRowFn, colspan) {
   render();
 }
 
+/**
+ * Como renderConVerMas, pero pide cada tanda de filas AL SERVIDOR
+ * en el momento (con .range()), en vez de tener ya toda la tabla
+ * descargada de antemano. fetchPageFn(offset, pageSize) debe
+ * devolver un array con esa página de resultados.
+ */
+async function renderConVerMasPaginado(tbodyEl, fetchPageFn, renderRowFn, colspan, filaPropiaFn, pageSize = 25) {
+  let filas = [];
+  let offset = 0;
+  let masDisponibles = true;
+
+  async function cargarPagina() {
+    const nuevas = await fetchPageFn(offset, pageSize);
+    filas = filas.concat(nuevas);
+    offset += nuevas.length;
+    masDisponibles = nuevas.length === pageSize;
+    await render();
+  }
+
+  async function render() {
+    let html = filas.map((r, i) => renderRowFn(r, i)).join('');
+    // Se recalcula CADA VEZ que se repinta (también tras "Ver más"):
+    // si mi posición ya entra dentro de lo cargado, no se repite.
+    if (filaPropiaFn) {
+      const extra = await filaPropiaFn(filas.length);
+      if (extra) html += extra;
+    }
+    if (masDisponibles) {
+      html += '<tr><td colspan="' + colspan + '" style="text-align:center;padding:14px">' +
+        '<button class="btn-ver-mas" style="background:var(--surface);color:var(--neon);border:1px solid var(--border-neon);border-radius:20px;padding:8px 20px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:12px">Ver más</button></td></tr>';
+    }
+    tbodyEl.innerHTML = html;
+    const btn = tbodyEl.querySelector('.btn-ver-mas');
+    if (btn) btn.addEventListener('click', async () => {
+      btn.disabled = true; btn.textContent = 'Cargando...';
+      await cargarPagina();
+    });
+  }
+
+  await cargarPagina();
+}
+
 function toggleRankingCard(id) {
   const detail = document.getElementById('detail-' + id);
   const chevron = document.getElementById('chevron-' + id);
@@ -65,32 +107,22 @@ async function loadRanking() {
     if (lbl) lbl.textContent = clubInfo.nombre;
   }
 
-  // General — métricas rápidas
-  const { data: general } = await db.from('clasificacion_general_auto').select('*');
-  if (general?.length) {
-    const miPosG = general.findIndex(r => r.user_id === currentUser?.id);
+    // General — métrica rápida (1 sola fila, sin traer la tabla entera)
+    const { data: posGeneral } = await db.rpc('obtener_posicion_general', { p_user_id: currentUser.id });
     const mpG = document.getElementById('metric-pos-general');
-    if (mpG) mpG.textContent = miPosG >= 0 ? (miPosG + 1) + 'º' : '—';
-  }
+    if (mpG) mpG.textContent = posGeneral?.[0]?.posicion ? posGeneral[0].posicion + 'º' : '—';
 
-  // Semanal — métrica rápida
-  const { data: semanalMetrica } = await db.from('clasificacion_automatica').select('puntos, user_id').eq('jornada', jornadaRanking).order('puntos', { ascending: false });
-  if (semanalMetrica?.length) {
-    const miPosS = semanalMetrica.findIndex(r => r.user_id === currentUser?.id);
+    // Semanal — métrica rápida (1 sola fila)
+    const { data: posJornada } = await db.rpc('obtener_posicion_jornada', { p_user_id: currentUser.id, p_jornada: jornadaRanking });
     const mpS = document.getElementById('metric-pos-jornada');
-    if (mpS) mpS.textContent = miPosS >= 0 ? (miPosS + 1) + 'º' : '—';
-  }
+    if (mpS) mpS.textContent = posJornada?.[0]?.posicion ? posJornada[0].posicion + 'º' : '—';
 
-  // Peña — métrica rápida
-  if (equipoFav) {
-    const { data: penaAll } = await db.from('clasificacion_general_auto').select('*');
-    const { data: equiposFav } = await db.from('equipos').select('user_id').eq('equipo_favorito', equipoFav);
-    const userIdsFav = new Set((equiposFav || []).map(e => e.user_id));
-    const penaFiltrada = (penaAll || []).filter(r => userIdsFav.has(r.user_id));
-    const miPosP = penaFiltrada.findIndex(r => r.user_id === currentUser?.id);
-    const mpP = document.getElementById('metric-pos-pena');
-    if (mpP) mpP.textContent = miPosP >= 0 ? (miPosP + 1) + 'º' : '—';
-  }
+    // Peña — métrica rápida (1 sola fila)
+    if (equipoFav) {
+      const { data: posPena } = await db.rpc('obtener_posicion_pena', { p_user_id: currentUser.id });
+      const mpP = document.getElementById('metric-pos-pena');
+      if (mpP) mpP.textContent = posPena?.[0]?.posicion ? posPena[0].posicion + 'º' : '—';
+    }
   // Al final de loadRanking():
   cargarMVPPreview(jornadaRanking);
 }
@@ -98,34 +130,64 @@ async function loadRanking() {
 async function loadRankingClasificacion() {
   const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
 
-  // General
-  const { data: general } = await db.from('clasificacion_general_auto').select('*');
-  const tbodyG = document.getElementById('ranking-general-body');
-  if (!general?.length) {
-      tbodyG.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos</td></tr>';
-    } else {
-      renderConVerMas(tbodyG, general, (r, i) => {
+      // General — top 25 real desde el servidor, paginado de verdad
+      const tbodyG = document.getElementById('ranking-general-body');
+      const fetchPageGeneral = async (offset, pageSize) => {
+        const { data } = await db.from('clasificacion_general_auto')
+          .select('*')
+          .order('puntos_total', { ascending: false })
+          .range(offset, offset + pageSize - 1);
+        return data || [];
+      };
+      const renderFilaGeneral = (r, i) => {
         const esYo = r.user_id === currentUser?.id;
         return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
-      }, 3);
-    }
+      };
 
-  // Semanal
-  const cargarSemanal = async (jornadaSel) => {
-    const { data: semanal } = await db.from('clasificacion_automatica').select('*').eq('jornada', jornadaSel).order('puntos', { ascending: false });
-    const tbody = document.getElementById('ranking-body');
-    const cerrada = jornadaSel < JORNADA_ACTIVA;
-    if (!semanal?.length) {
-          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ' + jornadaSel + '</td></tr>';
-        } else {
-          renderConVerMas(tbody, semanal, (r, i) => {
-            const esYo = r.user_id === currentUser?.id;
-            const clickable = cerrada ? 'cursor:pointer' : '';
-            const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo + '\',' + jornadaSel + ')"' : '';
-            return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
-          }, 3);
-        }
-  };
+      const { data: miPosGeneralData } = await db.rpc('obtener_posicion_general', { p_user_id: currentUser.id });
+      const miPosGeneral = miPosGeneralData?.[0];
+      const filaPropiaGeneral = async (totalCargadas) => {
+        if (!miPosGeneral || miPosGeneral.posicion <= totalCargadas) return null;
+        return renderFilaGeneral({ user_id: currentUser.id, nombre_equipo: miPosGeneral.nombre_equipo, puntos_total: miPosGeneral.puntos_total }, miPosGeneral.posicion - 1);
+      };
+
+      await renderConVerMasPaginado(tbodyG, fetchPageGeneral, renderFilaGeneral, 3, filaPropiaGeneral);
+
+    // Semanal — top 25 real desde el servidor, paginado de verdad
+    const cargarSemanal = async (jornadaSel) => {
+      const tbody = document.getElementById('ranking-body');
+      const cerrada = jornadaSel < JORNADA_ACTIVA;
+
+      const fetchPageSemanal = async (offset, pageSize) => {
+        const { data } = await db.from('clasificacion_automatica')
+          .select('*')
+          .eq('jornada', jornadaSel)
+          .order('puntos', { ascending: false })
+          .range(offset, offset + pageSize - 1);
+        return data || [];
+      };
+      const renderFilaSemanal = (r, i) => {
+        const esYo = r.user_id === currentUser?.id;
+        const clickable = cerrada ? 'cursor:pointer' : '';
+        const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo + '\',' + jornadaSel + ')"' : '';
+      return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\',null,null,null,' + jornadaSel + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+      };
+
+      const { data: miPosSemanalData } = await db.rpc('obtener_posicion_jornada', { p_user_id: currentUser.id, p_jornada: jornadaSel });
+      const miPosSemanal = miPosSemanalData?.[0];
+      const filaPropiaSemanal = async (totalCargadas) => {
+        if (!miPosSemanal || miPosSemanal.posicion <= totalCargadas) return null;
+        return renderFilaSemanal({ user_id: currentUser.id, nombre_equipo: miPosSemanal.nombre_equipo, puntos: miPosSemanal.puntos }, miPosSemanal.posicion - 1);
+      };
+
+      // Comprobar si hay datos antes de lanzar la paginación
+      const primeraPagina = await fetchPageSemanal(0, 1);
+      if (!primeraPagina.length && !miPosSemanal) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Sin datos para la jornada ' + jornadaSel + '</td></tr>';
+      } else {
+        await renderConVerMasPaginado(tbody, fetchPageSemanal, renderFilaSemanal, 3, filaPropiaSemanal);
+      }
+    };
 
   const selectSemanal = document.getElementById('semanal-jornada-select');
   if (selectSemanal) {
@@ -146,23 +208,45 @@ async function loadRankingClasificacion() {
     if (esc) { esc.src = clubInfo.escudo; esc.style.display = 'block'; }
     if (nom) nom.textContent = 'Liga ' + clubInfo.nombre;
   }
-  if (equipoFav) {
-    const { data: penaAll } = await db.from('clasificacion_general_auto').select('*');
-    const { data: equiposFav } = await db.from('equipos').select('user_id').eq('equipo_favorito', equipoFav);
-    const userIdsFav = new Set((equiposFav || []).map(e => e.user_id));
-    const penaFiltrada = (penaAll || []).filter(r => userIdsFav.has(r.user_id));
-    const tbodyP = document.getElementById('ranking-pena-body');
-        if (tbodyP) {
-          if (!penaFiltrada.length) {
-            tbodyP.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Solo tú en esta peña de momento</td></tr>';
-          } else {
-            renderConVerMas(tbodyP, penaFiltrada, (r, i) => {
-              const esYo = r.user_id === currentUser?.id;
-              return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
-            }, 3);
-          }
+    if (equipoFav) {
+      const tbodyP = document.getElementById('ranking-pena-body');
+      if (tbodyP) {
+        // La paginación real por rango no aplica bien a "peña" porque
+        // filtra por club DESPUÉS de traer de clasificacion_general_auto
+        // (no hay una columna de club ahí para filtrar en el propio
+        // .range()). Así que aquí sí traemos solo los user_id del club
+        // (ligero, sin puntos) y usamos esos para acotar el .in() por
+        // tandas — sigue sin traer NUNCA la tabla de puntos entera.
+        const { data: equiposFav } = await db.from('equipos').select('user_id').eq('equipo_favorito', equipoFav);
+        const userIdsFav = (equiposFav || []).map(e => e.user_id);
+
+        const fetchPagePena = async (offset, pageSize) => {
+          const { data } = await db.from('clasificacion_general_auto')
+            .select('*')
+            .in('user_id', userIdsFav)
+            .order('puntos_total', { ascending: false })
+            .range(offset, offset + pageSize - 1);
+          return data || [];
+        };
+        const renderFilaPena = (r, i) => {
+          const esYo = r.user_id === currentUser?.id;
+          return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+        };
+
+        const { data: miPosPenaData } = await db.rpc('obtener_posicion_pena', { p_user_id: currentUser.id });
+        const miPosPena = miPosPenaData?.[0];
+        const filaPropiaPena = async (totalCargadas) => {
+          if (!miPosPena || miPosPena.posicion <= totalCargadas) return null;
+          return renderFilaPena({ user_id: currentUser.id, nombre_equipo: miPosPena.nombre_equipo, puntos_total: miPosPena.puntos_total }, miPosPena.posicion - 1);
+        };
+
+        if (!userIdsFav.length) {
+          tbodyP.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:28px">Solo tú en esta peña de momento</td></tr>';
+        } else {
+          await renderConVerMasPaginado(tbodyP, fetchPagePena, renderFilaPena, 3, filaPropiaPena);
         }
-  }
+      }
+    }
 }
 
 async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
@@ -512,13 +596,13 @@ async function exportarMVP() {
   });
 }
 
-async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club, ligaId, ligaNombre) {
+async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club, ligaId, ligaNombre, jornadaCompartir) {
   let tabla = [];
   let titulo = '';
   let subtitulo = '';
 
-  if (tipo === 'jornada') {
-    const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+    if (tipo === 'jornada') {
+      const jornadaRanking = jornadaCompartir || (jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE);
     const { data } = await db.from('clasificacion_automatica').select('nombre_equipo, puntos, user_id').eq('jornada', jornadaRanking).order('puntos', { ascending: false });
     tabla = (data || []).map((r, i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos, esYo: r.user_id === currentUser?.id }));
     titulo = 'Jornada ' + jornadaRanking;
@@ -702,7 +786,7 @@ async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club
 }
 
 async function loadRankingJugadores() {
-  const { data: jugadores } = await db.from('ranking_jugadores').select('*');
+  const { data: jugadores } = await db.from('ranking_jugadores').select('nombre, club, posicion, valor, puntos_total, escudo_url');
   const clubes = [...new Set((jugadores || []).map(j => j.club))].sort();
   const posiciones = ['POR','DEF','MED','DEL','ENT'];
   document.getElementById('rtab-jugadores').innerHTML = `
