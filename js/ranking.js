@@ -170,7 +170,7 @@ async function loadRankingClasificacion() {
         const esYo = r.user_id === currentUser?.id;
         const clickable = cerrada ? 'cursor:pointer' : '';
         const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo + '\',' + jornadaSel + ')"' : '';
-        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+      return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\',null,null,null,' + jornadaSel + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
       };
 
       const { data: miPosSemanalData } = await db.rpc('obtener_posicion_jornada', { p_user_id: currentUser.id, p_jornada: jornadaSel });
@@ -596,13 +596,13 @@ async function exportarMVP() {
   });
 }
 
-async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club, ligaId, ligaNombre) {
+async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club, ligaId, ligaNombre, jornadaCompartir) {
   let tabla = [];
   let titulo = '';
   let subtitulo = '';
 
-  if (tipo === 'jornada') {
-    const jornadaRanking = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+    if (tipo === 'jornada') {
+      const jornadaRanking = jornadaCompartir || (jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE);
     const { data } = await db.from('clasificacion_automatica').select('nombre_equipo, puntos, user_id').eq('jornada', jornadaRanking).order('puntos', { ascending: false });
     tabla = (data || []).map((r, i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos, esYo: r.user_id === currentUser?.id }));
     titulo = 'Jornada ' + jornadaRanking;
@@ -786,7 +786,7 @@ async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club
 }
 
 async function loadRankingJugadores() {
-  const { data: jugadores } = await db.from('ranking_jugadores').select('*');
+  const { data: jugadores } = await db.from('ranking_jugadores').select('nombre, club, posicion, valor, puntos_total, escudo_url');
   const clubes = [...new Set((jugadores || []).map(j => j.club))].sort();
   const posiciones = ['POR','DEF','MED','DEL','ENT'];
   document.getElementById('rtab-jugadores').innerHTML = `
