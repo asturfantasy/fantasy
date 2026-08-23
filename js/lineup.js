@@ -67,30 +67,36 @@ async function loadLineup() {
   ['btn-save-lineup','btn-clear-lineup','btn-export-png'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
   const cw = document.getElementById('capitan-wrapper'); if (cw) cw.style.display = '';
   const bc = document.getElementById('btn-consultar-equipo'); if (bc) bc.style.display = 'none';
-  seleccionados = {}; capitan = null;
-  const sel = document.getElementById('capitan-select');
-  if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
-  const { data, error } = await db.from('jugadores').select('*').eq('jornada', JORNADA_ACTIVA).order('puntos', { ascending: false });
-  if (error) { showToast('Error cargando jugadores', true); return; }
-  const { data: rankingData } = await db.from('ranking_jugadores').select('nombre, club, puntos_total');
-  const puntosMap = {};
-  (rankingData || []).forEach(r => { puntosMap[r.nombre + '-' + r.club] = r.puntos_total; });
-  (data || []).forEach(j => { j.puntos_total = puntosMap[j.nombre + '-' + j.club] ?? j.puntos; });
+    seleccionados = {}; capitan = null;
+    const sel = document.getElementById('capitan-select');
+    if (sel) sel.innerHTML = '<option value="">— Elige tu capitán —</option>';
 
-  // Calcular cambio de valor respecto a jornada anterior
-  const { data: valoresAnt } = await db.from('jugadores')
-    .select('nombre, club, valor')
-    .eq('jornada', JORNADA_ACTIVA - 1);
-  const valorAntMap = {};
-  (valoresAnt || []).forEach(j => { valorAntMap[j.nombre + '|' + j.club] = parseFloat(j.valor) || 0; });
-  (data || []).forEach(j => {
-    const valorAnt = valorAntMap[j.nombre + '|' + j.club];
-    j.cambio_valor = valorAnt !== undefined ? (parseFloat(j.valor) || 0) - valorAnt : 0;
-  });
+    // Cache en memoria: si ya cargamos los jugadores de ESTA jornada
+    // en esta misma sesión, no los volvemos a pedir a Supabase.
+    if (window._jugadoresCacheJornada !== JORNADA_ACTIVA) {
+      const { data, error } = await db.from('jugadores').select('*').eq('jornada', JORNADA_ACTIVA).order('puntos', { ascending: false });
+      if (error) { showToast('Error cargando jugadores', true); return; }
+      const { data: rankingData } = await db.from('ranking_jugadores').select('nombre, club, puntos_total');
+      const puntosMap = {};
+      (rankingData || []).forEach(r => { puntosMap[r.nombre + '-' + r.club] = r.puntos_total; });
+      (data || []).forEach(j => { j.puntos_total = puntosMap[j.nombre + '-' + j.club] ?? j.puntos; });
 
-  jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
-  (data || []).forEach(j => { if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j); });
-  Object.keys(jugadoresPorPos).forEach(pos => { jugadoresPorPos[pos].sort((a, b) => (b.puntos_total ?? 0) - (a.puntos_total ?? 0)); });
+      const { data: valoresAnt } = await db.from('jugadores')
+        .select('nombre, club, valor')
+        .eq('jornada', JORNADA_ACTIVA - 1);
+      const valorAntMap = {};
+      (valoresAnt || []).forEach(j => { valorAntMap[j.nombre + '|' + j.club] = parseFloat(j.valor) || 0; });
+      (data || []).forEach(j => {
+        const valorAnt = valorAntMap[j.nombre + '|' + j.club];
+        j.cambio_valor = valorAnt !== undefined ? (parseFloat(j.valor) || 0) - valorAnt : 0;
+      });
+
+      jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
+      (data || []).forEach(j => { if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j); });
+      Object.keys(jugadoresPorPos).forEach(pos => { jugadoresPorPos[pos].sort((a, b) => (b.puntos_total ?? 0) - (a.puntos_total ?? 0)); });
+
+      window._jugadoresCacheJornada = JORNADA_ACTIVA;
+    }
 
   if (currentUser) {
     const { data: eg } = await db.from('mi_equipo').select('jugador_id, formacion, capitan').eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
@@ -100,7 +106,7 @@ async function loadLineup() {
       document.getElementById('formation-select').value = eg[0].formacion;
       const contadores = { POR:0, DEF:0, MED:0, DEL:0, ENT:0 };
       const idsG = eg.map(e => e.jugador_id);
-      const jg = data.filter(j => idsG.includes(j.id));
+      const jg = Object.values(jugadoresPorPos).flat().filter(j => idsG.includes(j.id));
       const ordenPos = ['POR','DEF','MED','DEL','ENT'];
       jg.sort((a,b) => ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion))
         .forEach(j => { const slotId = j.posicion + '-' + contadores[j.posicion]; seleccionados[slotId] = j; contadores[j.posicion]++; });
@@ -127,7 +133,7 @@ async function loadLineup() {
           .in('id', idsAnt);
 
         const jugadoresAnt = (jugadoresJ_ant || []).map(jant => {
-          const enActual = data.find(j => j.nombre === jant.nombre && j.club === jant.club);
+          const enActual = Object.values(jugadoresPorPos).flat().find(j => j.nombre === jant.nombre && j.club === jant.club);
           return enActual || null;
         }).filter(Boolean);
 
@@ -149,7 +155,7 @@ async function loadLineup() {
           if (capAntReg) {
             const jugCapAnt = (jugadoresJ_ant || []).find(j => j.id === capAntReg.jugador_id);
             if (jugCapAnt) {
-              const capEnActual = data.find(j => j.nombre === jugCapAnt.nombre && j.club === jugCapAnt.club);
+              const capEnActual = Object.values(jugadoresPorPos).flat().find(j => j.nombre === jugCapAnt.nombre && j.club === jugCapAnt.club);
               capId = capEnActual?.id || null;
             }
           }
@@ -579,15 +585,30 @@ function openModal(slotId, posicion, cls) {
   const textoCols = { gk:'#0d1117', def:'white', mid:'#0d1117', fwd:'white', ent:'white' };
   const getDisp = () => (PRESUPUESTO - Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0)).toFixed(1);
   let soloDisp = false;
+  let orden = 'puntos';
   const clubesUnicos = [...new Set(jugadoresPorPos[posicion].map(j => j.club))].sort();
-  const opcionesClub = '<option value="">Todos los clubes</option>' + clubesUnicos.map(c => '<option value="' + c + '">' + c + '</option>').join('');
-  list.innerHTML = '<div style="padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">PRESUPUESTO</span><span id="modal-presupuesto" style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--neon)">' + getDisp() + 'M</span></div><div style="display:flex;gap:6px;margin-bottom:6px"><input id="modal-search" type="text" placeholder="Buscar jugador..." style="flex:1;padding:7px 10px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"><select id="modal-filtro-club" style="width:110px;padding:7px 6px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">' + opcionesClub + '</select></div><button id="btn-vaciar-posicion" style="width:100%;padding:7px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--font-display);font-weight:600;font-size:12px;cursor:pointer;">🗑 Vaciar posición</button><button id="btn-filtro-presupuesto" style="width:100%;padding:7px;background:var(--neon);color:#0d1117;border:none;border-radius:6px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;margin-top:5px;">Dentro del presupuesto</button></div><div id="modal-players"></div>';
+  const opcionesClub = '<option value="">Club</option>' + clubesUnicos.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+  list.innerHTML = '<div style="padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">PRESUPUESTO</span><span id="modal-presupuesto" style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--neon)">' + getDisp() + 'M</span></div><div style="display:flex;gap:5px;margin-bottom:6px"><input id="modal-search" type="text" placeholder="Buscar..." style="flex:1;min-width:0;padding:7px 8px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"><button id="btn-orden-puntos" style="flex-shrink:0;padding:7px 8px;background:var(--neon);color:#0d1117;border:none;border-radius:6px;font-family:var(--font-mono);font-weight:700;font-size:10px;cursor:pointer;white-space:nowrap;">Puntos</button><button id="btn-orden-valor" style="flex-shrink:0;padding:7px 8px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--font-mono);font-weight:700;font-size:10px;cursor:pointer;white-space:nowrap;">Valor</button><select id="modal-filtro-club" style="flex-shrink:0;width:60px;padding:7px 2px;font-family:var(--font-mono);font-size:10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">' + opcionesClub + '</select></div><button id="btn-vaciar-posicion" style="width:100%;padding:7px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--font-display);font-weight:600;font-size:12px;cursor:pointer;margin-bottom:5px;">🗑 Vaciar posición</button><button id="btn-filtro-presupuesto" style="width:100%;padding:7px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--font-display);font-weight:600;font-size:12px;cursor:pointer;">Dentro del presupuesto</button></div><div id="modal-players"></div>';
   document.getElementById('btn-vaciar-posicion').addEventListener('click', () => { delete seleccionados[slotId]; capitan = null; closeModal(); renderPitch(); actualizarSelectCapitan(); actualizarPresupuesto(); });
+  const marcarBotonOrden = () => {
+    const bp = document.getElementById('btn-orden-puntos');
+    const bv = document.getElementById('btn-orden-valor');
+    bp.style.background = orden === 'puntos' ? 'var(--neon)' : 'var(--surface)';
+    bp.style.color = orden === 'puntos' ? '#0d1117' : 'var(--text)';
+    bp.style.border = orden === 'puntos' ? 'none' : '1px solid var(--border)';
+    bv.style.background = orden === 'valor' ? 'var(--neon)' : 'var(--surface)';
+    bv.style.color = orden === 'valor' ? '#0d1117' : 'var(--text)';
+    bv.style.border = orden === 'valor' ? 'none' : '1px solid var(--border)';
+  };
+  document.getElementById('btn-orden-puntos').addEventListener('click', () => { orden = 'puntos'; marcarBotonOrden(); renderLista(document.getElementById('modal-search').value); });
+  document.getElementById('btn-orden-valor').addEventListener('click', () => { orden = 'valor'; marcarBotonOrden(); renderLista(document.getElementById('modal-search').value); });
   document.getElementById('btn-filtro-presupuesto').addEventListener('click', () => {
     soloDisp = !soloDisp;
     const btn = document.getElementById('btn-filtro-presupuesto');
     btn.textContent = soloDisp ? '👁 Mostrar todos' : 'Dentro del presupuesto';
-    btn.style.background = soloDisp ? 'var(--amber)' : 'var(--neon)';
+    btn.style.background = soloDisp ? 'var(--amber)' : 'var(--surface)';
+    btn.style.color = soloDisp ? '#0d1117' : 'var(--text)';
+    btn.style.border = soloDisp ? 'none' : '1px solid var(--border)';
     renderLista(document.getElementById('modal-search').value);
   });
   const renderLista = (filtro = '') => {
@@ -595,7 +616,9 @@ function openModal(slotId, posicion, cls) {
     const mp = document.getElementById('modal-presupuesto');
     if (mp) { mp.textContent = disponible.toFixed(1) + 'M'; mp.style.color = disponible < 0 ? 'var(--red)' : disponible < 10 ? 'var(--amber)' : 'var(--neon)'; }
     const clubSeleccionado = document.getElementById('modal-filtro-club')?.value || '';
-    const filtrados = jugadoresPorPos[posicion].filter(j => (j.nombre.toLowerCase().includes(filtro.toLowerCase()) || j.club.toLowerCase().includes(filtro.toLowerCase())) && (!clubSeleccionado || j.club === clubSeleccionado) && (!soloDisp || (j.valor || 0) <= disponible));
+    const filtrados = jugadoresPorPos[posicion]
+      .filter(j => (j.nombre.toLowerCase().includes(filtro.toLowerCase()) || j.club.toLowerCase().includes(filtro.toLowerCase())) && (!clubSeleccionado || j.club === clubSeleccionado) && (!soloDisp || (j.valor || 0) <= disponible))
+      .sort((a, b) => orden === 'valor' ? (b.valor || 0) - (a.valor || 0) : (b.puntos_total ?? 0) - (a.puntos_total ?? 0));
     document.getElementById('modal-players').innerHTML = filtrados.map(j => {
       const usado = usados.has(j.id);
       const jugadorActual = seleccionados[slotId];
