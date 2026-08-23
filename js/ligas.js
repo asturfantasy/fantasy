@@ -83,7 +83,7 @@ async function cargarClasificacionLiga(ligaId) {
 
   if (!total) { container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:12px">Sin miembros</div>'; return; }
 
-  const { data: general } = await db.from('clasificacion_general_auto').select('*').in('user_id', userIds);
+  const { data: general } = await fetchAllRows(db.from('clasificacion_general_auto').select('*').in('user_id', userIds));
   const sorted = (general || []).sort((a, b) => b.puntos_total - a.puntos_total);
   const miPos = sorted.findIndex(r => r.user_id === currentUser.id) + 1;
 
