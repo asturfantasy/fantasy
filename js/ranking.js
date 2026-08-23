@@ -29,6 +29,21 @@ function renderConVerMas(tbodyEl, filasArray, renderRowFn, colspan) {
   render();
 }
 
+async function fetchAllRows(query) {
+  let resultado = [];
+  let desde = 0;
+  const TAMANO_PAGINA = 1000;
+  while (true) {
+    const { data, error } = await query.range(desde, desde + TAMANO_PAGINA - 1);
+    if (error) return { data: null, error };
+    if (!data?.length) break;
+    resultado = resultado.concat(data);
+    if (data.length < TAMANO_PAGINA) break;
+    desde += TAMANO_PAGINA;
+  }
+  return { data: resultado, error: null };
+}
+
 /**
  * Como renderConVerMas, pero pide cada tanda de filas AL SERVIDOR
  * en el momento (con .range()), en vez de tener ya toda la tabla
@@ -619,7 +634,7 @@ async function compartirClasificacion(nombreEquipo, posicion, puntos, tipo, club
   } else if (tipo === 'liga') {
     const { data: miembros } = await db.from('liga_miembros').select('user_id').eq('liga_id', ligaId);
     const userIds = (miembros || []).map(m => m.user_id);
-    const { data } = await db.from('clasificacion_general_auto').select('*').in('user_id', userIds);
+    const { data } = await fetchAllRows(db.from('clasificacion_general_auto').select('*').in('user_id', userIds));
     tabla = (data || []).sort((a,b) => b.puntos_total - a.puntos_total).map((r,i) => ({ pos: i+1, nombre: r.nombre_equipo, pts: r.puntos_total, esYo: r.user_id === currentUser?.id }));
     titulo = ligaNombre;
     subtitulo = 'Liga privada';
@@ -1180,20 +1195,29 @@ async function loadPerfil() {
     else break;
   }
 
-  // Jugador más usado
-  const { data: misEquipos } = await db.from('mi_equipo').select('jugador_id, jornada').eq('user_id', currentUser.id);
-  const { data: jugadoresInfo } = await db.from('jugadores').select('id, nombre, club, jornada, puntos, total_jornada').order('jornada', { ascending: false });
-  const contadorJugadores = {};
-  (misEquipos || []).forEach(e => {
-    contadorJugadores[e.jugador_id] = (contadorJugadores[e.jugador_id] || 0) + 1;
-  });
-  const masUsadoId = Object.entries(contadorJugadores).sort((a,b) => b[1] - a[1])[0];
-  let masUsadoNombre = '—', masUsadoVeces = 0;
-  if (masUsadoId) {
-    masUsadoVeces = masUsadoId[1];
-    const jugMasUsado = (jugadoresInfo || []).find(j => j.id === masUsadoId[0]);
-    masUsadoNombre = jugMasUsado?.nombre || '—';
-  }
+    // Jugador más usado (agrupado por nombre+club, no por id —
+    // el mismo jugador tiene un id distinto en cada jornada)
+    const { data: misEquipos } = await db.from('mi_equipo').select('jugador_id, jornada').eq('user_id', currentUser.id);
+    const idsUsados = [...new Set((misEquipos || []).map(e => e.jugador_id))];
+    const { data: jugadoresInfo } = idsUsados.length
+      ? await db.from('jugadores').select('id, nombre, club').in('id', idsUsados)
+      : { data: [] };
+    const infoPorId = {};
+    (jugadoresInfo || []).forEach(j => { infoPorId[j.id] = j; });
+
+    const contadorJugadores = {};
+    (misEquipos || []).forEach(e => {
+      const info = infoPorId[e.jugador_id];
+      if (!info) return;
+      const clave = info.nombre + '|' + info.club;
+      contadorJugadores[clave] = (contadorJugadores[clave] || 0) + 1;
+    });
+    const masUsadoEntry = Object.entries(contadorJugadores).sort((a,b) => b[1] - a[1])[0];
+    let masUsadoNombre = '—', masUsadoVeces = 0;
+    if (masUsadoEntry) {
+      masUsadoNombre = masUsadoEntry[0].split('|')[0];
+      masUsadoVeces = masUsadoEntry[1];
+    }
 
   // Jugador agradecido (mejor media pts / veces alineado)
   const jugadorPuntos = {};
