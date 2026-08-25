@@ -1141,7 +1141,7 @@ async function loadPerfil() {
   if (!currentUser) return;
 
   // Datos del equipo
-  const { data: equipo } = await db.from('equipos').select('nombre_equipo, equipo_favorito').eq('user_id', currentUser.id).single();
+  const { data: equipo } = await db.from('equipos').select('nombre_equipo, equipo_favorito').eq('user_id', currentUser.id).maybeSingle();
   const nombreEquipo = equipo?.nombre_equipo || '—';
   const clubFav = equipo?.equipo_favorito || null;
   const clubInfo = clubFav ? CLUBES_INFO[clubFav] : null;

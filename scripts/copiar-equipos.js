@@ -71,13 +71,13 @@ async function main() {
     const presupuesto = 100;
     const ahora = new Date();
 
-    const { data: jornadaData } = await supabase
-      .from('jornadas')
-      .select('jornada, deadline')
-      .lt('deadline', ahora.toISOString())
-      .order('jornada', { ascending: false })
-      .limit(1)
-      .single();
+        const { data: jornadaData } = await supabase
+          .from('jornadas')
+          .select('jornada, deadline')
+          .lt('deadline', ahora.toISOString())
+          .order('jornada', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
     if (!jornadaData) { console.log('Sin jornadas con deadline pasado'); return; }
 
