@@ -1,17 +1,15 @@
 // ============================================================
-// prueba_carga.js — Prueba de rendimiento contra Supabase (solo lectura)
+// prueba_carga_visita_unica.js — Patrón "una visita, no un bucle"
 //
-// Pensado para correr en GitHub Actions (servidores de GitHub,
-// no tu ordenador), eliminando cualquier limitación de tu propia
-// conexión doméstica del resultado.
+// A diferencia de prueba_carga.js (donde cada usuario virtual
+// repite el ciclo completo una y otra vez durante varios minutos,
+// más agresivo que la realidad), este script simula el patrón
+// REAL: cada persona entra UNA VEZ, mira 2-3 pantallas, y se va.
 //
-// Simula el ciclo real de un usuario: Jugadores, Clasificación,
-// Home, y ADEMÁS acciones bajo demanda con probabilidad realista:
-//   - 90% consulta el desglose de puntos de un jugador
-//   - 70% abre la pantalla de Jornada (Mi Equipo) completa
-//
-// El "cotilleo" de rivales queda excluido hasta que pase el
-// deadline de J1 (fallaría por RLS, ensuciando el resultado).
+// Usa 'ramping-arrival-rate': en vez de controlar cuántos
+// "usuarios activos" hay a la vez, controla cuánta GENTE NUEVA
+// llega por segundo — mucho más fiel a cómo entra la gente de
+// verdad tras publicarse resultados o cerrar una jornada.
 //
 // NO toca login, NO escribe nada.
 // ============================================================
@@ -28,14 +26,12 @@ const headers = {
 };
 const headersRpc = { ...headers, 'Content-Type': 'application/json' };
 
-const USUARIOS = parseInt(__ENV.K6_USUARIOS) || 1500;
+const TASA_PICO = parseInt(__ENV.K6_TASA_PICO) || 5;
 const DURACION_SUBIDA = __ENV.K6_DURACION_SUBIDA || '300s';
 
-// Probabilidades de cada acción bajo demanda (0.9 = 90%)
 const PROB_DESGLOSE = parseFloat(__ENV.K6_PROB_DESGLOSE) || 0.9;
 const PROB_JORNADA = parseFloat(__ENV.K6_PROB_JORNADA) || 0.7;
 
-// IDs reales de jugadores de J1
 const JUGADOR_IDS = [
   'd836aa4b-9d33-4d02-a8b1-141e23015ac3',
   '9047670b-21f9-4e19-a8d9-47db5631d355',
@@ -49,7 +45,6 @@ const JUGADOR_IDS = [
   '79af3d72-7ab7-487f-a0c5-8527a9b11c63',
 ];
 
-// user_id reales con equipo regenerado y válido en J1
 const MI_USER_IDS = [
   '2bf6141c-03c2-44d5-91d2-b646533cc397',
   '8ef08f2a-c3db-4c7f-bdda-c38563f43ccc',
@@ -62,13 +57,16 @@ function elegirAlAzar(array) {
 
 export const options = {
   scenarios: {
-    entrada_gradual: {
-      executor: 'ramping-vus',
-      startVUs: 0,
+    entrada_una_vez: {
+      executor: 'ramping-arrival-rate',
+      startRate: 0,
+      timeUnit: '1s',
+      preAllocatedVUs: 300,
+      maxVUs: 800,
       stages: [
-        { duration: DURACION_SUBIDA, target: USUARIOS },
-        { duration: '60s', target: USUARIOS },
-        { duration: '20s', target: 0 },
+        { target: TASA_PICO, duration: DURACION_SUBIDA },
+        { target: TASA_PICO, duration: '60s' },
+        { target: 0, duration: '20s' },
       ],
     },
   },
@@ -108,7 +106,6 @@ export default function () {
   check(r3b, { 'home obtener_media_puntos: 200': (r) => r.status === 200 });
   sleep(Math.random() * 1 + 0.5);
 
-  // Desglose de puntos de un jugador (~90% de las veces)
   if (Math.random() < PROB_DESGLOSE) {
     const jugadorId = elegirAlAzar(JUGADOR_IDS);
     let r4 = http.get(
@@ -119,7 +116,6 @@ export default function () {
     sleep(Math.random() * 1 + 0.3);
   }
 
-  // Pantalla de Jornada / Mi Equipo completa (~70% de las veces)
   if (Math.random() < PROB_JORNADA) {
     const miId = elegirAlAzar(MI_USER_IDS);
 
@@ -143,8 +139,6 @@ export default function () {
 
     sleep(Math.random() * 1 + 0.3);
   }
-
-  sleep(Math.random() * 2 + 1);
 }
 
 export function handleSummary(data) {
