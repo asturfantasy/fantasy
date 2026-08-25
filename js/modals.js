@@ -34,7 +34,8 @@ async function registrarNotificaciones() {
     userVisibleOnly: true,
     applicationServerKey: 'BO8jjePXwsFyfbvbYDG4ybLum0RpYkieXNXadNgIvn55YXtV8AHi1rdtSet4uhn7s6goILwqX2L_q7W24iozc5k'
   });
-  await db.from('push_subscriptions').insert({ user_id: currentUser.id, subscription: JSON.stringify(subscription) });
+    const { error } = await db.from('push_subscriptions').upsert({ user_id: currentUser.id, subscription: JSON.stringify(subscription) }, { onConflict: 'user_id' });
+    if (error) { showToast('Error activando notificaciones', true); return; }
   actualizarToggleNotif(true);
 }
 

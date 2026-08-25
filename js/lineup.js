@@ -583,7 +583,11 @@ function openModal(slotId, posicion, cls) {
   const list = document.getElementById('modal-list');
   const colores = { gk:'var(--pos-gk)', def:'var(--pos-def)', mid:'var(--pos-mid)', fwd:'var(--pos-fwd)', ent:'var(--pos-ent)' };
   const textoCols = { gk:'#0d1117', def:'white', mid:'#0d1117', fwd:'white', ent:'white' };
-  const getDisp = () => (PRESUPUESTO - Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0)).toFixed(1);
+  const getDisp = () => {
+    const totalGastado = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
+    const valorLiberado = seleccionados[slotId]?.valor || 0;
+    return (PRESUPUESTO - totalGastado + valorLiberado).toFixed(1);
+  };
   let soloDisp = false;
   let orden = 'puntos';
   const clubesUnicos = [...new Set(jugadoresPorPos[posicion].map(j => j.club))].sort();
