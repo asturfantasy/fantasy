@@ -46,7 +46,7 @@ async function loadHome() {
           .single();
         const bannerGanador = document.getElementById('banner-ganador-jornada');
         if (bannerGanador && ganadorData) {
-          bannerGanador.innerHTML = '🏆 <strong>' + ganadorData.nombre_equipo + '</strong> ganó la J' + JORNADA_VISIBLE + ' con <strong>' + ganadorData.puntos + ' pts</strong>';
+          bannerGanador.innerHTML = '🏆 <strong>' + escapeHTML(ganadorData.nombre_equipo) + '</strong> ganó la J' + JORNADA_VISIBLE + ' con <strong>' + ganadorData.puntos + ' pts</strong>';
           bannerGanador.style.display = 'block';
         }
       }

@@ -41,7 +41,7 @@ function ligaCardHtml(l) {
   return '<div class="liga-card" id="liga-card-' + l.id + '" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">' +
     '<div onclick="toggleLigaCard(\'' + l.id + '\')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer">' +
       '<div>' +
-        '<div style="font-size:14px;font-weight:700;color:var(--text)">' + l.nombre + '</div>' +
+        '<div style="font-size:14px;font-weight:700;color:var(--text)">' + escapeHTML(l.nombre) + '</div>' +
         '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px">' +
           'Código: <strong style="color:var(--neon);letter-spacing:2px">' + l.codigo + '</strong>' +
           ' · <span id="liga-info-' + l.id + '" style="color:var(--text-muted)">cargando...</span>' +
@@ -55,7 +55,7 @@ function ligaCardHtml(l) {
     '<div id="liga-detail-' + l.id + '" style="display:none;border-top:1px solid var(--border)">' +
       '<div id="tabla-liga-' + l.id + '" style="max-height:320px;overflow-y:auto"></div>' +
       '<div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">' +
-        '<button onclick="compartirClasificacion(null, null, null, \'liga\', null, \'' + l.id + '\', \'' + l.nombre + '\')" style="flex:1;padding:8px;background:var(--green-brand);color:white;border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-share"></i> Compartir</button>' +
+        '<button onclick="compartirClasificacion(null, null, null, \'liga\', null, \'' + l.id + '\', \'' + l.nombre.replace(/'/g, "\\'") + '\')" style="flex:1;padding:8px;background:var(--green-brand);color:white;border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-share"></i> Compartir</button>' +
         (l.creador_id === currentUser?.id
           ? '<button onclick="eliminarLiga(\'' + l.id + '\')" style="padding:8px 12px;background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:8px;color:var(--red);font-family:var(--font-display);font-size:12px;cursor:pointer"><i class="ti ti-trash"></i></button>'
           : '<button onclick="salirLiga(\'' + l.id + '\')" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-family:var(--font-display);font-size:12px;cursor:pointer">Salir</button>') +
@@ -100,7 +100,7 @@ async function cargarClasificacionLiga(ligaId) {
       const esYo = r.user_id === currentUser.id;
       return '<tr style="' + (esYo ? 'background:rgba(0,217,126,0.06);' : '') + '">' +
         '<td style="padding:8px 12px;width:32px"><span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:' + medalColor(i) + '">' + (i+1) + '</span></td>' +
-        '<td style="padding:8px 4px"><div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:' + (esYo ? 'var(--neon)' : 'var(--text)') + '">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td>' +
+        '<td style="padding:8px 4px"><div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:' + (esYo ? 'var(--neon)' : 'var(--text)') + '">' + (esYo ? '⭐ ' : '') + escapeHTML(r.nombre_equipo) + '</div></td>' +
         '<td style="padding:8px 12px;text-align:right"><div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:' + (esYo ? 'var(--neon)' : 'var(--text)') + '">' + r.puntos_total + '</div></td>' +
       '</tr>';
     }).join('') +
@@ -178,8 +178,8 @@ async function unirseALiga() {
   const { data: yaMiembro } = await db.from('liga_miembros').select('liga_id').eq('liga_id', liga.id).eq('user_id', currentUser.id).maybeSingle();
   if (yaMiembro) { showToast('Ya eres miembro de esta liga', true); return; }
 
-  const { error } = await db.from('liga_miembros').insert({ liga_id: liga.id, user_id: currentUser.id });
-  if (error) { showToast('Error al unirse a la liga', true); return; }
+   const { error } = await db.from('liga_miembros').upsert({ liga_id: liga.id, user_id: currentUser.id }, { onConflict: 'liga_id,user_id' });
+   if (error) { showToast('Error al unirse a la liga', true); return; }
 
   showToast('¡Te has unido a ' + liga.nombre + '!');
   loadLigas();

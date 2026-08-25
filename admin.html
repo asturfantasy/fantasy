@@ -532,13 +532,14 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0bWNsbXF6YXNrdHNobHp3Y3luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDUwMjAsImV4cCI6MjA5NDEyMTAyMH0.Z1X05a8EFzCA58iGjXymIBBTs01V5uY7XgIfb8yqiqk';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const API_URL = '/api';
-  /**
- * Trae TODAS las filas de una tabla, paginando en tandas de 1000
- * (el límite por defecto de Supabase). Necesario para cualquier
- * consulta sin filtrar por usuario que pueda superar 1000 filas
- * (equipos, mi_equipo por jornada, jugadores, clasificacion_automatica...).
- * Uso: const { data, error } = await fetchAllRows(db.from('tabla').select('col').eq(...));
- */
+
+function escapeHTML(texto) {
+  if (texto === null || texto === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(texto);
+  return div.innerHTML;
+}
+
 async function fetchAllRows(query) {
   let resultado = [];
   let desde = 0;
@@ -1568,17 +1569,17 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
 
   /* ── CLASIFICACIÓN ── */
   async function cargarClasificacion() {
-    const { data } = await db.from('clasificacion_general_auto').select('*');
-    const { data: equipos } = await db.from('equipos').select('user_id, equipo_favorito');
+    const { data } = await fetchAllRows(db.from('clasificacion_general_auto').select('*'));
+    const { data: equipos } = await fetchAllRows(db.from('equipos').select('user_id, equipo_favorito'));
     const favMap = {};
     (equipos || []).forEach(e => { favMap[e.user_id] = e.equipo_favorito; });
     const tbody = document.getElementById('tabla-clasificacion');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</td></tr>'; return; }
     tbody.innerHTML = data.map((r, i) =>
-      '<tr><td><strong>' + (i+1) + '</strong></td><td>' + r.nombre_equipo + '</td>' +
-      '<td style="color:var(--neon);font-weight:700">' + r.puntos_total + '</td>' +
-      '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (favMap[r.user_id] || '—') + '</td></tr>'
-    ).join('');
+  '<tr><td><strong>' + (i+1) + '</strong></td><td>' + escapeHTML(r.nombre_equipo) + '</td>' +
+  '<td style="color:var(--neon);font-weight:700">' + r.puntos_total + '</td>' +
+  '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (favMap[r.user_id] || '—') + '</td></tr>'
+).join('');
   }
 
   /* ── ESTADÍSTICAS ── */
@@ -1606,7 +1607,7 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
 
   /* ── ADMINS ── */
   async function cargarAdmins() {
-    const { data } = await db.from('equipos').select('user_id, nombre_equipo, is_admin, rol').order('nombre_equipo');
+    const { data } = await fetchAllRows(db.from('equipos').select('user_id, nombre_equipo, is_admin, rol').order('nombre_equipo'));
     const tbody = document.getElementById('tabla-admins');
     if (!data?.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</td></tr>'; return; }
     tbody.innerHTML = data.map(e => {
@@ -1616,7 +1617,7 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
           ? '<span class="pill pill-amber">Colaborador</span>'
           : '<span class="pill" style="background:var(--surface2);color:var(--text-muted)">Usuario</span>';
       const esTu = e.user_id === adminUser?.id;
-      return '<tr><td><strong>' + e.nombre_equipo + '</strong></td>' +
+      return '<tr><td><strong>' + escapeHTML(e.nombre_equipo) + '</strong></td>' +
         '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + e.user_id.substring(0,8) + '...</td>' +
         '<td>' + rolLabel + '</td>' +
         '<td>' + (esTu ? '<span style="font-size:12px;color:var(--text-muted)">Tú</span>' :

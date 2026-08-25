@@ -156,7 +156,7 @@ async function loadRankingClasificacion() {
       };
       const renderFilaGeneral = (r, i) => {
         const esYo = r.user_id === currentUser?.id;
-        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+        return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + escapeHTML(r.nombre_equipo) + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo.replace(/'/g, "\\'") + '\',' + (i+1) + ',' + r.puntos_total + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
       };
 
       const { data: miPosGeneralData } = await db.rpc('obtener_posicion_general', { p_user_id: currentUser.id });
@@ -184,8 +184,8 @@ async function loadRankingClasificacion() {
       const renderFilaSemanal = (r, i) => {
         const esYo = r.user_id === currentUser?.id;
         const clickable = cerrada ? 'cursor:pointer' : '';
-        const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo + '\',' + jornadaSel + ')"' : '';
-      return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\',null,null,null,' + jornadaSel + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+        const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + r.user_id + '\',\'' + r.nombre_equipo.replace(/'/g, "\\'") + '\',' + jornadaSel + ')"' : '';
+      return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + clickable + '" ' + onclick + '><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + escapeHTML(r.nombre_equipo) + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">Ver alineación →</div>' : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos + '</div>' + (esYo ? '<button onclick="event.stopPropagation();compartirClasificacion(\'' + r.nombre_equipo.replace(/'/g, "\\'") + '\',' + (i+1) + ',' + r.puntos + ',\'jornada\',null,null,null,' + jornadaSel + ')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
       };
 
       const { data: miPosSemanalData } = await db.rpc('obtener_posicion_jornada', { p_user_id: currentUser.id, p_jornada: jornadaSel });
@@ -245,7 +245,7 @@ async function loadRankingClasificacion() {
         };
         const renderFilaPena = (r, i) => {
           const esYo = r.user_id === currentUser?.id;
-          return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + r.nombre_equipo + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
+          return '<tr class="' + medalClass(i+1) + '" style="' + (esYo ? 'outline:2px solid var(--neon);outline-offset:-2px;' : '') + '"><td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td><td><div class="rank-team">' + (esYo ? '⭐ ' : '') + escapeHTML(r.nombre_equipo) + '</div></td><td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="rank-pts">' + r.puntos_total + '</div>' + (esYo ? '<button onclick="compartirClasificacion(\'' + r.nombre_equipo.replace(/'/g, "\\'") + '\',' + (i+1) + ',' + r.puntos_total + ',\'pena\',\'' + equipoFav + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:10px;white-space:nowrap">COMPARTIR</button>' : '') + '</div></td></tr>';
         };
 
         const { data: miPosPenaData } = await db.rpc('obtener_posicion_pena', { p_user_id: currentUser.id });
@@ -1339,9 +1339,9 @@ async function reclamarLeyenda() {
         '<span style="color:white;font-weight:700;font-size:12px">Astur<span style="color:#4cd97b">Fantasy</span></span>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:12px">' +
-        '<div style="width:48px;height:48px;border-radius:50%;background:rgba(76,217,123,0.15);border:2px solid rgba(76,217,123,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#4cd97b">' + nombreEquipo.substring(0,2).toUpperCase() + '</div>' +
+        '<div style="width:48px;height:48px;border-radius:50%;background:rgba(76,217,123,0.15);border:2px solid rgba(76,217,123,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#4cd97b">' + escapeHTML(nombreEquipo.substring(0,2).toUpperCase()) + '</div>' +
         '<div>' +
-          '<div style="font-size:16px;font-weight:700;color:white">' + nombreEquipo + '</div>' +
+          '<div style="font-size:16px;font-weight:700;color:white">' + escapeHTML(nombreEquipo) + '</div>' +
           '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">' + clubFav + '</div>' +
         '</div>' +
       '</div>' +

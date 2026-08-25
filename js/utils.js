@@ -69,6 +69,13 @@ function jornadadCerrada() { return new Date() > new Date(DEADLINE_JORNADA); }
 
 function medalClass(pos) { return pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : ''; }
 
+function escapeHTML(texto) {
+  if (texto === null || texto === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(texto);
+  return div.innerHTML;
+}
+
 function updateBottomNav(screenId) {
   document.querySelectorAll('.bottom-nav-item').forEach(item => {
     item.classList.toggle('active', item.dataset.target === screenId);
