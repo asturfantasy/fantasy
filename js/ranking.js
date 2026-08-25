@@ -820,7 +820,7 @@ async function loadRankingJugadores() {
         <option value="valor-desc">Valor ↓</option>
         <option value="rentabilidad">Rentabilidad</option>
       </select>
-      <input id="filtro-nombre" type="text" placeholder="Buscar jugador..." style="padding:7px 10px;font-family:var(--font-mono);font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;min-width:140px;">
+      <input id="filtro-nombre" type="text" placeholder="Buscar jugador..." style="padding:7px 10px;font-family:var(--font-mono);font-size:16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;min-width:140px;">
       <button id="btn-reset-filtros">Reiniciar</button>
     </div>
     <table class="ranking-table">

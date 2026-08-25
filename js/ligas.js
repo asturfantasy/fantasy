@@ -115,7 +115,7 @@ function mostrarCrearLiga() {
       '<div style="font-size:13px;font-weight:700;margin-bottom:12px">Crear nueva liga</div>' +
       '<div style="margin-bottom:10px">' +
         '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;margin-bottom:6px">NOMBRE</div>' +
-        '<input id="nueva-liga-nombre" type="text" placeholder="Ej: Liga del trabajo" maxlength="40" style="width:100%;padding:8px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:var(--font-display);font-size:13px">' +
+        '<input id="nueva-liga-nombre" type="text" placeholder="Ej: Liga del trabajo" maxlength="40" style="width:100%;padding:8px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:var(--font-display);font-size:16px">' +
       '</div>' +
       '<div style="display:flex;gap:8px">' +
         '<button onclick="crearLiga()" style="flex:1;padding:9px;background:var(--neon);color:#0d1117;border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer">Crear</button>' +
