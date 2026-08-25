@@ -27,7 +27,7 @@ db.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN') {
       document.getElementById('bottom-nav').style.display = 'flex';
       db.from('equipos').select('nombre_equipo, equipo_favorito')
-        .eq('user_id', currentUser.id).single()
+        .eq('user_id', currentUser.id).maybeSingle()
         .then(({ data: equipoData }) => {
           if (!equipoData?.nombre_equipo) {
             document.getElementById('modal-nombre-equipo').classList.add('open');
@@ -56,7 +56,7 @@ db.auth.onAuthStateChange((event, session) => {
     document.getElementById('bottom-nav').style.display = 'flex';
     const { data: equipoData } = await db.from('equipos')
       .select('nombre_equipo, equipo_favorito')
-      .eq('user_id', currentUser.id).single();
+      .eq('user_id', currentUser.id).maybeSingle();
     if (!equipoData?.nombre_equipo) {
       document.getElementById('modal-nombre-equipo').classList.add('open');
     } else if (!equipoData?.equipo_favorito) {

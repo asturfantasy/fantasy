@@ -630,11 +630,14 @@
 <!-- PANTALLA DETALLE: COMPARADOR -->
 <div id="screen-ranking-comparador" class="screen">
     <div class="navbar-placeholder"></div>
-    <div class="detail-header">
-        <button class="detail-back" onclick="goTo('ranking')">
-            <i class="ti ti-arrow-left"></i>
-        </button>
-        <span class="detail-title">COMPARADOR</span>
+    <div class="detail-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+            <button class="detail-back" onclick="goTo('ranking')">
+                <i class="ti ti-arrow-left"></i>
+            </button>
+            <span class="detail-title">COMPARADOR</span>
+        </div>
+        <button onclick="reiniciarComparador()" style="background:var(--neon);color:#0d1117;border:none;border-radius:8px;padding:6px 12px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;letter-spacing:1px">REINICIAR</button>
     </div>
     <main class="page-body">
         <div id="comparador-container"></div>
