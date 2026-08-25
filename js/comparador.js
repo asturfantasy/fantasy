@@ -16,21 +16,18 @@ async function loadComparador() {
 
   const container = document.getElementById('comparador-container');
   container.innerHTML = `
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <select id="comp-filtro-club" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:var(--font-display);font-size:13px;cursor:pointer">
-        <option value="">Todos los clubes</option>
-        ${clubes.map(c => `<option value="${c}">${c}</option>`).join('')}
-      </select>
-      <select id="comp-filtro-pos" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:var(--font-display);font-size:13px;cursor:pointer">
-        <option value="">Todas las posiciones</option>
-        ${posiciones.map(p => `<option value="${p}">${p}</option>`).join('')}
-      </select>
-      <button onclick="reiniciarComparador()" style="background:var(--neon);color:#0d1117;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;letter-spacing:1px">REINICIAR</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;margin-top:14px">
       ${[0,1].map(i => `
         <div>
           <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Jugador ${i+1}</div>
+                    <select id="comp-filtro-club-${i}" style="width:100%;box-sizing:border-box;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 8px;font-family:var(--font-display);font-size:12px;cursor:pointer;margin-bottom:6px">
+                      <option value="">Club</option>
+                      ${clubes.map(c => `<option value="${c}">${c}</option>`).join('')}
+                    </select>
+                    <select id="comp-filtro-pos-${i}" style="width:100%;box-sizing:border-box;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 8px;font-family:var(--font-display);font-size:12px;cursor:pointer;margin-bottom:6px">
+                      <option value="">Posición</option>
+                      ${posiciones.map(p => `<option value="${p}">${p}</option>`).join('')}
+                    </select>
           <div style="position:relative">
             <input id="buscador-${i}" type="text" placeholder="Buscar..."
               style="width:100%;padding:8px 10px;font-family:var(--font-display);font-size:16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;box-sizing:border-box"
@@ -43,13 +40,15 @@ async function loadComparador() {
     </div>
     <div id="resultado-comparador"></div>`;
 
-  document.getElementById('comp-filtro-club').addEventListener('change', () => { filtrarSugerencias(0); filtrarSugerencias(1); });
-  document.getElementById('comp-filtro-pos').addEventListener('change', () => { filtrarSugerencias(0); filtrarSugerencias(1); });
+  [0, 1].forEach(i => {
+    document.getElementById(`comp-filtro-club-${i}`).addEventListener('change', () => filtrarSugerencias(i));
+    document.getElementById(`comp-filtro-pos-${i}`).addEventListener('change', () => filtrarSugerencias(i));
+  });
 }
 
-function getJugadoresFiltrados() {
-  const club = document.getElementById('comp-filtro-club')?.value || '';
-  const pos  = document.getElementById('comp-filtro-pos')?.value || '';
+function getJugadoresFiltrados(idx) {
+  const club = document.getElementById(`comp-filtro-club-${idx}`)?.value || '';
+  const pos  = document.getElementById(`comp-filtro-pos-${idx}`)?.value || '';
   return todosLosJugadores.filter(j =>
     (!club || j.club === club) && (!pos || j.posicion === pos)
   );
@@ -60,7 +59,7 @@ function filtrarSugerencias(idx) {
   const lista = document.getElementById(`sugerencias-${idx}`);
   if (!input || !lista) return;
   const q = input.value.toLowerCase().trim();
-  const base = getJugadoresFiltrados();
+  const base = getJugadoresFiltrados(idx);
   const filtrados = base.filter(j => q === '' || j.nombre.toLowerCase().includes(q)).slice(0, 8);
   if (!filtrados.length) { lista.style.display = 'none'; return; }
   lista.style.display = 'block';
@@ -200,9 +199,9 @@ async function mostrarComparativa() {
   const esEnt2 = j2.posicion === 'ENT';
   const ambosPor = j1.posicion === 'POR' && j2.posicion === 'POR';
 
-  const [{ data: valoresHist1 }, { data: valoresHist2 }] = await Promise.all([
-    db.from('jugadores').select('jornada, valor').eq('nombre', j1.nombre).eq('club', j1.club).order('jornada', { ascending: true }),
-    db.from('jugadores').select('jornada, valor').eq('nombre', j2.nombre).eq('club', j2.club).order('jornada', { ascending: true }),
+   const [{ data: valoresHist1 }, { data: valoresHist2 }] = await Promise.all([
+    db.from('jugadores').select('jornada, valor').eq('nombre', j1.nombre).eq('club', j1.club).lte('jornada', JORNADA_VISIBLE).order('jornada', { ascending: true }),
+    db.from('jugadores').select('jornada, valor').eq('nombre', j2.nombre).eq('club', j2.club).lte('jornada', JORNADA_VISIBLE).order('jornada', { ascending: true }),
   ]);
   const valores1 = (valoresHist1 || []).filter(d => d.valor != null && parseFloat(d.valor) > 0);
   const valores2 = (valoresHist2 || []).filter(d => d.valor != null && parseFloat(d.valor) > 0);
@@ -232,22 +231,21 @@ async function mostrarComparativa() {
     ];
   } else {
     const [r1, r2] = await Promise.all([
-      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,penalti_parado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
-      db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,penalti_parado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
-    ]);
+    db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j1.nombre),
+    db.from('jugadores').select('minutos,rol,gol,penalti_marcado,penalti_fallado,asistencia,gol_pp,amarilla,doble_amarilla,roja,goles_encajados,total_jornada').eq('nombre', j2.nombre),
+  ]);
 
     const calc = (rows) => {
       const r = rows || [];
       const goles = r.reduce((a,x) => a + (x.gol||0), 0);
       const penMarcados = r.reduce((a,x) => a + (x.penalti_marcado||0), 0);
-      const penFallados = r.reduce((a,x) => a + (x.penalti_fallado||0), 0);
-      const penParados = r.reduce((a,x) => a + (x.penalti_parado||0), 0);
-      return {
-        puntos:         r.reduce((a,x) => a + (x.total_jornada||0), 0),
-        partidos:       r.filter(x => (x.minutos||0) > 0).length,
-        titularidades:  r.filter(x => x.rol === 'titular' && (x.minutos||0) > 0).length,
-        minutos:        r.reduce((a,x) => a + (x.minutos||0), 0),
-        goles, penMarcados, penFallados, penParados,
+            const penFallados = r.reduce((a,x) => a + (x.penalti_fallado||0), 0);
+            return {
+              puntos:         r.reduce((a,x) => a + (x.total_jornada||0), 0),
+              partidos:       r.filter(x => (x.minutos||0) > 0).length,
+              titularidades:  r.filter(x => x.rol === 'titular' && (x.minutos||0) > 0).length,
+              minutos:        r.reduce((a,x) => a + (x.minutos||0), 0),
+              goles, penMarcados, penFallados,
         totalGoles:     goles + penMarcados,
         asistencias:    r.reduce((a,x) => a + (x.asistencia||0), 0),
         gol_pp:         r.reduce((a,x) => a + (x.gol_pp||0), 0),
@@ -270,9 +268,9 @@ async function mostrarComparativa() {
       ['Titularidades',    stats1.titularidades, stats2.titularidades, stats1.titularidades, stats2.titularidades, 'mayor'],
       ['Minutos',          stats1.minutos,       stats2.minutos,       stats1.minutos,       stats2.minutos,       'mayor'],
       ['Goles',            goles1,               goles2,               stats1.totalGoles,    stats2.totalGoles,    'mayor'],
-      ambosPor
-        ? ['Pen. parados',  stats1.penParados,  stats2.penParados,  stats1.penParados,  stats2.penParados,  'mayor']
-        : ['Pen. fallados', stats1.penFallados, stats2.penFallados, stats1.penFallados, stats2.penFallados, 'menor'],
+            ambosPor
+              ? ['Pen. parados',  stats1.penFallados, stats2.penFallados, stats1.penFallados, stats2.penFallados, 'mayor']
+              : ['Pen. fallados', stats1.penFallados, stats2.penFallados, stats1.penFallados, stats2.penFallados, 'menor'],
       ['Asistencias',      stats1.asistencias,   stats2.asistencias,   stats1.asistencias,   stats2.asistencias,   'mayor'],
       ['Gol PP',           stats1.gol_pp,        stats2.gol_pp,        stats1.gol_pp,        stats2.gol_pp,        'menor'],
       ['Amarillas',        stats1.amarillas,     stats2.amarillas,     stats1.amarillas,     stats2.amarillas,     'menor'],
@@ -501,10 +499,12 @@ document.addEventListener('click', e => {
 
 function reiniciarComparador() {
   comparadorSeleccionados = [null, null];
-  const club = document.getElementById('comp-filtro-club');
-  const pos  = document.getElementById('comp-filtro-pos');
-  if (club) club.value = '';
-  if (pos)  pos.value  = '';
+  [0, 1].forEach(i => {
+    const club = document.getElementById(`comp-filtro-club-${i}`);
+    const pos  = document.getElementById(`comp-filtro-pos-${i}`);
+    if (club) club.value = '';
+    if (pos)  pos.value  = '';
+  });
   [0,1].forEach(i => {
     const input = document.getElementById(`buscador-${i}`);
     const sel   = document.getElementById(`seleccionado-${i}`);

@@ -336,10 +336,11 @@ async function verAlineacionUsuario(userId, nombreEquipo, jornada) {
 
 async function loadMVP() {
   const jornadaActual = jornadadCerrada() ? JORNADA_ACTIVA : JORNADA_VISIBLE;
+  const jornadaMaxSelect = Math.max(jornadaActual, 1);
   const selectMVP = document.getElementById('mvp-jornada-select');
 
   if (selectMVP && !selectMVP.options.length) {
-    for (let i = jornadaActual; i >= 1; i--) {
+    for (let i = jornadaMaxSelect; i >= 1; i--) {
       const opt = document.createElement('option');
       opt.value = i; opt.textContent = 'Jornada ' + i;
       selectMVP.appendChild(opt);
