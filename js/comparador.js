@@ -33,7 +33,7 @@ async function loadComparador() {
           <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Jugador ${i+1}</div>
           <div style="position:relative">
             <input id="buscador-${i}" type="text" placeholder="Buscar..."
-              style="width:100%;padding:8px 10px;font-family:var(--font-display);font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;box-sizing:border-box"
+              style="width:100%;padding:8px 10px;font-family:var(--font-display);font-size:16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;box-sizing:border-box"
               oninput="filtrarSugerencias(${i})" onclick="filtrarSugerencias(${i})" autocomplete="off">
             <div id="sugerencias-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:100;max-height:180px;overflow-y:auto;margin-top:2px"></div>
           </div>
