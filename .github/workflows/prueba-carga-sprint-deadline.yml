@@ -12,7 +12,7 @@ on:
       tasa_tranquila:
         description: 'Usuarios/seg en la parte tranquila'
         required: false
-        default: '0.3'
+        default: '1'
       tasa_sprint:
         description: 'Usuarios/seg en el sprint final'
         required: false
