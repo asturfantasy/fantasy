@@ -29,7 +29,7 @@ const headers = {
 const headersRpc = { ...headers, 'Content-Type': 'application/json' };
 
 // Tasa de llegada en cada tramo (usuarios nuevos por segundo)
-const TASA_TRANQUILA = parseFloat(__ENV.K6_TASA_TRANQUILA) || 0.3;  // ~0.3/s durante los primeros 45 min ≈ 75 personas
+const TASA_TRANQUILA = Math.round(parseFloat(__ENV.K6_TASA_TRANQUILA) || 1);
 const TASA_SPRINT = parseFloat(__ENV.K6_TASA_SPRINT) || 5;          // ~5/s en los últimos 15 min ≈ 450 personas
 
 const PROB_DESGLOSE = parseFloat(__ENV.K6_PROB_DESGLOSE) || 0.9;
