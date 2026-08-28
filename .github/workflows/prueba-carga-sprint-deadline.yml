@@ -1,0 +1,49 @@
+# ============================================================
+# .github/workflows/prueba-carga-sprint-deadline.yml
+# Lanza la prueba del "sprint final antes del deadline" — el
+# patrón más realista para un cierre de jornada anunciado.
+# ============================================================
+
+name: Prueba de carga (sprint deadline)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tasa_tranquila:
+        description: 'Usuarios/seg en la parte tranquila'
+        required: false
+        default: '0.3'
+      tasa_sprint:
+        description: 'Usuarios/seg en el sprint final'
+        required: false
+        default: '5'
+
+jobs:
+  prueba-carga-sprint-deadline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Ejecutar prueba de carga (sprint deadline)
+        env:
+          K6_TASA_TRANQUILA: ${{ github.event.inputs.tasa_tranquila }}
+          K6_TASA_SPRINT: ${{ github.event.inputs.tasa_sprint }}
+        run: |
+          k6 run scripts/prueba_carga_sprint_deadline.js
+
+      - name: Subir el resumen como resultado descargable
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-prueba-carga-sprint-deadline
+          path: summary.json
+          if-no-files-found: ignore
