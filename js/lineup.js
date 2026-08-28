@@ -720,8 +720,10 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   await db.from('mi_equipo').delete().eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
   const { error } = await db.from('mi_equipo').insert(Object.values(seleccionados).map(jugador => ({ user_id: currentUser.id, jugador_id: jugador.id, jornada: JORNADA_ACTIVA, formacion, capitan: capitan === jugador.id })));
   btn.disabled = false; btn.textContent = 'GUARDAR ALINEACIÓN';
-  if (error) showToast('Error al guardar: ' + error.message, true);
-  else { cambiosSinGuardar = false; showToast('Alineación guardada'); }
+  if (error) {
+    const esDeadlinePasado = error.message.includes('row-level security') || error.code === '42501';
+    showToast(esDeadlinePasado ? 'El plazo de esta jornada ya cerró. Recarga la página.' : 'Error al guardar: ' + error.message, true);
+  } else { cambiosSinGuardar = false; showToast('Alineación guardada'); }
 });
 
 async function limpiarAlineacion() {
