@@ -3,8 +3,10 @@
    ============================================================ */
 
 let equipoAbrevActual = null;
+let intervaloCarrusel = null;
 
 async function loadHome() {
+iniciarCarruselPublicidad();
   document.getElementById('home-jornada-num').textContent = JORNADA_ACTIVA;
   const { data: sub } = await db.from('push_subscriptions').select('id').eq('user_id', currentUser.id).limit(1);
   actualizarToggleNotif(!!(sub?.length));
@@ -119,6 +121,70 @@ async function loadHome() {
       : '<div class="match-vs">' + p.estadio + '</div><div class="match-date">' + formatearFecha(p.fecha, p.hora) + '</div>';
     return '<div class="match-card"><div class="match-team"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + localImg + '</div><div><div class="team-name">' + p.local.nombre + '</div></div></div><div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 8px;min-width:90px;max-width:110px">' + centro + '</div><div class="match-team right"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + visitanteImg + '</div><div style="text-align:right"><div class="team-name">' + p.visitante.nombre + '</div></div></div></div>';
   };
+
+  function iniciarCarruselPublicidad() {
+    if (intervaloCarrusel) clearInterval(intervaloCarrusel);
+    const anuncios = [
+      { imagen: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/banners/siroko1.png', url: 'https://www.siroko.com/' },
+      { imagen: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/banners/siroko2.png', url: 'https://www.siroko.com/' },
+      { imagen: 'https://rtmclmqzasktshlzwcyn.supabase.co/storage/v1/object/public/banners/siroko3.png', url: 'https://www.siroko.com/' },
+      // Añade más anuncios aquí con la misma estructura
+    ];
+
+    const contenedor = document.getElementById('carrusel-publicidad');
+    if (!contenedor || !anuncios.length) return;
+
+      const slides = anuncios.map((a, i) =>
+        `<a href="${a.url}" target="_blank" rel="noopener" class="${i === 0 ? 'activo' : ''}">
+          <img src="${a.imagen}" loading="lazy" alt="Publicidad">
+        </a>`
+      ).join('');
+
+      const puntos = anuncios.length > 1
+        ? '<div class="carrusel-puntos">' + anuncios.map((_, i) => `<span class="carrusel-punto${i === 0 ? ' activo' : ''}" data-i="${i}"></span>`).join('') + '</div>'
+        : '';
+
+      const flechas = anuncios.length > 1
+        ? '<button class="carrusel-flecha carrusel-flecha-izq" aria-label="Anterior">‹</button><button class="carrusel-flecha carrusel-flecha-der" aria-label="Siguiente">›</button>'
+        : '';
+
+      contenedor.innerHTML = slides + flechas + puntos;
+
+      if (anuncios.length > 1) {
+        let indiceActual = 0;
+        const enlaces = contenedor.querySelectorAll('a');
+        const puntosEls = contenedor.querySelectorAll('.carrusel-punto');
+
+        const irAIndice = (nuevoIndice) => {
+          enlaces[indiceActual].classList.remove('activo');
+          puntosEls[indiceActual].classList.remove('activo');
+          indiceActual = (nuevoIndice + anuncios.length) % anuncios.length;
+          enlaces[indiceActual].classList.add('activo');
+          puntosEls[indiceActual].classList.add('activo');
+        };
+
+        const reiniciarAutoplay = () => {
+          if (intervaloCarrusel) clearInterval(intervaloCarrusel);
+          intervaloCarrusel = setInterval(() => irAIndice(indiceActual + 1), 5000);
+        };
+
+        contenedor.querySelector('.carrusel-flecha-der').addEventListener('click', (e) => {
+          e.preventDefault();
+          irAIndice(indiceActual + 1);
+          reiniciarAutoplay();
+        });
+        contenedor.querySelector('.carrusel-flecha-izq').addEventListener('click', (e) => {
+          e.preventDefault();
+          irAIndice(indiceActual - 1);
+          reiniciarAutoplay();
+        });
+        puntosEls.forEach((punto, i) => {
+          punto.addEventListener('click', () => { irAIndice(i); reiniciarAutoplay(); });
+        });
+
+        reiniciarAutoplay();
+      }
+    }
 
   const INICIAL = 3;
   let mostrados = INICIAL;
