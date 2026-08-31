@@ -76,9 +76,9 @@ async function cargarMyTeam(jornada) {
     return '<div class="player-card ' + (esC ? 'card-capitan' : '') + '" style="cursor:pointer' + (sancionado ? ';border:1px solid rgba(240,94,94,0.5);' : duda ? ';border:1px solid rgba(255,140,0,0.6);' : lesionado ? ';border:1px solid rgba(240,94,94,0.5);' : '') + '" onclick="mostrarDesgloseMyTeam(\'' + j.jugador_id + '\',\'' + j.nombre + '\',\'' + j.posicion + '\',' + jornada + ')">' +
       '<div class="pc-avatar" style="position:relative;background:' + POS_COLORS[j.posicion] + ';color:' + POS_TEXT[j.posicion] + ';overflow:visible">' +
         avatar +
-        (sancionado ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(240,94,94,0.4);"></div>'
-          : duda ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(255,140,0,0.4);"></div>'
-          : lesionado ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(240,94,94,0.4);display:flex;align-items:center;justify-content:center;font-size:14px">➕</div>' : '') +
+                        (sancionado ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(240,94,94,0.4);display:flex;align-items:center;justify-content:center;font-size:14px">🟥</div>'
+                          : duda ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(255,140,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px">❓️</div>'
+                          : lesionado ? '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(240,94,94,0.4);display:flex;align-items:center;justify-content:center;font-size:14px">🚑</div>' : '') +
         (escudo ? '<img loading="lazy" src="' + escudo + '" width="14" height="14" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') +
       '</div>' +
       '<div class="pc-info">' +
