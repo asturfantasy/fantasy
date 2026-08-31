@@ -1727,7 +1727,6 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
 
     const orden = ['POR','DEF','MED','DEL'];
 const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion) || a.nombre.localeCompare(b.nombre));
-const cols = '1fr 50px ' + EDM_CAMPOS.map(c => c.w).join(' ') + ' 60px';
 
 const esValorado = j => (j.minutos || 0) > 0 || (j.total_jornada || 0) !== 0;
 const puntuados = sorted.filter(esValorado).length;
@@ -1742,46 +1741,47 @@ tabla.innerHTML =
     '</div>' +
     '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + Math.round((puntuados/total)*100) + '%</div>' +
   '</div>' +
-  '<div style="min-width:760px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">' +
-    '<div style="display:grid;grid-template-columns:' + cols + ';padding:8px 16px;border-bottom:1px solid var(--border)">' +
-      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">JUGADOR</div>' +
-      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">POS</div>' +
-      EDM_CAMPOS.map(c => '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">' + c.label + '</div>').join('') +
-      '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;text-align:center">PTS</div>' +
-    '</div>' +
+  '<div class="edm-tarjetas" style="display:flex;flex-direction:column;gap:10px">' +
     sorted.map(j => {
       const valorado = esValorado(j);
-      return '<div style="display:grid;grid-template-columns:' + cols + ';align-items:center;padding:8px 16px;border-bottom:1px solid var(--surface);background:' + (valorado ? 'rgba(0,217,126,0.06)' : 'transparent') + '">' +
-        '<div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">' +
-          '<span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;display:inline-block;background:' + (valorado ? 'var(--neon)' : 'var(--border)') + '"></span>' +
-          j.nombre +
+      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;' + (valorado ? 'background:rgba(0,217,126,0.06);' : '') + '">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+          '<div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px">' +
+            '<span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;display:inline-block;background:' + (valorado ? 'var(--neon)' : 'var(--border)') + '"></span>' +
+            j.nombre + '<span style="font-size:11px;color:var(--text-muted);font-weight:400"> · ' + j.posicion + '</span>' +
+          '</div>' +
+          '<div style="font-size:14px;font-weight:700;color:var(--neon)" data-pts-jugid="' + j.id + '">' + (j.total_jornada || 0) + '</div>' +
         '</div>' +
-        '<div style="font-size:11px;color:var(--text-muted);text-align:center">' + j.posicion + '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(64px, 1fr));gap:8px">' +
         EDM_CAMPOS.map(c => {
+  let campo;
   if (c.key === 'activo') {
     const val = String(j[c.key] ?? 1);
-    return '<select class="edm-input" data-jugid="' + j.id + '" data-field="activo" data-tipo="activo" ' +
+    campo = '<select class="edm-input" data-jugid="' + j.id + '" data-field="activo" data-tipo="activo" ' +
       'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-family:var(--font-mono);font-size:10px;text-align:center">' +
       '<option value="1"' + (val === '1' ? ' selected' : '') + '>✅ Activo</option>' +
       '<option value="0"' + (val === '0' ? ' selected' : '') + '>🚫 Sancionado</option>' +
       '<option value="2"' + (val === '2' ? ' selected' : '') + '>❓ Duda</option>' +
       '<option value="3"' + (val === '3' ? ' selected' : '') + '>🚑 Lesionado</option>' +
     '</select>';
-  }
-  if (c.tipo === 'select') {
+  } else if (c.tipo === 'select') {
     const val = j[c.key] || '';
-    return '<select class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="select" ' +
+    campo = '<select class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="select" ' +
       'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-family:var(--font-mono);font-size:10px;text-align:center">' +
       '<option value=""' + (val === '' ? ' selected' : '') + '>—</option>' +
       '<option value="titular"' + (val === 'titular' ? ' selected' : '') + '>Titular</option>' +
       '<option value="suplente"' + (val === 'suplente' ? ' selected' : '') + '>Suplente</option>' +
     '</select>';
+  } else {
+    campo = '<input type="number" min="0" class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="num" value="' + (j[c.key] || 0) + '" ' +
+      'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 4px;font-family:var(--font-mono);font-size:11px;text-align:center">';
   }
-  return '<input type="number" min="0" class="edm-input" data-jugid="' + j.id + '" data-field="' + c.key + '" data-tipo="num" value="' + (j[c.key] || 0) + '" ' +
-    'style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 4px;font-family:var(--font-mono);font-size:11px;text-align:center">';
+  return '<div style="' + (c.key === 'activo' ? 'grid-column:span 2' : '') + '">' +
+    '<div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);letter-spacing:1px;text-align:center;margin-bottom:3px">' + c.label + '</div>' +
+    campo +
+  '</div>';
 }).join('') +
-        '<div style="font-size:12px;font-weight:700;color:var(--neon);text-align:center" data-pts-jugid="' + j.id + '">' + (j.total_jornada || 0) + '</div>' +
-      '</div>';
+      '</div></div>';
     }).join('') +
   '</div>';
 
