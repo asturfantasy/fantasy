@@ -6,6 +6,8 @@ let equipoAbrevActual = null;
 
 async function loadHome() {
   document.getElementById('home-jornada-num').textContent = JORNADA_ACTIVA;
+  const textoBajas = document.getElementById('texto-btn-bajas');
+  if (textoBajas) textoBajas.textContent = 'Sancionados, dudas y lesionados para la J' + JORNADA_ACTIVA;
   const { data: sub } = await db.from('push_subscriptions').select('id').eq('user_id', currentUser.id).limit(1);
   actualizarToggleNotif(!!(sub?.length));
   const ahora = new Date();
