@@ -1716,7 +1716,7 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
     tabla.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
 
     const { data } = await db.from('jugadores')
-      .select('id, nombre, posicion, minutos, rol, activo, gol, asistencia, penalti_marcado, penalti_fallado, gol_pp, amarilla, doble_amarilla, roja, goles_encajados, total_jornada')
+      .select('id, nombre, posicion, minutos, rol, activo, motivo_baja, gol, asistencia, penalti_marcado, penalti_fallado, gol_pp, amarilla, doble_amarilla, roja, goles_encajados, total_jornada')
       .eq('jornada', jornada)
       .eq('club', club)
       .neq('posicion', 'ENT')
@@ -1781,11 +1781,23 @@ tabla.innerHTML =
     campo +
   '</div>';
 }).join('') +
-      '</div></div>';
+      '</div>' +
+      '<div id="motivo-wrap-' + j.id + '" style="margin-top:8px;display:' + (j.activo !== 1 ? 'block' : 'none') + '">' +
+        '<div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);letter-spacing:1px;margin-bottom:3px">MOTIVO</div>' +
+        '<input type="text" class="edm-input" data-jugid="' + j.id + '" data-field="motivo_baja" data-tipo="texto" value="' + (j.motivo_baja || '').replace(/"/g, '&quot;') + '" placeholder="Ej: 4ª amarilla, esguince tobillo..." style="width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-family:var(--font-mono);font-size:11px">' +
+      '</div>' +
+      '</div>';
     }).join('') +
   '</div>';
 
-    btnGuardar.style.display = 'flex';
+        btnGuardar.style.display = 'flex';
+
+    document.querySelectorAll('select[data-field="activo"]').forEach(select => {
+      select.addEventListener('change', () => {
+        const wrap = document.getElementById('motivo-wrap-' + select.dataset.jugid);
+        if (wrap) wrap.style.display = select.value === '1' ? 'none' : 'block';
+      });
+    });
   }
 
   document.getElementById('btn-guardar-edm')?.addEventListener('click', async () => {
@@ -1800,6 +1812,8 @@ tabla.innerHTML =
       if (!porJugador[id]) porJugador[id] = {};
       if (inp.dataset.tipo === 'activo') {
   porJugador[id][inp.dataset.field] = parseInt(inp.value);
+} else if (inp.dataset.tipo === 'texto') {
+  porJugador[id][inp.dataset.field] = inp.value || null;
 } else {
   porJugador[id][inp.dataset.field] = inp.dataset.tipo === 'select' ? (inp.value || null) : (parseInt(inp.value) || 0);
 }

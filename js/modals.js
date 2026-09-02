@@ -482,6 +482,63 @@ async function mostrarHistorial(nombre, club, posicion) {
     }).join('');
 }
 
+async function mostrarBajasJornada() {
+  const modal = document.getElementById('modal-bajas');
+  const content = document.getElementById('bajas-content');
+  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
+  modal.classList.add('open');
+
+        const { data } = await db.from('jugadores')
+          .select('nombre, club, posicion, activo, escudo_url, motivo_baja')
+          .eq('jornada', JORNADA_ACTIVA)
+          .in('activo', [0, 2, 3])
+          .order('activo')
+          .order('nombre');
+
+  if (!data?.length) {
+    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">No hay bajas registradas para esta jornada</div>';
+    return;
+  }
+
+   const grupos = {
+     0: { titulo: 'Sancionados', icono: '🚫', color: '220,38,38', jugadores: [] },
+     2: { titulo: 'Dudas', icono: '❓', color: '255,140,0', jugadores: [] },
+     3: { titulo: 'Lesionados', icono: '🚑', color: '220,38,38', jugadores: [] },
+   };
+   data.forEach(j => { if (grupos[j.activo]) grupos[j.activo].jugadores.push(j); });
+
+   const resumen = Object.values(grupos)
+     .filter(g => g.jugadores.length)
+     .map(g => '<div style="text-align:center;flex:1"><div style="font-family:var(--font-display);font-weight:700;font-size:22px;color:rgba(' + g.color + ',1)">' + g.jugadores.length + '</div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px;margin-top:2px">' + g.titulo.toUpperCase() + '</div></div>')
+     .join('');
+
+   const listado = Object.values(grupos)
+     .filter(g => g.jugadores.length)
+     .map(g =>
+       '<div style="margin-bottom:18px">' +
+                 '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;margin-bottom:8px;color:#ffffff">' + g.icono + ' ' + g.titulo + '</div>' +
+         g.jugadores.map(j =>
+           '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;background:rgba(' + g.color + ',0.08);border-left:3px solid rgba(' + g.color + ',0.7);border-radius:6px">' +
+             (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="24" height="24" style="object-fit:contain;flex-shrink:0">' : '') +
+                          '<div style="flex:1">' +
+                            '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
+                            '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + ' · ' + j.posicion + '</div>' +
+                            (j.motivo_baja ? '<div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:2px">' + j.motivo_baja + '</div>' : '') +
+                          '</div>' +
+           '</div>'
+         ).join('') +
+       '</div>'
+     ).join('');
+
+   content.innerHTML =
+     '<div style="display:flex;padding:14px 0 18px;border-bottom:1px solid var(--border);margin-bottom:16px">' + resumen + '</div>' +
+     listado;
+ }
+
+document.getElementById('bajas-close')?.addEventListener('click', () => {
+  document.getElementById('modal-bajas').classList.remove('open');
+});
+
 function toggleGraficaValor() {
   const grafica = document.getElementById('grafica-valor');
   const btn = document.getElementById('btn-toggle-valor');

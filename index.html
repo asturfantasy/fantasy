@@ -130,6 +130,12 @@
             <i class="ti ti-calendar" style="font-size:16px;color:var(--green-light)"></i>
             <span class="action-label">CONSULTA LA JORNADA EN JUEGO</span>
         </button>
+        <div style="text-align:center;margin-top:8px">
+            <button onclick="mostrarBajasJornada()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);cursor:pointer">
+                <i class="ti ti-info-circle" style="font-size:14px;color:var(--green-light)"></i>
+                <span id="texto-btn-bajas">Sancionados, dudas y lesionados para la</span>
+            </button>
+        </div>
         <div class="section-label" style="margin-top:8px"><strong id="titulo-jornada-home"></strong></div>
         <div id="matches-container" class="matches-grid">
             <div style="text-align:center;padding:32px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:12px">Cargando jornada...</div>
@@ -711,6 +717,13 @@
     <div class="modal" style="max-width:480px">
         <div class="modal-header"><span class="modal-title" id="historial-titulo">Historial</span><button class="modal-close" id="historial-close">✕</button></div>
         <div style="padding:20px;overflow-y:auto;max-height:65vh" id="historial-content"></div>
+    </div>
+</div>
+
+<div id="modal-bajas" class="modal-overlay">
+    <div class="modal" style="max-width:480px">
+        <div class="modal-header"><span class="modal-title">A tener en cuenta</span><button class="modal-close" id="bajas-close">✕</button></div>
+        <div style="padding:20px;overflow-y:auto;max-height:65vh" id="bajas-content"></div>
     </div>
 </div>
 
