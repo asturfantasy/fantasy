@@ -708,12 +708,15 @@ document.getElementById('btn-save-lineup').addEventListener('click', async () =>
   const clubExcedido = Object.entries(clubCount).find(([club, count]) => count > 2);
   if (clubExcedido) { showToast('Máximo 2 jugadores del mismo club (' + clubExcedido[0] + ')', true); return; }
 
-  const totalEsperado = 1 + def + mid + fwd + 1;
-  const huecos = totalEsperado - Object.keys(seleccionados).length;
-  if (huecos > 0 && Object.keys(seleccionados).length > 0) {
-    showToast(`¡Recuerda! ¡El once aún no está completo!`, true);
-    await new Promise(r => setTimeout(r, 1500));
-  }
+    const totalEsperado = 1 + def + mid + fwd + 1;
+    const huecos = totalEsperado - Object.keys(seleccionados).length;
+    if (huecos > 0 && Object.keys(seleccionados).length > 0) {
+      showToast(`¡Recuerda! ¡El once aún no está completo!`, true);
+      await new Promise(r => setTimeout(r, 1500));
+    } else if (huecos < 0) {
+      showToast('Tienes más jugadores de la cuenta (' + Object.keys(seleccionados).length + '/' + totalEsperado + '). Recarga la página e inténtalo de nuevo.', true);
+      return;
+    }
 
   const btn = document.getElementById('btn-save-lineup');
   btn.disabled = true; btn.textContent = 'GUARDANDO...';
