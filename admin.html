@@ -112,7 +112,7 @@
     .mobile-header-title span { color:var(--neon); }
     .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
     .sidebar-overlay.open { display:block; }
-    @media (max-width: 768px) {
+        @media (max-width: 768px) {
       .admin-layout { grid-template-columns:1fr; }
       .sidebar { position:fixed; left:-260px; top:0; height:100vh; width:260px; z-index:300; transition:left 0.25s ease; border-right:1px solid var(--border); }
       .sidebar.open { left:0; }
@@ -123,11 +123,42 @@
       .form-grid { grid-template-columns:1fr; }
       .page-header { flex-wrap:wrap; gap:10px; }
       .page-header > div { flex-wrap:wrap; gap:6px; }
-      .admin-table { font-size:12px; }
-      .admin-table th, .admin-table td { padding:8px 8px; }
-      .section-head { flex-wrap:wrap; gap:8px; }
+                   #panel-partidos .admin-table { font-size:11px; table-layout:fixed; width:100%; }
+      #panel-partidos .admin-table th, #panel-partidos .admin-table td { padding:6px 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      #panel-partidos .section { overflow-x:hidden; }
+            #tabla-jornadas input[type="datetime-local"] { min-width:170px; font-size:11px; }
+      #panel-jornadas .admin-table { display:block; overflow-x:auto; white-space:nowrap; }
+      #panel-jornadas .admin-table thead, #panel-jornadas .admin-table tbody, #panel-jornadas .admin-table tr { display:table; width:100%; table-layout:fixed; }
+      #tabla-admins-head th:nth-child(2), #tabla-admins tr td:nth-child(2) { display:none; }
+      .section { overflow-x:hidden; }
+      .section-head { flex-wrap:wrap; gap:8px; flex-direction:column; align-items:stretch; }
+      .section-head select, .section-head .form-input { width:100%; max-width:none; }
       .modal-box, .modal-box-wide { max-width:95vw; padding:16px; }
       .score-inputs { justify-content:center; }
+      .publicar-grid { grid-template-columns:1fr; }
+            .page-header > .partidos-acciones {
+        width:100% !important;
+        display:flex !important;
+        flex-direction:column !important;
+        flex-wrap:nowrap !important;
+        align-items:stretch !important;
+        height:auto !important;
+        max-height:none !important;
+      }
+      .partidos-acciones > * {
+        width:100% !important;
+        max-width:none !important;
+        flex:none !important;
+        display:block !important;
+      }
+      .partidos-acciones .btn {
+        width:100% !important;
+        box-sizing:border-box !important;
+        justify-content:center !important;
+      }
+      #menu-formato-jornada, #menu-formato-clasificacion { left:0; right:0; width:100%; box-sizing:border-box; }
+            .mina-selectores { flex-direction:column !important; }
+      .mina-selectores select { width:100% !important; }
     }
   </style>
 </head>
@@ -244,7 +275,7 @@
       <div class="panel" id="panel-partidos">
         <div class="page-header">
           <div class="page-title">Partidos</div>
-          <div style="display:flex;gap:8px">
+          <div class="partidos-acciones" style="display:flex;gap:8px">
             <button class="btn" id="btn-nueva-jornada"><i class="ti ti-calendar-plus"></i> Nueva jornada</button>
             <div style="position:relative;display:inline-block">
               <button class="btn" id="btn-compartir-jornada"><i class="ti ti-share"></i> Compartir jornada</button>
@@ -408,7 +439,7 @@
         <div class="section">
           <div class="section-head"><div class="section-title">Notas de La Mina por equipo</div></div>
           <div class="section-body">
-            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <div class="mina-selectores" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
               <select id="mina-jornada" class="form-input" style="width:160px"></select>
               <select id="mina-club" class="form-input" style="width:200px"><option value="">Selecciona un club...</option></select>
             </div>
@@ -477,8 +508,8 @@
         <div class="section">
           <div class="section-head"><div class="section-title">Usuarios y roles</div></div>
           <div class="section-body">
-            <table class="admin-table">
-              <thead><tr><th>Equipo</th><th>User ID</th><th>Rol</th><th>Acciones</th></tr></thead>
+            <table class="admin-table" id="tabla-admins-completa">
+              <thead id="tabla-admins-head"><tr><th>Equipo</th><th>User ID</th><th>Rol</th><th>Acciones</th></tr></thead>
               <tbody id="tabla-admins"></tbody>
             </table>
           </div>
@@ -1436,7 +1467,7 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
   ctx.font = 'bold 20px sans-serif';
   ctx.textAlign = 'right';
   ctx.fillStyle = '#007a45';
-  ctx.fillText(`MÁS USADOS · J${jornada}`, SIZE - 40, 54);
+  ctx.fillText(`LOS FAVORITOS · J${jornada}`, SIZE - 40, 54);
 
   const lineaSep = (y) => {
     const grad = ctx.createLinearGradient(0, 0, SIZE, 0);
@@ -1565,7 +1596,7 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
     canvas.toBlob(async blob => {
       const file = new File([blob], `mas_usados_J${jornada}.png`, { type: 'image/png' });
       if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Más usados J${jornada} · AsturFantasy` });
+        await navigator.share({ files: [file], title: `Los favoritos de la J${jornada} · AsturFantasy` });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1595,9 +1626,9 @@ async function dibujarPublicacionMasUsados(jornada, jugador, capitan, entrenador
   }
 
   /* ── ESTADÍSTICAS ── */
-  async function cargarStats() {
-    const { data: equipos } = await db.from('equipos').select('user_id');
-    const { data: jornadas } = await db.from('clasificacion_automatica').select('jornada, puntos').order('jornada', { ascending: true });
+    async function cargarStats() {
+    const { data: equipos } = await fetchAllRows(db.from('equipos').select('user_id'));
+    const { data: jornadas } = await fetchAllRows(db.from('clasificacion_automatica').select('jornada, puntos').order('jornada', { ascending: true }));
     const porJornada = {};
     (jornadas || []).forEach(r => { if (!porJornada[r.jornada]) porJornada[r.jornada] = []; porJornada[r.jornada].push(r.puntos); });
     const jornadasKeys = Object.keys(porJornada).sort((a,b) => b - a);
@@ -1949,8 +1980,8 @@ tabla.innerHTML =
   });
 
   /* ── NOTIFICACIONES ── */
-  async function cargarNotificaciones() {
-    const { data } = await db.from('push_subscriptions').select('id, user_id, created_at');
+    async function cargarNotificaciones() {
+    const { data } = await fetchAllRows(db.from('push_subscriptions').select('id, user_id, created_at'));
     const el = document.getElementById('notif-suscriptores');
     if (!data?.length) { el.textContent = 'Sin suscriptores activos'; return; }
     el.innerHTML = '<div style="font-size:14px;font-weight:700;color:var(--neon);margin-bottom:8px">' + data.length + ' suscriptores activos</div>' +
