@@ -488,12 +488,13 @@ async function mostrarBajasJornada() {
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
 
-        const { data } = await db.from('jugadores')
-          .select('nombre, club, posicion, activo, escudo_url, motivo_baja')
-          .eq('jornada', JORNADA_ACTIVA)
-          .in('activo', [0, 2, 3])
-          .order('activo')
-          .order('nombre');
+            const { data } = await db.from('jugadores')
+              .select('nombre, club, posicion, activo, escudo_url, motivo_baja')
+              .eq('jornada', JORNADA_ACTIVA)
+              .in('activo', [0, 2, 3])
+              .order('activo')
+              .order('club')
+              .order('nombre');
 
   if (!data?.length) {
     content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">No hay bajas registradas para esta jornada</div>';
@@ -513,22 +514,21 @@ async function mostrarBajasJornada() {
      .join('');
 
    const listado = Object.values(grupos)
-     .filter(g => g.jugadores.length)
-     .map(g =>
-       '<div style="margin-bottom:18px">' +
-                 '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;margin-bottom:8px;color:#ffffff">' + g.icono + ' ' + g.titulo + '</div>' +
-         g.jugadores.map(j =>
-           '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;background:rgba(' + g.color + ',0.08);border-left:3px solid rgba(' + g.color + ',0.7);border-radius:6px">' +
-             (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="24" height="24" style="object-fit:contain;flex-shrink:0">' : '') +
-                          '<div style="flex:1">' +
-                            '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
-                            '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.club + ' · ' + j.posicion + '</div>' +
-                            (j.motivo_baja ? '<div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:2px">' + j.motivo_baja + '</div>' : '') +
-                          '</div>' +
-           '</div>'
-         ).join('') +
-       '</div>'
-     ).join('');
+        .filter(g => g.jugadores.length)
+        .map(g =>
+          '<div style="margin-bottom:18px">' +
+                    '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;margin-bottom:8px;color:#ffffff">' + g.icono + ' ' + g.titulo + '</div>' +
+            g.jugadores.map(j =>
+              '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;background:rgba(' + g.color + ',0.08);border-left:3px solid rgba(' + g.color + ',0.7);border-radius:6px">' +
+                (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="24" height="24" style="object-fit:contain;flex-shrink:0">' : '') +
+                '<div style="flex:1">' +
+                  '<div style="font-size:13px;font-weight:600">' + j.nombre + '</div>' +
+                                    '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + j.posicion + (j.motivo_baja ? ' · ' + j.motivo_baja : '') + '</div>' +
+                '</div>' +
+              '</div>'
+            ).join('') +
+          '</div>'
+        ).join('');
 
    content.innerHTML =
      '<div style="display:flex;padding:14px 0 18px;border-bottom:1px solid var(--border);margin-bottom:16px">' + resumen + '</div>' +
