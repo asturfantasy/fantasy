@@ -1872,12 +1872,17 @@ tabla.innerHTML =
   /* ── LA MINA ── */
   let minaJugadores = [];
 
-  async function inicializarMina() {
-    const jornadaActiva = parseInt(document.getElementById('cfg-jornada-activa')?.value) || 1;
-    const selectJornada = document.getElementById('mina-jornada');
+  async function calcularJornadaActivaReal() {
+  const { data: jornadas } = await db.from('jornadas').select('*').order('jornada', { ascending: true });
+  const ahora = new Date();
+  if (!jornadas?.length) return 1;
+  const pasadas = jornadas.filter(j => new Date(j.deadline) < ahora);
+  return pasadas.length ? pasadas[pasadas.length - 1].jornada : 1;
+}
 
-    const { data: config } = await db.from('config_jornada').select('jornada_activa').eq('id', 1).single();
-    const jornada = config?.jornada_activa || jornadaActiva;
+    async function inicializarMina() {
+    const selectJornada = document.getElementById('mina-jornada');
+    const jornada = await calcularJornadaActivaReal();
 
     selectJornada.innerHTML = '<option value="' + jornada + '">Jornada ' + jornada + '</option>';
     selectJornada.value = jornada;
