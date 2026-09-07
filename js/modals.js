@@ -110,8 +110,9 @@ async function abrirConsultaPuntos() {
     content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
     const { data: partidos } = await db.from('partidos').select('*').eq('jornada', jornada).order('fecha');
     if (!partidos?.length) { content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin partidos para esta jornada</div>'; return; }
+    const esc = s => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     content.innerHTML = partidos.map(p => `
-      <div class="match-card" style="cursor:pointer;margin-bottom:8px" onclick="mostrarPartido('${p.local_abrev}','${p.visitante_abrev}','${p.local_nombre}','${p.visitante_nombre}',${jornada},true)">
+      <div class="match-card" style="cursor:pointer;margin-bottom:8px" onclick="mostrarPartido('${esc(p.local_abrev)}','${esc(p.visitante_abrev)}','${esc(p.local_nombre)}','${esc(p.visitante_nombre)}',${jornada},true)">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;text-align:center">
           <div class="crest" style="display:flex;align-items:center;justify-content:center">
             ${p.local_escudo_url ? '<img loading="lazy" src="' + p.local_escudo_url + '" width="44" height="44" style="object-fit:contain">' : p.local_abrev}

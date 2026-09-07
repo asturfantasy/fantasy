@@ -105,16 +105,18 @@ async function cargarMyTeam(jornada) {
           ${partidos.map(p => {
             const localImg = p.local_escudo_url ? `<img loading="lazy" src="${p.local_escudo_url}" width="28" height="28" style="object-fit:contain">` : p.local_abrev;
             const visitanteImg = p.visitante_escudo_url ? `<img loading="lazy" src="${p.visitante_escudo_url}" width="28" height="28" style="object-fit:contain">` : p.visitante_abrev;
+            const esc = s => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const argsPartido = `'${esc(p.local_abrev)}','${esc(p.visitante_abrev)}','${esc(p.local_nombre)}','${esc(p.visitante_nombre)}',${p.jornada}`;
             return `
               <div style="background:var(--surface);border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer"
-                   onclick="mostrarPartido('${p.local_abrev}','${p.visitante_abrev}','${p.local_nombre}','${p.visitante_nombre}',${p.jornada})">
+                   onclick="mostrarPartido(${argsPartido})">
                 <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:4px">
                   ${localImg}
                   <div style="flex:1;font-family:var(--font-display);font-size:10px;font-weight:600;color:var(--text);text-align:center;line-height:1.2">${p.local_abrev}</div>
                   <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:${p.finalizado ? 'var(--neon)' : 'var(--text-muted)'};white-space:nowrap">
                     ${p.finalizado ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
                       <span>${p.resultado_local}-${p.resultado_visitante}</span>
-                      <button onclick="event.stopPropagation();mostrarPartido('${p.local_abrev}','${p.visitante_abrev}','${p.local_nombre}','${p.visitante_nombre}',${p.jornada})"
+                      <button onclick="event.stopPropagation();mostrarPartido(${argsPartido})"
                         style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:2px 8px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:1px;text-transform:uppercase">
                         PUNTOS
                       </button>
