@@ -114,10 +114,11 @@ async function loadHome() {
   if (!PARTIDOS.length) { container.innerHTML = '<div style="text-align:center;padding:32px 20px;font-family:var(--font-display);font-size:15px;color:var(--text-muted);letter-spacing:1px">Próxima jornada por confirmar</div>'; return; }
 
   const renderPartido = (p) => {
+    const esc = s => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;')
     const localImg = p.local.escudo_url ? '<img loading="lazy" src="' + p.local.escudo_url + '" alt="' + p.local.abrev + '" width="44" height="44" style="object-fit:contain">' : p.local.abrev;
     const visitanteImg = p.visitante.escudo_url ? '<img loading="lazy" src="' + p.visitante.escudo_url + '" alt="' + p.visitante.abrev + '" width="44" height="44" style="object-fit:contain">' : p.visitante.abrev;
     const centro = p.resultado?.finalizado
-      ? '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:2px">' + p.resultado.local + ' - ' + p.resultado.visitante + '</div><div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--neon);text-transform:uppercase;margin-bottom:2px">Final</div><button onclick="mostrarPartido(\'' + p.local.abrev + '\',\'' + p.visitante.abrev + '\',\'' + p.local.nombre + '\',\'' + p.visitante.nombre + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:4px;width:100%">Puntos</button>'
+      ? '<div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:2px">' + p.resultado.local + ' - ' + p.resultado.visitante + '</div><div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--neon);text-transform:uppercase;margin-bottom:2px">Final</div><button onclick="mostrarPartido(\'' + p.local.abrev + '\',\'' + p.visitante.abrev + '\',\'' + esc(p.local.nombre) + '\',\'' + esc(p.visitante.nombre) + '\')" style="background:var(--neon);color:#0d1117;border:none;border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:4px;width:100%">Puntos</button>'
       : '<div class="match-vs">' + p.estadio + '</div><div class="match-date">' + formatearFecha(p.fecha, p.hora) + '</div>';
     return '<div class="match-card"><div class="match-team"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + localImg + '</div><div><div class="team-name">' + p.local.nombre + '</div></div></div><div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:0 8px;min-width:90px;max-width:110px">' + centro + '</div><div class="match-team right"><div class="crest" style="color:white;display:flex;align-items:center;justify-content:center">' + visitanteImg + '</div><div style="text-align:right"><div class="team-name">' + p.visitante.nombre + '</div></div></div></div>';
   };
@@ -306,7 +307,8 @@ async function cargarResultadosEquipo(abrev) {
   const pendientes = data.filter(p => !p.finalizado);
 
   const renderPartido = (p) => {
-    const esLocal = p.local_abrev === abrev;
+      const esc = s => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const esLocal = p.local_abrev === abrev;
     const rival = esLocal ? p.visitante_nombre : p.local_nombre;
     const rivalEscudo = esLocal ? p.visitante_escudo_url : p.local_escudo_url;
     const golesA = esLocal ? p.resultado_local : p.resultado_visitante;
@@ -316,7 +318,7 @@ async function cargarResultadosEquipo(abrev) {
     return `
       <div style="display:flex;align-items:center;gap:12px;padding:12px 0;
                   border-bottom:1px solid var(--border);cursor:pointer"
-           onclick="mostrarPartido('${p.local_abrev}', '${p.visitante_abrev}', '${p.local_nombre}', '${p.visitante_nombre}', ${p.jornada})">
+           onclick="mostrarPartido('${esc(p.local_abrev)}', '${esc(p.visitante_abrev)}', '${esc(p.local_nombre)}', '${esc(p.visitante_nombre)}', ${p.jornada})">
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);width:20px;text-align:center">J${p.jornada}</div>
         <div style="font-size:14px;width:24px;text-align:center">${esLocal ? '🏠' : '✈️'}</div>
         ${rivalEscudo ? `<img src="${rivalEscudo}" width="24" height="24" style="object-fit:contain">` : ''}
