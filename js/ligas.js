@@ -52,8 +52,14 @@ function ligaCardHtml(l) {
         '<i class="ti ti-chevron-down" id="chevron-liga-' + l.id + '" style="font-size:18px;color:var(--text-muted);transition:transform 0.2s"></i>' +
       '</div>' +
     '</div>' +
-    '<div id="liga-detail-' + l.id + '" style="display:none;border-top:1px solid var(--border)">' +
-      '<div id="tabla-liga-' + l.id + '" style="max-height:320px;overflow-y:auto"></div>' +
+        '<div id="liga-detail-' + l.id + '" style="display:none;border-top:1px solid var(--border)">' +
+          '<div style="padding:10px 16px 0">' +
+            '<select id="liga-jornada-' + l.id + '" onchange="cargarClasificacionLiga(\'' + l.id + '\', this.value === \'general\' ? null : parseInt(this.value))" style="width:100%;padding:7px 10px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:var(--font-display);font-size:12px">' +
+              '<option value="general">General (temporada)</option>' +
+              Array.from({ length: JORNADA_ACTIVA }, (_, i) => JORNADA_ACTIVA - i).map(j => '<option value="' + j + '">Jornada ' + j + '</option>').join('') +
+            '</select>' +
+          '</div>' +
+          '<div id="tabla-liga-' + l.id + '" style="max-height:320px;overflow-y:auto"></div>' +
       '<div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">' +
         '<button onclick="compartirClasificacion(null, null, null, \'liga\', null, \'' + l.id + '\', \'' + l.nombre.replace(/'/g, "\\'") + '\')" style="flex:1;padding:8px;background:var(--green-brand);color:white;border:none;border-radius:8px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-share"></i> Compartir</button>' +
         (l.creador_id === currentUser?.id
@@ -73,9 +79,11 @@ function toggleLigaCard(ligaId) {
   if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
-async function cargarClasificacionLiga(ligaId) {
+async function cargarClasificacionLiga(ligaId, jornadaSel = null) {
   const container = document.getElementById('tabla-liga-' + ligaId);
   if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
 
   const { data: miembros } = await db.from('liga_miembros').select('user_id').eq('liga_id', ligaId);
   const userIds = (miembros || []).map(m => m.user_id);
@@ -83,8 +91,14 @@ async function cargarClasificacionLiga(ligaId) {
 
   if (!total) { container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:12px">Sin miembros</div>'; return; }
 
-  const { data: general } = await fetchAllRows(db.from('clasificacion_general_auto').select('*').in('user_id', userIds));
-  const sorted = (general || []).sort((a, b) => b.puntos_total - a.puntos_total);
+  let sorted;
+  if (jornadaSel === null) {
+    const { data: general } = await fetchAllRows(db.from('clasificacion_general_auto').select('*').in('user_id', userIds));
+    sorted = (general || []).sort((a, b) => b.puntos_total - a.puntos_total);
+  } else {
+    const { data: semanal } = await fetchAllRows(db.from('clasificacion_automatica').select('*').eq('jornada', jornadaSel).in('user_id', userIds));
+    sorted = (semanal || []).sort((a, b) => b.puntos - a.puntos);
+  }
   const miPos = sorted.findIndex(r => r.user_id === currentUser.id) + 1;
 
   // Actualizar header de la card con miembros y posición
@@ -93,19 +107,28 @@ async function cargarClasificacionLiga(ligaId) {
     headerInfo.textContent = miPos + 'º / ' + total + ' participantes';
   }
 
-  const medalColor = (i) => i === 0 ? '#e3b341' : i === 1 ? '#8b949e' : i === 2 ? '#cd7f32' : 'var(--text-muted)';
+    const medalColor = (i) => i === 0 ? '#e3b341' : i === 1 ? '#8b949e' : i === 2 ? '#cd7f32' : 'var(--text-muted)';
+    const cerrada = jornadaSel !== null && jornadaSel <= JORNADA_VISIBLE;
+    const esc = s => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
-  container.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-    sorted.map((r, i) => {
-      const esYo = r.user_id === currentUser.id;
-      return '<tr style="' + (esYo ? 'background:rgba(0,217,126,0.06);' : '') + '">' +
-        '<td style="padding:8px 12px;width:32px"><span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:' + medalColor(i) + '">' + (i+1) + '</span></td>' +
-        '<td style="padding:8px 4px"><div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:' + (esYo ? 'var(--neon)' : 'var(--text)') + '">' + (esYo ? '⭐ ' : '') + escapeHTML(r.nombre_equipo) + '</div></td>' +
-        '<td style="padding:8px 12px;text-align:right"><div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:' + (esYo ? 'var(--neon)' : 'var(--text)') + '">' + r.puntos_total + '</div></td>' +
-      '</tr>';
-    }).join('') +
-  '</table>';
-}
+    if (!sorted.length) {
+      container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:12px">Sin datos para esta jornada</div>';
+      return;
+    }
+
+    container.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      sorted.map((r, i) => {
+        const esYo = r.user_id === currentUser.id;
+        const puntos = jornadaSel === null ? r.puntos_total : r.puntos;
+        const onclick = cerrada ? 'onclick="verAlineacionUsuario(\'' + esc(r.user_id) + '\',\'' + esc(r.nombre_equipo) + '\',' + jornadaSel + ')"' : '';
+        return '<tr style="' + (esYo ? 'background:rgba(0,217,126,0.06);' : '') + (cerrada ? 'cursor:pointer;' : '') + '" ' + onclick + '>' +
+          '<td style="padding:8px 12px;width:32px"><span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:' + medalColor(i) + '">' + (i+1) + '</span></td>' +
+          '<td style="padding:8px 4px"><div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:' + (esYo ? 'var(--neon)' : 'var(--text)') + '">' + (esYo ? '⭐ ' : '') + escapeHTML(r.nombre_equipo) + '</div>' + (cerrada ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim)">Ver alineación →</div>' : '') + '</td>' +
+          '<td style="padding:8px 12px;text-align:right"><div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:' + (esYo ? 'var(--neon)' : 'var(--text)') + '">' + puntos + '</div></td>' +
+        '</tr>';
+      }).join('') +
+    '</table>';
+  }
 
 function mostrarCrearLiga() {
   const form = document.getElementById('ligas-form');
