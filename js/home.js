@@ -71,7 +71,7 @@ async function loadHome() {
         .in('id', ids)
         .eq('jornada', JORNADA_ACTIVA);
 
-      const costeTotal = (jugadoresJ || []).reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0);
+      const costeTotal = Math.round((jugadoresJ || []).reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0) * 10) / 10;
 
       const avisoPresupuesto = document.getElementById('aviso-presupuesto-home');
       if (avisoPresupuesto) {
