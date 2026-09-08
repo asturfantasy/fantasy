@@ -43,25 +43,28 @@ async function cargarMyTeam(jornada) {
   const banner = document.getElementById('myteam-banner');
   if (error || !data?.length) { grid.innerHTML = ''; banner.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  const ids = data.map(j => j.jugador_id);
-  const { data: jugData } = await db.from('jugadores').select('id, escudo_url, foto_url, valor, activo').in('id', ids);
-  const escudoMap = {}, fotoMap = {}, valorMap = {}, activoMap = {};
-  (jugData || []).forEach(j => { escudoMap[j.id] = j.escudo_url; fotoMap[j.id] = j.foto_url; valorMap[j.id] = j.valor; activoMap[j.id] = j.activo; });
-  const { data: capData } = await db.from('mi_equipo').select('jugador_id').eq('user_id', currentUser.id).eq('jornada', jornada).eq('capitan', true).single();
-  const capitanId = capData?.jugador_id || null;
-  const orden = ['POR','DEF','MED','DEL','ENT'];
-  const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion));
-  const totalPuntos = sorted.reduce((acc, j) => { const pts = j.puntos || 0; return acc + (j.jugador_id === capitanId ? pts * 2 : pts); }, 0);
-  const formacion = data[0]?.formacion || '—';
-  const { data: mediaData } = await db.from('clasificacion_automatica').select('puntos').eq('jornada', jornada);
-  const media = mediaData?.length ? Math.round(mediaData.reduce((acc, r) => acc + r.puntos, 0) / mediaData.length) : 0;
+    const ids = data.map(j => j.jugador_id);
+    const { data: jugData } = await db.from('jugadores').select('id, escudo_url, foto_url, valor, activo, gol, asistencia').in('id', ids);
+    const escudoMap = {}, fotoMap = {}, valorMap = {}, activoMap = {}, golMap = {}, asistMap = {};
+    (jugData || []).forEach(j => { escudoMap[j.id] = j.escudo_url; fotoMap[j.id] = j.foto_url; valorMap[j.id] = j.valor; activoMap[j.id] = j.activo; golMap[j.id] = j.gol || 0; asistMap[j.id] = j.asistencia || 0; });
+    const { data: capData } = await db.from('mi_equipo').select('jugador_id').eq('user_id', currentUser.id).eq('jornada', jornada).eq('capitan', true).single();
+    const capitanId = capData?.jugador_id || null;
+    const orden = ['POR','DEF','MED','DEL','ENT'];
+    const sorted = [...data].sort((a,b) => orden.indexOf(a.posicion) - orden.indexOf(b.posicion));
+    const totalPuntos = sorted.reduce((acc, j) => { const pts = j.puntos || 0; return acc + (j.jugador_id === capitanId ? pts * 2 : pts); }, 0);
+    const totalGoles = sorted.reduce((acc, j) => acc + (golMap[j.jugador_id] || 0), 0);
+    const totalAsistencias = sorted.reduce((acc, j) => acc + (asistMap[j.jugador_id] || 0), 0);
+    const formacion = data[0]?.formacion || '—';
+    const { data: mediaData } = await db.from('clasificacion_automatica').select('puntos').eq('jornada', jornada);
+    const media = mediaData?.length ? Math.round(mediaData.reduce((acc, r) => acc + r.puntos, 0) / mediaData.length) : 0;
 
-  banner.style.display = 'block';
-  banner.innerHTML =
-    '<div class="saved-sub" style="text-align:center">Formación <strong>' + formacion + '</strong> · Jornada ' + jornada + '</div>' +
-    '<div class="saved-pts-high" style="text-align:center"><strong>' + totalPuntos + ' PUNTOS</strong></div>' +
-    '<div class="saved-sub" style="text-align:center;margin-top:6px">Media de la jornada: <strong>' + media + ' pts</strong></div>' +
-    '<button onclick="compartirEquipo()" style="width:100%;margin-top:12px;padding:10px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-share"></i> Compartir mi equipo</button>';
+    banner.style.display = 'block';
+    banner.innerHTML =
+      '<div class="saved-sub" style="text-align:center">Formación <strong>' + formacion + '</strong> · Jornada ' + jornada + '</div>' +
+      '<div class="saved-sub" style="text-align:center;margin-top:6px"><strong>' + totalGoles + '</strong> goles · <strong>' + totalAsistencias + '</strong> asistencias</div>' +
+      '<div class="saved-pts-high" style="text-align:center"><strong>' + totalPuntos + ' PUNTOS</strong></div>' +
+      '<div class="saved-sub" style="text-align:center;margin-top:6px">Media de la jornada: <strong>' + media + ' pts</strong></div>' +
+      '<button onclick="compartirEquipo()" style="width:100%;margin-top:12px;padding:10px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-share"></i> Compartir mi equipo</button>';
 
   grid.innerHTML = sorted.map(j => {
     const foto = fotoMap[j.jugador_id];
