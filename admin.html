@@ -291,6 +291,7 @@
                 <button class="btn" style="display:block;width:100%" onclick="generarCardClasificacion('historia')">📱 Formato 9:16 (historia)</button>
               </div>
             </div>
+            <button class="btn" onclick="generarClasificacionesFantasy()"><i class="ti ti-crown"></i> Clasificación fantasy (Top 15)</button>
             <button class="btn btn-primary" id="btn-nuevo-partido"><i class="ti ti-plus"></i> Añadir partido</button>
           </div>
         </div>
@@ -2217,6 +2218,147 @@ async function generarCardJornada(jornada, formato = 'cuadrado') {
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
+
+  async function _dibujarClasificacionFantasy(tabla, titulo, subtitulo, nombreArchivo) {
+    const N = 15;
+    const topN = Array.from({ length: N }, (_, i) => tabla[i] || { pos: i + 1, nombre: '—', pts: '—', vacio: true });
+
+    const SIZE = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#101715';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('ASTUR', 40, 55);
+    ctx.fillStyle = '#007a45';
+    ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 55);
+
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(titulo, SIZE - 40, 55);
+
+    const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
+    gradH.addColorStop(0, 'transparent');
+    gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+    gradH.addColorStop(1, 'transparent');
+    ctx.strokeStyle = gradH;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 90);
+    ctx.lineTo(SIZE, 90);
+    ctx.stroke();
+
+    const HEADER_H = 90;
+    const FOOTER_H = 50;
+    const AVAILABLE_H = SIZE - HEADER_H - FOOTER_H;
+    const ROW_H = Math.floor(AVAILABLE_H / N);
+    const CARD_H = ROW_H - 6;
+    const PADDING = 16;
+
+    const medalColor = (pos) => {
+      if (pos === 1) return '#e3b341';
+      if (pos === 2) return '#8b949e';
+      if (pos === 3) return '#cd7f32';
+      return 'rgba(255,255,255,0.3)';
+    };
+
+    const dibujarFila = (r, y) => {
+      if (r.vacio) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(PADDING, y, SIZE - PADDING * 2, CARD_H, 8);
+        ctx.stroke();
+        return;
+      }
+
+      ctx.fillStyle = r.pos % 2 === 0 ? '#141a17' : '#0f1512';
+      ctx.beginPath();
+      ctx.roundRect(PADDING, y, SIZE - PADDING * 2, CARD_H, 8);
+      ctx.fill();
+
+      ctx.fillStyle = medalColor(r.pos);
+      ctx.font = `bold ${Math.floor(CARD_H * 0.35)}px sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(r.pos, PADDING + 14, y + CARD_H / 2);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.floor(CARD_H * 0.32)}px sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText(r.nombre, PADDING + 70, y + CARD_H / 2);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.floor(CARD_H * 0.35)}px sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText(r.pts + ' pts', SIZE - PADDING - 14, y + CARD_H / 2);
+    };
+
+    let currentY = HEADER_H;
+    topN.forEach(r => {
+      dibujarFila(r, currentY);
+      currentY += ROW_H;
+    });
+
+    const footerY = SIZE - FOOTER_H;
+    const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
+    gradF.addColorStop(0, 'transparent');
+    gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+    gradF.addColorStop(1, 'transparent');
+    ctx.strokeStyle = gradF;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, footerY);
+    ctx.lineTo(SIZE, footerY);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(subtitulo + ' · asturfantasy.com', SIZE / 2, footerY + 25);
+
+    const link = document.createElement('a');
+    link.download = nombreArchivo;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  async function generarClasificacionesFantasy() {
+    const ahora = new Date();
+    const { data: jornadasData } = await db.from('jornadas').select('*').order('jornada', { ascending: true });
+    let jornadaVisible;
+    if (jornadasData?.length) {
+      const pasadas = jornadasData.filter(j => new Date(j.deadline) < ahora);
+      jornadaVisible = pasadas.length ? pasadas[pasadas.length - 1].jornada : 0;
+    } else {
+      const { data: config } = await db.from('config_jornada').select('*').eq('id', 1).single();
+      jornadaVisible = config?.jornada_visible || 0;
+    }
+
+    if (!jornadaVisible) { showToast('Todavía no hay ninguna jornada cerrada', true); return; }
+
+    const { data: semanal } = await db.from('clasificacion_automatica')
+      .select('nombre_equipo, puntos')
+      .eq('jornada', jornadaVisible)
+      .order('puntos', { ascending: false })
+      .limit(15);
+    const tablaJornada = (semanal || []).map((r, i) => ({ pos: i + 1, nombre: r.nombre_equipo, pts: r.puntos }));
+    await _dibujarClasificacionFantasy(tablaJornada, 'Jornada ' + jornadaVisible, 'Clasificación semanal', 'clasificacion-jornada-J' + jornadaVisible + '.png');
+
+    const { data: general } = await db.from('clasificacion_general_auto').select('nombre_equipo, puntos_total').order('puntos_total', { ascending: false }).limit(15);
+    const tablaGeneral = (general || []).map((r, i) => ({ pos: i + 1, nombre: r.nombre_equipo, pts: r.puntos_total }));
+    setTimeout(() => {
+      _dibujarClasificacionFantasy(tablaGeneral, 'General', 'Clasificación general', 'clasificacion-general.png');
+    }, 400);
+  }
 
   async function generarCardClasificacion(formato = 'cuadrado') {
   const { data: clasif } = await db

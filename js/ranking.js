@@ -877,52 +877,95 @@ let rankingDetalleData = null;
 
 async function loadRankingDetalle() {
   if (!rankingDetalleData) {
-    const { data } = await db.from('ranking_jugadores').select('nombre, club, posicion, escudo_url, foto_url, goles, asistencias, porterias_cero, amarillas, rojas, minutos_total');
+    const { data } = await db.from('ranking_jugadores').select('nombre, club, posicion, escudo_url, foto_url, goles, asistencias, porterias_cero, amarillas, rojas, minutos_total, goles_encajados, partidos_jugados');
     rankingDetalleData = data || [];
+  }
+  const selectClub = document.getElementById('detalle-filtro-club');
+  if (selectClub && selectClub.options.length <= 1) {
+    const clubesUnicos = [...new Set(rankingDetalleData.map(j => j.club))].sort();
+    selectClub.innerHTML = '<option value="">Todos los clubes</option>' +
+      clubesUnicos.map(c => '<option value="' + c + '">' + (CLUBES_INFO[c]?.nombre || c) + '</option>').join('');
   }
   cambiarSubtabDetalle('goles');
 }
+
+let _detalleFiltrados = [];
+let _detalleLimite = 25;
+let _detalleCampo = null, _detalleLabel = null, _detalleIcono = null;
+let _detalleExtraCol = null;
+const DETALLE_PAGINA = 25;
 
 function cambiarSubtabDetalle(subtab) {
   document.querySelectorAll('.ranking-subtab').forEach(b => b.classList.remove('active'));
   document.querySelector('[data-subtab="' + subtab + '"]')?.classList.add('active');
 
-  const campos = {
-    goles:       { campo: 'goles',          label: 'Goles',         icono: '⚽' },
-    asistencias: { campo: 'asistencias',    label: 'Asistencias',   icono: '👟' },
-    porterias:   { campo: 'porterias_cero', label: 'Port. a cero',  icono: '🔒' },
-    amarillas:   { campo: 'amarillas',      label: 'Amarillas',     icono: '🟨' },
-    rojas:       { campo: 'rojas',          label: 'Rojas',         icono: '🟥' },
-    minutos:     { campo: 'minutos_total',  label: 'Minutos',       icono: '⏱️' },
-  };
+    const campos = {
+      goles:       { campo: 'goles',          label: 'Goles',         icono: '⚽' },
+      asistencias: { campo: 'asistencias',    label: 'Asistencias',   icono: '👟' },
+      porterias:   { campo: 'porterias_cero', label: 'Port. a cero',  icono: '🔒' },
+      amarillas:   { campo: 'amarillas',      label: 'Amarillas',     icono: '🟨' },
+      rojas:       { campo: 'rojas',          label: 'Rojas',         icono: '🟥' },
+      minutos:     { campo: 'minutos_total',  label: 'Minutos',       icono: '⏱️' },
+      zamora:      { campo: 'zamora',         label: 'Goles encajados cada 90 mins', icono: '🧤' },
+    };
 
-  const { campo, label, icono } = campos[subtab];
+    const { campo, label, icono } = campos[subtab];
+    _detalleCampo = campo; _detalleLabel = label; _detalleIcono = icono;
+    _detalleLimite = DETALLE_PAGINA;
+
+      if (subtab === 'zamora') {
+        // Solo porteros con minutos jugados; gana el que menos encaja por 90 min
+        _detalleExtraCol = { campo: 'pj', label: 'PJ' };
+        _detalleFiltrados = (rankingDetalleData || [])
+          .filter(j => j.posicion === 'POR' && (j.minutos_total || 0) > 0)
+          .map(j => ({ ...j, pj: j.partidos_jugados || 0, zamora: Math.round(((j.goles_encajados || 0) / (j.minutos_total / 90)) * 100) / 100 }))
+          .sort((a, b) => a.zamora - b.zamora);
+      } else {
+        _detalleExtraCol = null;
+        _detalleFiltrados = (rankingDetalleData || [])
+          .filter(j => (j[campo] || 0) > 0)
+          .sort((a, b) => (b[campo] || 0) - (a[campo] || 0));
+      }
+
+    renderDetalleTabla();
+}
+
+function verMasDetalle() {
+  _detalleLimite += DETALLE_PAGINA;
+  renderDetalleTabla();
+}
+
+function renderDetalleTabla() {
   const container = document.getElementById('detalle-container');
-
-  const filtrados = (rankingDetalleData || [])
-    .filter(j => (j[campo] || 0) > 0)
-    .sort((a, b) => (b[campo] || 0) - (a[campo] || 0))
-    .slice(0, 20);
+  const campo = _detalleCampo, label = _detalleLabel, icono = _detalleIcono;
+    const clubSeleccionado = document.getElementById('detalle-filtro-club')?.value || '';
+    const base = clubSeleccionado ? _detalleFiltrados.filter(j => j.club === clubSeleccionado) : _detalleFiltrados;
+    const filtrados = base.slice(0, _detalleLimite);
 
   if (!filtrados.length) {
     container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:28px;font-family:var(--font-mono);font-size:12px">Sin datos</div>';
     return;
   }
 
-  container.innerHTML =
-    '<table class="ranking-table">' +
-      '<thead><tr><th>#</th><th>Jugador</th><th>Club</th><th style="text-align:right">' + icono + ' ' + label + '</th></tr></thead>' +
-      '<tbody>' +
-        filtrados.map((j, i) =>
-          '<tr class="' + medalClass(i+1) + '">' +
-            '<td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td>' +
-            '<td><div class="rank-name" style="cursor:pointer;text-decoration:underline" onclick="mostrarHistorial(\'' + j.nombre + '\',\'' + j.club + '\',\'' + j.posicion + '\')">' + j.nombre + '</div><div class="rank-team">' + j.posicion + '</div></td>' +
-            '<td>' + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="22" height="22" style="object-fit:contain;vertical-align:middle;margin-right:4px">' : '') + '<span class="rank-team">' + j.club + '</span></td>' +
-            '<td><div class="rank-pts">' + (j[campo] || 0) + '</div></td>' +
-          '</tr>'
-        ).join('') +
-      '</tbody>' +
-    '</table>';
+      const hayMas = base.length > _detalleLimite;
+      const colExtra = _detalleExtraCol ? '<th style="text-align:right">' + _detalleExtraCol.label + '</th>' : '';
+
+      container.innerHTML =
+        '<table class="ranking-table">' +
+          '<thead><tr><th>#</th><th>Jugador</th><th>Club</th>' + colExtra + '<th style="text-align:right">' + icono + ' ' + label + '</th></tr></thead>' +
+          '<tbody>' +
+            filtrados.map((j, i) =>
+              '<tr class="' + medalClass(i+1) + '">' +
+                '<td><span class="rank-pos ' + medalClass(i+1) + '">' + (i+1) + '</span></td>' +
+                '<td><div class="rank-name" style="cursor:pointer;text-decoration:underline" onclick="mostrarHistorial(\'' + j.nombre + '\',\'' + j.club + '\',\'' + j.posicion + '\')">' + j.nombre + '</div><div class="rank-team">' + j.posicion + '</div></td>' +
+                '<td>' + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="22" height="22" style="object-fit:contain;vertical-align:middle;margin-right:4px">' : '') + '<span class="rank-team">' + j.club + '</span></td>' +
+                (_detalleExtraCol ? '<td><div class="rank-team" style="text-align:right">' + (j[_detalleExtraCol.campo] ?? 0) + '</div></td>' : '') +
+                '<td><div class="rank-pts">' + (j[campo] || 0) + '</div></td>' +
+              '</tr>'
+            ).join('') +
+          '</tbody>' +
+        '</table>' +
+        (hayMas ? '<button onclick="verMasDetalle()" style="width:100%;margin-top:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer">Ver más</button>' : '');
 }
 
 function logrosVacios() {
@@ -1099,11 +1142,17 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   });
   const trebolDesbloqueado = trebolMax >= 5;
 
-  // Agitador: 50 jugadores diferentes durante la temporada
-  const jugadoresDiferentes = new Set(
-    (miEquipoAll || []).map(e => e.jugador_id)
-  ).size;
-  const agitadorDesbloqueado = jugadoresDiferentes >= 50;
+    // Agitador: 50 jugadores diferentes durante la temporada
+    // (por NOMBRE, no por jugador_id: cada jornada crea una fila -> id distinto
+    // para el mismo jugador, así que contar ids únicos infla el número real)
+    const nombrePorId = {};
+    (jugadoresAll || []).forEach(j => { nombrePorId[j.id] = j.nombre; });
+    const jugadoresDiferentes = new Set(
+      (miEquipoAll || [])
+        .map(e => nombrePorId[e.jugador_id])
+        .filter(Boolean)
+    ).size;
+    const agitadorDesbloqueado = jugadoresDiferentes >= 50;
 
   // Gafe
   let gafe = false;

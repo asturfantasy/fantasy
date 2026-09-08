@@ -297,10 +297,6 @@ async function loadLineup() {
 }
 
 async function exportarAlineacion() {
-  /*await new FontFace('Space Grotesk', 'url(https://cdn.jsdelivr.net/fontsource/fonts/space-grotesk@latest/latin-700-normal.woff2)').load()
-    .then(f => document.fonts.add(f))
-    .catch(() => {});*/
-
   const { data: equipoData } = await db
     .from('equipos')
     .select('nombre_equipo')
@@ -309,26 +305,23 @@ async function exportarAlineacion() {
   const nombreEquipo = equipoData?.nombre_equipo || 'Mi Equipo';
   const formacion = document.getElementById('formation-select')?.value || '—';
 
-  const ordenPos = ['POR','DEF','MED','DEL','ENT'];
-  const jugadores = Object.values(seleccionados).sort((a,b) =>
-    ordenPos.indexOf(a.posicion) - ordenPos.indexOf(b.posicion)
-  );
+  if (!Object.keys(seleccionados).length) { showToast('No hay jugadores en la alineación', true); return; }
 
-  if (!jugadores.length) { showToast('No hay jugadores en la alineación', true); return; }
+  const costeTotal = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
 
-  const mitad = Math.ceil(jugadores.length / 2);
-  const colIzq = jugadores.slice(0, mitad);
-  const colDer = jugadores.slice(mitad);
-
-  const SIZE = 1080;
-  const canvas = document.createElement('canvas');
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext('2d');
-
-  // Fondo sólido
-  ctx.fillStyle = '#101715';
-  ctx.fillRect(0, 0, SIZE, SIZE);
+    // Filas del campo, de arriba abajo: delanteros → ... → portero
+    const FILAS = [
+      { pos: 'DEL', color: '#f05e5e', textColor: '#ffffff' },
+      { pos: 'MED', color: '#4cd97b', textColor: '#111816' },
+      { pos: 'DEF', color: '#5b9cf6', textColor: '#ffffff' },
+      { pos: 'POR', color: '#e3b341', textColor: '#111816' },
+    ];
+    const porFila = { DEL: [], MED: [], DEF: [], POR: [], ENT: [] };
+    Object.entries(seleccionados).forEach(([slotId, jugador]) => {
+      const pos = slotId.split('-')[0];
+      if (porFila[pos]) porFila[pos].push(jugador);
+    });
+    const entrenador = porFila.ENT[0] || null;
 
   const cargarImg = (url) => new Promise(res => {
     if (!url) { res(null); return; }
@@ -339,34 +332,46 @@ async function exportarAlineacion() {
     img.src = url;
   });
 
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  // Fondo general
+  ctx.fillStyle = '#111816';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
   // ── Header ──
-  const HEADER_H = 140;
-
-  // Logo ASTURFANTASY
-  ctx.font = 'bold 36px "Space Grotesk"';
+  const HEADER_H = 150;
+  ctx.font = 'bold 36px "Space Grotesk", sans-serif';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('ASTUR', 40, 48);
-  ctx.fillStyle = '#007a45';
-  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 48);
+  ctx.fillText('ASTUR', 40, 46);
+  ctx.fillStyle = '#4cd97b';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 46);
 
-  // Nombre equipo y jornada
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 24px "Space Grotesk"';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(`${nombreEquipo} · Alineación J${JORNADA_ACTIVA}`, 40, 88);
+      ctx.fillStyle = '#f0f4f2';
+      ctx.font = 'bold 22px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(nombreEquipo, 40, 84);
 
-  // Formación
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '13px monospace';
-  ctx.fillText(formacion, 40, 118);
+      ctx.fillStyle = '#7a9088';
+      ctx.font = '13px monospace';
+      ctx.fillText('Formación ' + formacion, 40, 112);
 
-  // Línea separadora header
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#f0f4f2';
+      ctx.font = 'bold 18px "Space Grotesk", sans-serif';
+      ctx.fillText('Alineación J' + JORNADA_ACTIVA, SIZE - 40, 38);
+      ctx.fillStyle = costeTotal > PRESUPUESTO ? '#f05e5e' : '#4cd97b';
+      ctx.font = 'bold 18px "Space Grotesk", sans-serif';
+      ctx.fillText(costeTotal.toFixed(1) + ' M', SIZE - 40, 62);
+
   const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
   gradH.addColorStop(0, 'transparent');
-  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(0.5, 'rgba(76,217,123,0.5)');
   gradH.addColorStop(1, 'transparent');
   ctx.strokeStyle = gradH;
   ctx.lineWidth = 1;
@@ -375,64 +380,90 @@ async function exportarAlineacion() {
   ctx.lineTo(SIZE, HEADER_H);
   ctx.stroke();
 
-  // ── Jugadores ──
-  const PADDING = 32;
-  const COL_W = SIZE / 2;
-  const filas = Math.max(colIzq.length, colDer.length);
-  const AVAILABLE_H = SIZE - HEADER_H - 70;
-  const ROW_H = Math.floor(AVAILABLE_H / filas);
-  const CARD_H = ROW_H - 16;
-  const START_Y = HEADER_H + 10;
+  // ── Césped ──
+    const PITCH_X = 24;
+    const PITCH_Y = HEADER_H + 14;
+    const PITCH_W = SIZE - PITCH_X * 2;
+    const FOOTER_H = 44;
+    const ENT_LINE_H = entrenador ? 34 : 0;
+    const PITCH_H = SIZE - PITCH_Y - FOOTER_H - ENT_LINE_H - 14;
 
-  const dibujarJugador = async (j, x, y, cardW) => {
-    const fotoImg   = await cargarImg(j.foto_url);
-    const escudoImg = await cargarImg(j.escudo_url);
-    const esCap = String(capitan) === String(j.id);
+  const gradPitch = ctx.createLinearGradient(0, PITCH_Y, 0, PITCH_Y + PITCH_H);
+  gradPitch.addColorStop(0, '#1a3a26');
+  gradPitch.addColorStop(0.5, '#1e4a2e');
+  gradPitch.addColorStop(1, '#1a3a26');
+  ctx.fillStyle = gradPitch;
+  ctx.beginPath();
+  ctx.roundRect(PITCH_X, PITCH_Y, PITCH_W, PITCH_H, 16);
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
 
-    // Card
-    ctx.fillStyle = esCap ? 'rgba(245,158,11,0.2)' : '#007a45';
+  const NUM_STRIPES = 10;
+  const STRIPE_H = PITCH_H / NUM_STRIPES;
+  for (let i = 0; i < NUM_STRIPES; i += 2) {
+    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    ctx.fillRect(PITCH_X, PITCH_Y + i * STRIPE_H, PITCH_W, STRIPE_H);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PITCH_X + 16, PITCH_Y + PITCH_H / 2);
+  ctx.lineTo(PITCH_X + PITCH_W - 16, PITCH_Y + PITCH_H / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(PITCH_X + PITCH_W / 2, PITCH_Y + PITCH_H / 2, 55, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // ── Filas de jugadores (incluye ENT como una fila más) ──
+  const ROW_MARGIN = 24;
+  const filasConJugadores = FILAS.filter(f => porFila[f.pos].length > 0);
+  const AVAILABLE_ROWS_H = PITCH_H - ROW_MARGIN * 2;
+  const ROW_H = filasConJugadores.length ? AVAILABLE_ROWS_H / filasConJugadores.length : 0;
+    const CIRCLE_R = Math.min(50, Math.floor(ROW_H * 0.32));
+
+  const dibujarJugador = async (jugador, cx, cy, color, textColor) => {
+    const esCap = String(capitan) === String(jugador.id);
+    const fotoImg = await cargarImg(jugador.foto_url);
+    const escudoImg = await cargarImg(jugador.escudo_url);
+
     ctx.beginPath();
-    ctx.roundRect(x, y, cardW, CARD_H, 10);
+    ctx.arc(cx, cy, CIRCLE_R, 0, Math.PI * 2);
+    ctx.fillStyle = color;
     ctx.fill();
-
+    ctx.lineWidth = esCap ? 4 : 2;
+    ctx.strokeStyle = esCap ? '#e3b341' : 'rgba(255,255,255,0.2)';
+    ctx.stroke();
     if (esCap) {
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 1.5;
+      ctx.save();
+      ctx.shadowColor = 'rgba(227,179,65,0.6)';
+      ctx.shadowBlur = 16;
       ctx.beginPath();
-      ctx.roundRect(x, y, cardW, CARD_H, 10);
+      ctx.arc(cx, cy, CIRCLE_R, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
     }
-
-    // Foto circular
-    const r = Math.floor(CARD_H * 0.38);
-    const cx = x + 14 + r;
-    const cy = y + CARD_H / 2;
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fill();
 
     if (fotoImg) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(cx, cy, CIRCLE_R - 3, 0, Math.PI * 2);
       ctx.clip();
-      ctx.drawImage(fotoImg, cx - r, cy - r, r * 2, r * 2);
+      ctx.drawImage(fotoImg, cx - (CIRCLE_R - 3), cy - (CIRCLE_R - 3), (CIRCLE_R - 3) * 2, (CIRCLE_R - 3) * 2);
       ctx.restore();
     } else {
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.floor(r * 0.6)}px "Space Grotesk"`;
+      ctx.fillStyle = textColor;
+      ctx.font = `bold ${Math.floor(CIRCLE_R * 0.6)}px "Space Grotesk", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(j.nombre.substring(0,2).toUpperCase(), cx, cy);
+      ctx.fillText(jugador.nombre.substring(0, 3).toUpperCase(), cx, cy);
     }
 
-    // Escudo pequeño
     if (escudoImg) {
-      const er = Math.floor(r * 0.35);
-      const ex = cx + r - er + 2;
-      const ey = cy + r - er + 2;
+      const er = 13;
+      const ex = cx + CIRCLE_R - er + 2;
+      const ey = cy + CIRCLE_R - er + 2;
       ctx.save();
       ctx.beginPath();
       ctx.arc(ex, ey, er, 0, Math.PI * 2);
@@ -441,54 +472,89 @@ async function exportarAlineacion() {
       ctx.clip();
       ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
       ctx.restore();
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
-
-    // Texto
-    const txtX = x + 14 + r * 2 + 12;
-
-    ctx.fillStyle = esCap ? '#f59e0b' : '#ffffff';
-    ctx.font = `bold ${Math.floor(CARD_H * 0.22)}px "Space Grotesk"`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(j.nombre, txtX, y + CARD_H * 0.18);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = `${Math.floor(CARD_H * 0.16)}px monospace`;
-    //ctx.fillText(j.posicion + ' · ' + j.club, txtX, y + CARD_H * 0.48);
-    ctx.fillText(j.posicion + ' · ' + (j.valor || '—') + 'M', txtX, y + CARD_H * 0.48);
 
     if (esCap) {
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = `bold ${Math.floor(CARD_H * 0.14)}px "Space Grotesk"`;
-      ctx.fillText('⭐ Capitán', txtX, y + CARD_H * 0.68);
+      const bx = cx + CIRCLE_R - 5;
+      const by = cy - CIRCLE_R + 5;
+      ctx.beginPath();
+      ctx.arc(bx, by, 13, 0, Math.PI * 2);
+      ctx.fillStyle = '#e3b341';
+      ctx.fill();
+      ctx.fillStyle = '#111816';
+      ctx.font = 'bold 13px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('C', bx, by + 1);
     }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.floor(CIRCLE_R * 0.34)}px "Space Grotesk", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(jugador.nombre, cx, cy + CIRCLE_R + 6);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `${Math.floor(CIRCLE_R * 0.26)}px monospace`;
+    ctx.fillText(`${jugador.club} · ${(jugador.valor || 0).toFixed(1)}M`, cx, cy + CIRCLE_R + 6 + Math.floor(CIRCLE_R * 0.4));
   };
 
-  for (let i = 0; i < colIzq.length; i++) {
-    await dibujarJugador(colIzq[i], PADDING, START_Y + i * ROW_H, COL_W - PADDING - 8);
-  }
-  for (let i = 0; i < colDer.length; i++) {
-    await dibujarJugador(colDer[i], COL_W + 8, START_Y + i * ROW_H, COL_W - PADDING - 8);
-  }
+        let currentY = PITCH_Y + ROW_MARGIN;
+        for (const fila of filasConJugadores) {
+          const jugadoresFila = porFila[fila.pos];
+          const rowY = currentY + ROW_H / 2 - 8;
+          const gap = PITCH_W / (jugadoresFila.length + 1);
+          for (let i = 0; i < jugadoresFila.length; i++) {
+            const cx = PITCH_X + gap * (i + 1);
+            await dibujarJugador(jugadoresFila[i], cx, rowY, fila.color, fila.textColor);
+          }
+          currentY += ROW_H;
+        }
+
+        // ── Entrenador, línea compacta justo debajo del césped ──
+        if (entrenador) {
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = 'bold 16px "Space Grotesk", sans-serif';
+          const etiqueta = 'Entrenador: ';
+          const nombreEnt = entrenador.nombre + ' (' + (entrenador.club || '—') + ')';
+          const anchoEtiqueta = ctx.measureText(etiqueta).width;
+          const anchoNombre = ctx.measureText(nombreEnt).width;
+          const startX = SIZE / 2 - (anchoEtiqueta + anchoNombre) / 2;
+          const entY = PITCH_Y + PITCH_H + ENT_LINE_H / 2 + 6;
+          ctx.textAlign = 'left';
+          ctx.fillStyle = '#a78bfa';
+          ctx.fillText(etiqueta, startX, entY);
+          ctx.fillStyle = '#f0f4f2';
+          ctx.fillText(nombreEnt, startX + anchoEtiqueta, entY);
+        }
 
   // ── Footer ──
-  const footerY = SIZE - 52;
+  const footerY = SIZE - FOOTER_H / 2 - 8;
   const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
   gradF.addColorStop(0, 'transparent');
-  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(0.5, 'rgba(76,217,123,0.4)');
   gradF.addColorStop(1, 'transparent');
   ctx.strokeStyle = gradF;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, footerY);
-  ctx.lineTo(SIZE, footerY);
+  ctx.moveTo(0, footerY - 12);
+  ctx.lineTo(SIZE, footerY - 12);
   ctx.stroke();
 
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.font = '13px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 10);
 
   canvas.toBlob(async blob => {
     const file = new File([blob], `alineacion-j${JORNADA_ACTIVA}.png`, { type: 'image/png' });

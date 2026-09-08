@@ -573,11 +573,15 @@
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
             <button class="ranking-subtab active" data-subtab="goles" onclick="cambiarSubtabDetalle('goles')">⚽ Goles</button>
             <button class="ranking-subtab" data-subtab="asistencias" onclick="cambiarSubtabDetalle('asistencias')">👟 Asistencias</button>
+            <button class="ranking-subtab" data-subtab="zamora" onclick="cambiarSubtabDetalle('zamora')">🧤 Zamora</button>
             <button class="ranking-subtab" data-subtab="porterias" onclick="cambiarSubtabDetalle('porterias')">🔒 Porterías a cero</button>
             <button class="ranking-subtab" data-subtab="amarillas" onclick="cambiarSubtabDetalle('amarillas')">🟨 Amarillas</button>
             <button class="ranking-subtab" data-subtab="rojas" onclick="cambiarSubtabDetalle('rojas')">🟥 Rojas</button>
             <button class="ranking-subtab" data-subtab="minutos" onclick="cambiarSubtabDetalle('minutos')">⏱️ Minutos</button>
         </div>
+        <select id="detalle-filtro-club" onchange="_detalleLimite = DETALLE_PAGINA; renderDetalleTabla()" style="width:100%;margin-bottom:14px;padding:9px 10px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:var(--font-mono);font-size:12px">
+            <option value="">Todos los clubes</option>
+        </select>
         <div id="detalle-container"></div>
     </main>
 </div>
