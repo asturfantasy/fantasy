@@ -730,11 +730,33 @@ document.getElementById('modal-overlay').addEventListener('click', e => { if (e.
 document.getElementById('formation-select').addEventListener('change', () => {
   const { def, mid, fwd } = FORMACIONES[document.getElementById('formation-select').value];
   const maxPorPos = { POR:1, DEF:def, MED:mid, DEL:fwd, ENT:1 };
-  Object.keys(seleccionados).forEach(slotId => {
-    const [pos, idx] = slotId.split('-');
-    if (parseInt(idx) >= maxPorPos[pos]) { if (capitan === seleccionados[slotId]?.id) { capitan = null; const s = document.getElementById('capitan-select'); if (s) s.value = ''; } delete seleccionados[slotId]; }
+
+  const porPosicion = { POR: [], DEF: [], MED: [], DEL: [], ENT: [] };
+  Object.keys(seleccionados)
+    .sort((a, b) => parseInt(a.split('-')[1]) - parseInt(b.split('-')[1]))
+    .forEach(slotId => {
+      const pos = slotId.split('-')[0];
+      if (porPosicion[pos]) porPosicion[pos].push(seleccionados[slotId]);
+    });
+
+  const nuevosSeleccionados = {};
+  let capitanSigueEnEquipo = false;
+  Object.keys(porPosicion).forEach(pos => {
+    porPosicion[pos].slice(0, maxPorPos[pos]).forEach((jugador, i) => {
+      nuevosSeleccionados[pos + '-' + i] = jugador;
+      if (capitan === jugador.id) capitanSigueEnEquipo = true;
+    });
   });
-  actualizarSelectCapitan(); renderPitch();
+  seleccionados = nuevosSeleccionados;
+
+  if (!capitanSigueEnEquipo) {
+    capitan = null;
+    const s = document.getElementById('capitan-select');
+    if (s) s.value = '';
+  }
+
+  actualizarSelectCapitan();
+  renderPitch();
 });
 
 document.getElementById('capitan-select')?.addEventListener('change', e => { if (e.isTrusted) { capitan = e.target.value || null; cambiosSinGuardar = true; renderPitch(); } });

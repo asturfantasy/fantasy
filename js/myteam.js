@@ -149,9 +149,7 @@ async function compartirEquipo() {
 
   const banner = document.getElementById('myteam-banner');
   const ptsMatch = banner.innerHTML.match(/(\d+) PUNTOS/);
-  const mediaMatch = banner.innerHTML.match(/Media de managers: <strong>(\d+)/);
-  const totalPuntos = ptsMatch ? ptsMatch[1] : '—';
-  const media = mediaMatch ? mediaMatch[1] : '—';
+  const totalPuntos = ptsMatch ? parseInt(ptsMatch[1]) : 0;
 
   const cards = document.getElementById('myteam-grid').querySelectorAll('.player-card');
   const jugadores = Array.from(cards).map(card => {
@@ -167,21 +165,15 @@ async function compartirEquipo() {
     return { nombre, pts, pos, club, esCapitan, foto, escudo };
   });
 
-  const ordenPos = ['POR','DEF','MED','DEL','ENT'];
-  jugadores.sort((a,b) => ordenPos.indexOf(a.pos) - ordenPos.indexOf(b.pos));
-
-  const mitad = Math.ceil(jugadores.length / 2);
-  const colIzq = jugadores.slice(0, mitad);
-  const colDer = jugadores.slice(mitad);
-
-  const SIZE = 1080;
-  const canvas = document.createElement('canvas');
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext('2d');
-
-  ctx.fillStyle = '#101715';
-  ctx.fillRect(0, 0, SIZE, SIZE);
+  const FILAS = [
+    { pos: 'DEL', color: '#f05e5e', textColor: '#ffffff' },
+    { pos: 'MED', color: '#4cd97b', textColor: '#111816' },
+    { pos: 'DEF', color: '#5b9cf6', textColor: '#ffffff' },
+    { pos: 'POR', color: '#e3b341', textColor: '#111816' },
+  ];
+  const porFila = { DEL: [], MED: [], DEF: [], POR: [], ENT: [] };
+  jugadores.forEach(j => { if (porFila[j.pos]) porFila[j.pos].push(j); });
+  const entrenador = porFila.ENT[0] || null;
 
   const cargarImg = (url) => new Promise(res => {
     if (!url) { res(null); return; }
@@ -192,33 +184,43 @@ async function compartirEquipo() {
     img.src = url;
   });
 
-  // ── Header ──
-  const HEADER_H = 140;
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
 
-  ctx.font = 'bold 36px sans-serif';
+  ctx.fillStyle = '#111816';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  const HEADER_H = 150;
+  ctx.font = 'bold 36px "Space Grotesk", sans-serif';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('ASTUR', 40, 48);
-  ctx.fillStyle = '#007a45';
-  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 48);
-  ctx.font = 'bold 64px sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(totalPuntos, SIZE - 40, 55);
+  ctx.fillText('ASTUR', 40, 46);
+  ctx.fillStyle = '#4cd97b';
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 46);
+
+  ctx.fillStyle = '#f0f4f2';
+  ctx.font = 'bold 22px "Space Grotesk", sans-serif';
+  ctx.fillText(nombreEquipo, 40, 84);
+
+  ctx.fillStyle = '#7a9088';
   ctx.font = '13px monospace';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('puntos', SIZE - 40, 90);
+  ctx.fillText('Jornada ' + jornada, 40, 112);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 24px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(`Mi equipo · ${nombreEquipo} · Jornada ${jornada}`, 40, 88);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#f0f4f2';
+  ctx.font = 'bold 18px "Space Grotesk", sans-serif';
+  ctx.fillText('Resultado J' + jornada, SIZE - 40, 38);
+  ctx.fillStyle = '#4cd97b';
+  ctx.font = 'bold 22px "Space Grotesk", sans-serif';
+  ctx.fillText(totalPuntos + ' PUNTOS', SIZE - 40, 64);
 
   const gradH = ctx.createLinearGradient(0, 0, SIZE, 0);
   gradH.addColorStop(0, 'transparent');
-  gradH.addColorStop(0.5, 'rgba(0,122,69,0.5)');
+  gradH.addColorStop(0.5, 'rgba(76,217,123,0.5)');
   gradH.addColorStop(1, 'transparent');
   ctx.strokeStyle = gradH;
   ctx.lineWidth = 1;
@@ -227,60 +229,88 @@ async function compartirEquipo() {
   ctx.lineTo(SIZE, HEADER_H);
   ctx.stroke();
 
-  // ── Jugadores ──
-  const PADDING = 32;
-  const COL_W = SIZE / 2;
-  const filas = Math.max(colIzq.length, colDer.length);
-  const AVAILABLE_H = SIZE - HEADER_H - 70;
-  const ROW_H = Math.floor(AVAILABLE_H / filas);
-  const CARD_H = ROW_H - 16;
-  const START_Y = HEADER_H + 10;
+  const PITCH_X = 24;
+  const PITCH_Y = HEADER_H + 14;
+  const PITCH_W = SIZE - PITCH_X * 2;
+  const FOOTER_H = 44;
+  const ENT_LINE_H = entrenador ? 34 : 0;
+  const PITCH_H = SIZE - PITCH_Y - FOOTER_H - ENT_LINE_H - 14;
 
-  const dibujarJugador = async (j, x, y, cardW) => {
-    const fotoImg   = await cargarImg(j.foto);
-    const escudoImg = await cargarImg(j.escudo);
+  const gradPitch = ctx.createLinearGradient(0, PITCH_Y, 0, PITCH_Y + PITCH_H);
+  gradPitch.addColorStop(0, '#1a3a26');
+  gradPitch.addColorStop(0.5, '#1e4a2e');
+  gradPitch.addColorStop(1, '#1a3a26');
+  ctx.fillStyle = gradPitch;
+  ctx.beginPath();
+  ctx.roundRect(PITCH_X, PITCH_Y, PITCH_W, PITCH_H, 16);
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
 
-    ctx.fillStyle = j.esCapitan ? 'rgba(245,158,11,0.2)' : '#007a45';
+  const NUM_STRIPES = 10;
+  const STRIPE_H = PITCH_H / NUM_STRIPES;
+  for (let i = 0; i < NUM_STRIPES; i += 2) {
+    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    ctx.fillRect(PITCH_X, PITCH_Y + i * STRIPE_H, PITCH_W, STRIPE_H);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PITCH_X + 16, PITCH_Y + PITCH_H / 2);
+  ctx.lineTo(PITCH_X + PITCH_W - 16, PITCH_Y + PITCH_H / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(PITCH_X + PITCH_W / 2, PITCH_Y + PITCH_H / 2, 55, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  const ROW_MARGIN = 24;
+  const filasConJugadores = FILAS.filter(f => porFila[f.pos].length > 0);
+  const AVAILABLE_ROWS_H = PITCH_H - ROW_MARGIN * 2;
+  const ROW_H = filasConJugadores.length ? AVAILABLE_ROWS_H / filasConJugadores.length : 0;
+  const CIRCLE_R = Math.min(50, Math.floor(ROW_H * 0.32));
+
+  const dibujarJugador = async (jugador, cx, cy, color, textColor) => {
+    const esCap = jugador.esCapitan;
+    const fotoImg = await cargarImg(jugador.foto);
+    const escudoImg = await cargarImg(jugador.escudo);
+
     ctx.beginPath();
-    ctx.roundRect(x, y, cardW, CARD_H, 10);
+    ctx.arc(cx, cy, CIRCLE_R, 0, Math.PI * 2);
+    ctx.fillStyle = color;
     ctx.fill();
-
-    if (j.esCapitan) {
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 1.5;
+    ctx.lineWidth = esCap ? 4 : 2;
+    ctx.strokeStyle = esCap ? '#e3b341' : 'rgba(255,255,255,0.2)';
+    ctx.stroke();
+    if (esCap) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(227,179,65,0.6)';
+      ctx.shadowBlur = 16;
       ctx.beginPath();
-      ctx.roundRect(x, y, cardW, CARD_H, 10);
+      ctx.arc(cx, cy, CIRCLE_R, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
     }
-
-    const r = Math.floor(CARD_H * 0.38);
-    const cx = x + 14 + r;
-    const cy = y + CARD_H / 2;
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fill();
 
     if (fotoImg) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(cx, cy, CIRCLE_R - 3, 0, Math.PI * 2);
       ctx.clip();
-      ctx.drawImage(fotoImg, cx - r, cy - r, r * 2, r * 2);
+      ctx.drawImage(fotoImg, cx - (CIRCLE_R - 3), cy - (CIRCLE_R - 3), (CIRCLE_R - 3) * 2, (CIRCLE_R - 3) * 2);
       ctx.restore();
     } else {
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.floor(r * 0.6)}px sans-serif`;
+      ctx.fillStyle = textColor;
+      ctx.font = `bold ${Math.floor(CIRCLE_R * 0.6)}px "Space Grotesk", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(j.nombre.substring(0,2).toUpperCase(), cx, cy);
+      ctx.fillText(jugador.nombre.substring(0, 3).toUpperCase(), cx, cy);
     }
 
     if (escudoImg) {
-      const er = Math.floor(r * 0.35);
-      const ex = cx + r - er + 2;
-      const ey = cy + r - er + 2;
+      const er = 13;
+      const ex = cx + CIRCLE_R - er + 2;
+      const ey = cy + CIRCLE_R - er + 2;
       ctx.save();
       ctx.beginPath();
       ctx.arc(ex, ey, er, 0, Math.PI * 2);
@@ -289,58 +319,87 @@ async function compartirEquipo() {
       ctx.clip();
       ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
       ctx.restore();
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
 
-    const txtX = x + 14 + r * 2 + 12;
+    if (esCap) {
+      const bx = cx + CIRCLE_R - 5;
+      const by = cy - CIRCLE_R + 5;
+      ctx.beginPath();
+      ctx.arc(bx, by, 13, 0, Math.PI * 2);
+      ctx.fillStyle = '#e3b341';
+      ctx.fill();
+      ctx.fillStyle = '#111816';
+      ctx.font = 'bold 13px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('C', bx, by + 1);
+    }
 
-    ctx.fillStyle = j.esCapitan ? '#f59e0b' : '#ffffff';
-    ctx.font = `bold ${Math.floor(CARD_H * 0.22)}px sans-serif`;
-    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.floor(CIRCLE_R * 0.34)}px "Space Grotesk", sans-serif`;
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(j.nombre, txtX, y + CARD_H * 0.18);
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(jugador.nombre, cx, cy + CIRCLE_R + 6);
+    ctx.shadowBlur = 0;
 
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = `${Math.floor(CARD_H * 0.16)}px monospace`;
-    ctx.fillText(`${j.pos} · ${j.club}`, txtX, y + CARD_H * 0.48);
-
-    ctx.fillStyle = '#00d97e';
-    ctx.font = `bold ${Math.floor(CARD_H * 0.2)}px sans-serif`;
-    ctx.textAlign = 'right';
-    ctx.fillText(j.pts + ' pts', x + cardW - 12, y + CARD_H * 0.35);
-
-    if (j.esCapitan) {
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = `bold ${Math.floor(CARD_H * 0.14)}px sans-serif`;
-      ctx.textAlign = 'left';
-      ctx.fillText('⭐ Capitán', txtX, y + CARD_H * 0.68);
-    }
+    ctx.fillStyle = '#4cd97b';
+    ctx.font = `bold ${Math.floor(CIRCLE_R * 0.3)}px "Space Grotesk", sans-serif`;
+    ctx.fillText(jugador.pts + ' pts', cx, cy + CIRCLE_R + 6 + Math.floor(CIRCLE_R * 0.42));
   };
 
-  for (let i = 0; i < colIzq.length; i++) {
-    await dibujarJugador(colIzq[i], PADDING, START_Y + i * ROW_H, COL_W - PADDING - 8);
-  }
-  for (let i = 0; i < colDer.length; i++) {
-    await dibujarJugador(colDer[i], COL_W + 8, START_Y + i * ROW_H, COL_W - PADDING - 8);
+  let currentY = PITCH_Y + ROW_MARGIN;
+  for (const fila of filasConJugadores) {
+    const jugadoresFila = porFila[fila.pos];
+    const rowY = currentY + ROW_H / 2 - 8;
+    const gap = PITCH_W / (jugadoresFila.length + 1);
+    for (let i = 0; i < jugadoresFila.length; i++) {
+      const cx = PITCH_X + gap * (i + 1);
+      await dibujarJugador(jugadoresFila[i], cx, rowY, fila.color, fila.textColor);
+    }
+    currentY += ROW_H;
   }
 
-  // ── Footer ──
-  const footerY = SIZE - 52;
+  if (entrenador) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 16px "Space Grotesk", sans-serif';
+    const etiqueta = 'Entrenador: ';
+    const nombreEnt = entrenador.nombre + ' (' + (entrenador.club || '—') + ') · ' + entrenador.pts + ' pts';
+    const anchoEtiqueta = ctx.measureText(etiqueta).width;
+    const anchoNombre = ctx.measureText(nombreEnt).width;
+    const startX = SIZE / 2 - (anchoEtiqueta + anchoNombre) / 2;
+    const entY = PITCH_Y + PITCH_H + ENT_LINE_H / 2 + 6;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#a78bfa';
+    ctx.fillText(etiqueta, startX, entY);
+    ctx.fillStyle = '#f0f4f2';
+    ctx.fillText(nombreEnt, startX + anchoEtiqueta, entY);
+  }
+
+  const footerY = SIZE - FOOTER_H / 2 - 8;
   const gradF = ctx.createLinearGradient(0, 0, SIZE, 0);
   gradF.addColorStop(0, 'transparent');
-  gradF.addColorStop(0.5, 'rgba(0,122,69,0.4)');
+  gradF.addColorStop(0.5, 'rgba(76,217,123,0.4)');
   gradF.addColorStop(1, 'transparent');
   ctx.strokeStyle = gradF;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, footerY);
-  ctx.lineTo(SIZE, footerY);
+  ctx.moveTo(0, footerY - 12);
+  ctx.lineTo(SIZE, footerY - 12);
   ctx.stroke();
 
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.font = '13px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 26);
+  ctx.fillText('asturfantasy.com', SIZE / 2, footerY + 10);
 
   canvas.toBlob(async blob => {
     const file = new File([blob], `${nombreEquipo}_J${jornada}.png`, { type: 'image/png' });
