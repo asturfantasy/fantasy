@@ -18,8 +18,8 @@ function actualizarSelectCapitan() {
 }
 
 function actualizarPresupuesto() {
-  const coste = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
-  const disp = PRESUPUESTO - coste;
+  const coste = Math.round(Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0) * 10) / 10;
+  const disp = Math.round((PRESUPUESTO - coste) * 10) / 10;
   const el = document.getElementById('presupuesto-valor');
   if (el) {
     el.textContent = disp.toFixed(1) + 'M';
@@ -137,8 +137,8 @@ async function loadLineup() {
           return enActual || null;
         }).filter(Boolean);
 
-        const todosExisten = jugadoresAnt.length === idsAnt.length;
-        const costeTotal = jugadoresAnt.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0);
+                const todosExisten = jugadoresAnt.length === idsAnt.length;
+                const costeTotal = Math.round(jugadoresAnt.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0) * 10) / 10;
 
         if (todosExisten && costeTotal <= PRESUPUESTO) {
           // Copiar equipo anterior
@@ -649,11 +649,11 @@ function openModal(slotId, posicion, cls) {
   const list = document.getElementById('modal-list');
   const colores = { gk:'var(--pos-gk)', def:'var(--pos-def)', mid:'var(--pos-mid)', fwd:'var(--pos-fwd)', ent:'var(--pos-ent)' };
   const textoCols = { gk:'#0d1117', def:'white', mid:'#0d1117', fwd:'white', ent:'white' };
-  const getDisp = () => {
-    const totalGastado = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
-    const valorLiberado = seleccionados[slotId]?.valor || 0;
-    return (PRESUPUESTO - totalGastado + valorLiberado).toFixed(1);
-  };
+    const getDisp = () => {
+      const totalGastado = Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0);
+      const valorLiberado = seleccionados[slotId]?.valor || 0;
+      return (Math.round((PRESUPUESTO - totalGastado + valorLiberado) * 10) / 10).toFixed(1);
+    };
   let soloDisp = false;
   let orden = 'puntos';
   const clubesUnicos = [...new Set(jugadoresPorPos[posicion].map(j => j.club))].sort();
@@ -761,34 +761,12 @@ document.getElementById('formation-select').addEventListener('change', () => {
 
 document.getElementById('capitan-select')?.addEventListener('change', e => { if (e.isTrusted) { capitan = e.target.value || null; cambiosSinGuardar = true; renderPitch(); } });
 
-/*document.getElementById('btn-save-lineup').addEventListener('click', async () => {
-  if (!currentUser) { showToast('Debes iniciar sesión', true); return; }
-  const formacion = document.getElementById('formation-select').value;
-  const { def, mid, fwd } = FORMACIONES[formacion];
-  if (Object.keys(seleccionados).length < 1 + def + mid + fwd + 1) { showToast('¡Faltan jugadores por seleccionar!', true); return; }
-  if (Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0) > PRESUPUESTO) { showToast('Has superado el presupuesto', true); return; }
-
-  // Comprobar máximo 2 jugadores por club
-  const clubCount = {};
-  Object.values(seleccionados).forEach(j => { clubCount[j.club] = (clubCount[j.club] || 0) + 1; });
-  const clubExcedido = Object.entries(clubCount).find(([club, count]) => count > 2);
-  if (clubExcedido) { showToast('Máximo 2 jugadores del mismo club (' + clubExcedido[0] + ')', true); return; }
-
-  const btn = document.getElementById('btn-save-lineup');
-  btn.disabled = true; btn.textContent = 'GUARDANDO...';
-  await db.from('mi_equipo').delete().eq('user_id', currentUser.id).eq('jornada', JORNADA_ACTIVA);
-  const { error } = await db.from('mi_equipo').insert(Object.values(seleccionados).map(jugador => ({ user_id: currentUser.id, jugador_id: jugador.id, jornada: JORNADA_ACTIVA, formacion, capitan: capitan === jugador.id })));
-  btn.disabled = false; btn.textContent = 'GUARDAR ALINEACIÓN';
-  if (error) showToast('Error al guardar: ' + error.message, true);
-  else { cambiosSinGuardar = false; showToast('Alineación guardada'); }
-});*/
-
 document.getElementById('btn-save-lineup').addEventListener('click', async () => {
   if (!currentUser) { showToast('Debes iniciar sesión', true); return; }
   const formacion = document.getElementById('formation-select').value;
   const { def, mid, fwd } = FORMACIONES[formacion];
 
-  if (Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0) > PRESUPUESTO) { showToast('Has superado el presupuesto', true); return; }
+  if (Math.round(Object.values(seleccionados).reduce((acc, j) => acc + (j.valor || 0), 0) * 10) / 10 > PRESUPUESTO) { showToast('Has superado el presupuesto', true); return; }
 
   // Comprobar máximo 2 jugadores por club
   const clubCount = {};
