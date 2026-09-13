@@ -696,9 +696,9 @@ async function mostrarPartido(localAbrev, visitanteAbrev, localNombre, visitante
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
 
-  const { data, error } = await db.from('jugadores')
-    .select('nombre, club, posicion, rol, total_jornada, escudo_url, foto_url, minutos, puerta_cero, lne, gol, asistencia, penalti_marcado, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador, goles_encajados')
-    .in('club', [localAbrev, visitanteAbrev]).eq('jornada', jornada).order('total_jornada', { ascending: false });
+    const { data, error } = await db.from('jugadores')
+      .select('nombre, club, posicion, rol, total_jornada, escudo_url, foto_url, minutos, puerta_cero, lne, gol, asistencia, penalti_marcado, penalti_fallado, gol_pp, amarilla, doble_amarilla, roja, puntos_entrenador, goles_encajados')
+      .in('club', [localAbrev, visitanteAbrev]).eq('jornada', jornada).order('total_jornada', { ascending: false });
 
   if (error || !data?.length) { content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin datos</div>'; return; }
 

@@ -413,12 +413,14 @@ async function cargarMVP(jornada) {
   const clubsPublicados = new Set();
   partidosPublicados.forEach(p => { clubsPublicados.add(p.local_abrev); clubsPublicados.add(p.visitante_abrev); });
 
-  const { data: jugadores } = await db.from('jugadores')
-    .select('nombre, club, posicion, puntos, minutos, gol, penalti_marcado, asistencia, amarilla, roja, goles_encajados, foto_url, escudo_url, valor')
-    .eq('jornada', jornada)
-    .order('puntos', { ascending: false })
-    .order('minutos', { ascending: true })
-    .order('asistencia', { ascending: false });
+    const { data: jugadores } = await db.from('jugadores')
+      .select('nombre, club, posicion, puntos, minutos, gol, penalti_marcado, asistencia, amarilla, roja, goles_encajados, foto_url, escudo_url, valor')
+      .eq('jornada', jornada)
+      .order('puntos', { ascending: false })
+      .order('valor', { ascending: true })
+      .order('minutos', { ascending: true })
+      .order('gol', { ascending: false })
+      .order('asistencia', { ascending: false });
 
   const mvp = (jugadores || []).find(j => clubsPublicados.has(j.club) && (j.minutos || 0) > 0);
 
@@ -1672,22 +1674,25 @@ async function loadOnce(jornada) {
   container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
   const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).order('puntos', { ascending: false }).order('valor', { ascending: true });
   if (error || !data?.length) { container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>'; return; }
-  const porPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
-  data.forEach(j => porPos[j.posicion]?.push(j));
-  const portero = porPos.POR.sort((a,b) => b.puntos - a.puntos).slice(0,1);
-  const defs = porPos.DEF.sort((a,b) => b.puntos - a.puntos);
-  const meds = porPos.MED.sort((a,b) => b.puntos - a.puntos);
-  const dels = porPos.DEL.sort((a,b) => b.puntos - a.puntos);
-  const entrenador = porPos.ENT.sort((a,b) => b.puntos - a.puntos).slice(0,1);
-  let defOnce = defs.slice(0,3), medOnce = meds.slice(0,3), delOnce = dels.slice(0,1);
-  const candidatos = [...defs.slice(3,5).map(j=>({...j,_pos:'DEF'})),...meds.slice(3,4).map(j=>({...j,_pos:'MED'})),...dels.slice(1,3).map(j=>({...j,_pos:'DEL'}))].sort((a,b)=>b.puntos-a.puntos);
-  let huecos = 3;
-  for (const c of candidatos) {
-    if (!huecos) break;
-    if (c._pos==='DEF' && defOnce.length<5) { defOnce.push(c); huecos--; }
-    else if (c._pos==='MED' && medOnce.length<4) { medOnce.push(c); huecos--; }
-    else if (c._pos==='DEL' && delOnce.length<3) { delOnce.push(c); huecos--; }
-  }
+    const porPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
+    data.forEach(j => porPos[j.posicion]?.push(j));
+    const portero = porPos.POR.sort((a,b) => b.puntos - a.puntos).slice(0,1);
+    const defs = porPos.DEF.sort((a,b) => b.puntos - a.puntos);
+    const meds = porPos.MED.sort((a,b) => b.puntos - a.puntos);
+    const dels = porPos.DEL.sort((a,b) => b.puntos - a.puntos);
+    const entrenador = porPos.ENT.sort((a,b) => b.puntos - a.puntos).slice(0,1);
+
+    const sumaPuntos = arr => arr.reduce((acc, j) => acc + (j.puntos || 0), 0);
+
+    let mejorFormacion = null, mejorTotal = -Infinity;
+    for (const [nombreForm, { def, mid, fwd }] of Object.entries(FORMACIONES)) {
+      const total = sumaPuntos(defs.slice(0, def)) + sumaPuntos(meds.slice(0, mid)) + sumaPuntos(dels.slice(0, fwd));
+      if (total > mejorTotal) { mejorTotal = total; mejorFormacion = { nombreForm, def, mid, fwd }; }
+    }
+
+    const defOnce = defs.slice(0, mejorFormacion.def);
+    const medOnce = meds.slice(0, mejorFormacion.mid);
+    const delOnce = dels.slice(0, mejorFormacion.fwd);
   const totalPuntos = [...portero,...defOnce,...medOnce,...delOnce,...entrenador].reduce((acc,j)=>acc+j.puntos,0);
   if (!totalPuntos) { container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-family:var(--font-display);font-size:16px">Aún no tenemos el once de la jornada</div>'; return; }
   const filas = [{ label:'🧤 PORTERO', pos:'POR', jugadores:portero },{ label:'🛑 DEFENSAS', pos:'DEF', jugadores:defOnce },{ label:'🧠 MEDIOS', pos:'MED', jugadores:medOnce },{ label:'⚽ DELANTEROS', pos:'DEL', jugadores:delOnce },{ label:'👔 ENTRENADOR', pos:'ENT', jugadores:entrenador }];
@@ -1950,17 +1955,20 @@ async function cargarRentable(jornada) {
   const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
   conRentabilidad.forEach(j => porPos[j.posicion]?.push(j));
   Object.keys(porPos).forEach(pos => porPos[pos].sort((a, b) => b.rentabilidad - a.rentabilidad));
-  const portero = porPos.POR.slice(0, 1);
-  const defs = porPos.DEF, meds = porPos.MED, dels = porPos.DEL;
-  let defOnce = defs.slice(0, 3), medOnce = meds.slice(0, 3), delOnce = dels.slice(0, 1);
-  const candidatos = [...defs.slice(3,5).map(j=>({...j,_pos:'DEF'})),...meds.slice(3,4).map(j=>({...j,_pos:'MED'})),...dels.slice(1,3).map(j=>({...j,_pos:'DEL'}))].sort((a,b)=>b.rentabilidad-a.rentabilidad);
-  let huecos = 3;
-  for (const c of candidatos) {
-    if (!huecos) break;
-    if (c._pos==='DEF' && defOnce.length<5) { defOnce.push(c); huecos--; }
-    else if (c._pos==='MED' && medOnce.length<4) { medOnce.push(c); huecos--; }
-    else if (c._pos==='DEL' && delOnce.length<3) { delOnce.push(c); huecos--; }
-  }
+    const portero = porPos.POR.slice(0, 1);
+    const defs = porPos.DEF, meds = porPos.MED, dels = porPos.DEL;
+
+    const sumaRentabilidad = arr => arr.reduce((acc, j) => acc + (j.rentabilidad || 0), 0);
+
+    let mejorFormacion = null, mejorTotal = -Infinity;
+    for (const [nombreForm, { def, mid, fwd }] of Object.entries(FORMACIONES)) {
+      const total = sumaRentabilidad(defs.slice(0, def)) + sumaRentabilidad(meds.slice(0, mid)) + sumaRentabilidad(dels.slice(0, fwd));
+      if (total > mejorTotal) { mejorTotal = total; mejorFormacion = { nombreForm, def, mid, fwd }; }
+    }
+
+    const defOnce = defs.slice(0, mejorFormacion.def);
+    const medOnce = meds.slice(0, mejorFormacion.mid);
+    const delOnce = dels.slice(0, mejorFormacion.fwd);
   const filas = [{ label:'🧤 PORTERO', pos:'POR', jugadores:portero },{ label:'🛑 DEFENSAS', pos:'DEF', jugadores:defOnce },{ label:'🧠 MEDIOS', pos:'MED', jugadores:medOnce },{ label:'⚽ DELANTEROS', pos:'DEL', jugadores:delOnce },{ label:'👔 ENTRENADOR', pos:'ENT', jugadores:entrenador }];
   const costeTotal = [...portero,...defOnce,...medOnce,...delOnce,...entrenador].reduce((acc,j)=>acc+(j.valor||0),0);
   const puntosTotal = [...portero,...defOnce,...medOnce,...delOnce,...entrenador].reduce((acc,j)=>acc+j.puntos,0);
