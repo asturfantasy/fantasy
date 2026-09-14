@@ -1669,6 +1669,33 @@ async function loadRankingOnce() {
   loadOnce(jornadaRanking);
 }
 
+async function calcularMejorEntrenador(jornada, candidatosENT) {
+  if (!candidatosENT.length) return null;
+  const { data: partidos } = await db.from('partidos')
+    .select('local_abrev, visitante_abrev, resultado_local, resultado_visitante')
+    .eq('jornada', jornada)
+    .eq('finalizado', true);
+
+  const conMetricas = candidatosENT.map(ent => {
+    const partido = (partidos || []).find(p => p.local_abrev === ent.club || p.visitante_abrev === ent.club);
+    if (!partido || partido.resultado_local === null || partido.resultado_visitante === null) {
+      return { ...ent, diferenciaGoles: -Infinity, noEncajo: false, esVisitante: false };
+    }
+    const esLocal = partido.local_abrev === ent.club;
+    const golesFavor = esLocal ? partido.resultado_local : partido.resultado_visitante;
+    const golesContra = esLocal ? partido.resultado_visitante : partido.resultado_local;
+    return { ...ent, diferenciaGoles: golesFavor - golesContra, noEncajo: golesContra === 0, esVisitante: !esLocal };
+  });
+
+  conMetricas.sort((a, b) =>
+    b.diferenciaGoles - a.diferenciaGoles ||
+    (b.noEncajo ? 1 : 0) - (a.noEncajo ? 1 : 0) ||
+    (b.esVisitante ? 1 : 0) - (a.esVisitante ? 1 : 0)
+  );
+
+  return conMetricas[0] || null;
+}
+
 async function loadOnce(jornada) {
   const container = document.getElementById('once-container');
   container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
@@ -1680,7 +1707,8 @@ async function loadOnce(jornada) {
     const defs = porPos.DEF.sort((a,b) => b.puntos - a.puntos);
     const meds = porPos.MED.sort((a,b) => b.puntos - a.puntos);
     const dels = porPos.DEL.sort((a,b) => b.puntos - a.puntos);
-    const entrenador = porPos.ENT.sort((a,b) => b.puntos - a.puntos).slice(0,1);
+        const mejorEnt = await calcularMejorEntrenador(jornada, porPos.ENT);
+        const entrenador = mejorEnt ? [mejorEnt] : [];
 
     const sumaPuntos = arr => arr.reduce((acc, j) => acc + (j.puntos || 0), 0);
 
@@ -1943,13 +1971,45 @@ async function compartirOnceIdeal() {
   });
 }
 
+async function calcularMejorEntrenadorRentable(jornada, candidatosENT) {
+  if (!candidatosENT.length) return null;
+  const { data: partidos } = await db.from('partidos')
+    .select('local_abrev, visitante_abrev, resultado_local, resultado_visitante')
+    .eq('jornada', jornada)
+    .eq('finalizado', true);
+
+  const conMetricas = candidatosENT.map(ent => {
+    const partido = (partidos || []).find(p => p.local_abrev === ent.club || p.visitante_abrev === ent.club);
+    let diferenciaGoles = -Infinity, noEncajo = false, esVisitante = false;
+    if (partido && partido.resultado_local !== null && partido.resultado_visitante !== null) {
+      const esLocal = partido.local_abrev === ent.club;
+      const golesFavor = esLocal ? partido.resultado_local : partido.resultado_visitante;
+      const golesContra = esLocal ? partido.resultado_visitante : partido.resultado_local;
+      diferenciaGoles = golesFavor - golesContra;
+      noEncajo = golesContra === 0;
+      esVisitante = !esLocal;
+    }
+    return { ...ent, diferenciaGoles, noEncajo, esVisitante };
+  });
+
+  conMetricas.sort((a, b) =>
+    b.rentabilidad - a.rentabilidad ||
+    b.diferenciaGoles - a.diferenciaGoles ||
+    (b.noEncajo ? 1 : 0) - (a.noEncajo ? 1 : 0) ||
+    (b.esVisitante ? 1 : 0) - (a.esVisitante ? 1 : 0)
+  );
+
+  return conMetricas[0] || null;
+}
+
 async function cargarRentable(jornada) {
   const container = document.getElementById('rentable-container');
   container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Cargando...</div>';
   const { data, error } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).neq('posicion', 'ENT').gt('valor', 0).gt('puntos', 0).order('puntos', { ascending: false });
-  const { data: entData } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).eq('posicion', 'ENT').gt('valor', 0).gt('puntos', 0);
-  const entOrdenado = (entData || []).map(j => ({ ...j, rentabilidad: j.puntos / j.valor })).sort((a, b) => b.rentabilidad - a.rentabilidad);
-  const entrenador = entOrdenado.length ? [entOrdenado[0]] : [];
+    const { data: entData } = await db.from('jugadores').select('nombre, club, posicion, puntos, valor, escudo_url, foto_url').eq('jornada', jornada).eq('posicion', 'ENT').gt('valor', 0).gt('puntos', 0);
+    const entConRentabilidad = (entData || []).map(j => ({ ...j, rentabilidad: j.puntos / j.valor }));
+    const mejorEnt = await calcularMejorEntrenadorRentable(jornada, entConRentabilidad);
+    const entrenador = mejorEnt ? [mejorEnt] : [];
   if (error || !data?.length) { container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted)">Sin datos para esta jornada</div>'; return; }
   const conRentabilidad = data.map(j => ({ ...j, rentabilidad: j.puntos / j.valor }));
   const porPos = { POR:[], DEF:[], MED:[], DEL:[] };
