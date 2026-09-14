@@ -189,6 +189,36 @@ function graficaValorComparador(valores1, valores2, nombre1, nombre2) {
   </div>`;
 }
 
+function filaVariacionValor(valores1, valores2) {
+  const calcularVariacion = (valores) => {
+    if (!valores.length) return null;
+    const inicial = parseFloat(valores[0].valor);
+    const ultimo = parseFloat(valores[valores.length - 1].valor);
+    return ultimo - inicial;
+  };
+
+  const var1 = calcularVariacion(valores1);
+  const var2 = calcularVariacion(valores2);
+
+  if (var1 === null && var2 === null) return '';
+
+  const formatear = (v) => {
+    if (v === null) return '—';
+    const signo = v > 0 ? '+' : '';
+    return signo + v.toFixed(1) + 'M';
+  };
+
+  const empate = var1 === var2;
+  const gana1 = !empate && var1 !== null && (var2 === null || var1 > var2);
+  const gana2 = !empate && var2 !== null && (var1 === null || var2 > var1);
+
+  return `<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:9px 0;border-top:1px solid var(--border);margin-top:4px">
+    <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:${gana1 ? 'var(--neon)' : 'var(--text)'};text-align:left">${formatear(var1)}</div>
+    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;text-align:center;padding:0 10px">Variación de valor</div>
+    <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:${gana2 ? 'var(--neon)' : 'var(--text)'};text-align:right">${formatear(var2)}</div>
+  </div>`;
+}
+
 async function mostrarComparativa() {
   const res = document.getElementById('resultado-comparador');
   res.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
@@ -281,7 +311,16 @@ async function mostrarComparativa() {
     ];
   }
 
-  window._comparadorData = { j1, j2, filas, stats1, stats2 };
+    const calcularVariacion = (valores) => {
+      if (!valores.length) return null;
+      return parseFloat(valores[valores.length - 1].valor) - parseFloat(valores[0].valor);
+    };
+    const varValor1 = calcularVariacion(valores1);
+    const varValor2 = calcularVariacion(valores2);
+    const formatearVar = (v) => v === null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + 'M';
+    filas.push(['Variación valor', formatearVar(varValor1), formatearVar(varValor2), varValor1 ?? -Infinity, varValor2 ?? -Infinity, 'mayor']);
+
+    window._comparadorData = { j1, j2, filas, stats1, stats2 };
 
   const fila = ([label, v1, v2, n1, n2, tipo]) => {
     const empate = n1 === n2;
@@ -298,7 +337,6 @@ async function mostrarComparativa() {
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
       ${filas.map(f => fila(f)).join('')}
     </div>
-    ${graficaValorComparador(valores1, valores2, j1.nombre, j2.nombre)}
     <button onclick="exportarComparador()" style="width:100%;margin-top:16px;padding:10px;background:var(--green-brand);color:white;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
       <i class="ti ti-share"></i> Compartir comparativa
     </button>`;
@@ -408,9 +446,9 @@ async function exportarComparador() {
     ctx.textBaseline = 'top';
     ctx.fillText(j.nombre, cx, CARD_Y + 14 + r * 2 + 10);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = '13px monospace';
-    ctx.fillText(j.posicion + ' · ' + j.club, cx, CARD_Y + 14 + r * 2 + 34);
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.font = '13px monospace';
+        ctx.fillText(j.posicion + ' · ' + j.club + ' · ' + (j.valor || 0) + 'M', cx, CARD_Y + 14 + r * 2 + 34);
   };
 
   await dibujarJugador(j1, 40);
