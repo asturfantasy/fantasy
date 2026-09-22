@@ -854,7 +854,7 @@ async function loadRankingJugadores() {
     tbody.innerHTML = paginados.map((j, i) => `
       <tr class="${medalClass(inicio+i+1)}">
         <td><span class="rank-pos ${medalClass(inicio+i+1)}">${inicio+i+1}</span></td>
-        <td><div class="rank-name" style="cursor:pointer;text-decoration:underline" onclick="mostrarHistorial('${j.nombre}','${j.club}','${j.posicion}')">${j.nombre}</div><div class="rank-team">${j.posicion} · ${j.valor || 0}M</div></td>
+        <td><div class="rank-name" style="cursor:pointer;text-decoration:underline" onclick="mostrarHistorial('${j.nombre}','${j.club}','${j.posicion}')">${j.nombre}</div><div class="rank-team">${j.posicion} · ${j.valor == null ? 'Causa baja' : j.valor + 'M'}</div></td>
         <td>${j.escudo_url ? `<img loading="lazy" src="${j.escudo_url}" width="22" height="22" style="object-fit:contain;vertical-align:middle;margin-right:4px">` : ''}<span class="rank-team">${j.club}</span></td>
         <td><div class="rank-pts">${j.puntos_total}</div></td>
       </tr>`).join('');
