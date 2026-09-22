@@ -290,7 +290,7 @@ async function mostrarHistorial(nombre, club, posicion) {
   const iconos = (d) => {
     if (posicion === 'ENT') return '';
     const items = [];
-    if (d.puerta_cero) items.push('<i class="ti ti-lock" title="Portería a cero" style="font-size:15px;color:var(--green-light)"></i>');
+        if (d.puerta_cero && posicion !== 'DEL') items.push('<i class="ti ti-lock" title="Portería a cero" style="font-size:15px;color:var(--green-light)"></i>');
     if (d.gol > 0) for (let i = 0; i < d.gol; i++) items.push('<i class="ti ti-ball-football" title="Gol" style="font-size:15px;color:white"></i>');
     if (d.penalti_marcado > 0) {
       for (let i = 0; i < d.penalti_marcado; i++)
@@ -343,10 +343,12 @@ async function mostrarHistorial(nombre, club, posicion) {
     const golesEnc    = data.reduce((a,d) => a + (d.goles_encajados||0), 0);
     const portCero    = data.filter(d => (d.goles_encajados||0) === 0 && (d.minutos||0) >= 60).length;
     const penParados  = data.reduce((a,d) => a + (d.penalti_fallado||0), 0);
-    const amarillas   = data.reduce((a,d) => a + (d.amarilla||0), 0);
-    const rojas       = data.reduce((a,d) => a + (d.roja||0) + (d.doble_amarilla||0), 0);
-    statsCards = `
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">
+        const amarillas   = data.reduce((a,d) => a + (d.amarilla||0), 0);
+        const dobleAmar   = data.reduce((a,d) => a + (d.doble_amarilla||0), 0);
+        const rojaDirecta = data.reduce((a,d) => a + (d.roja||0), 0);
+        const rojas       = rojaDirecta + dobleAmar;
+        statsCards = `
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">
         <div style="${cardStyle(golesEnc > 0)}">
           <i class="ti ti-ball-football" style="font-size:16px;color:#f05e5e"></i>
           <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${golesEnc}</div>
@@ -365,27 +367,29 @@ async function mostrarHistorial(nombre, club, posicion) {
         <div style="${cardStyle(amarillas > 0)}">
           <i class="ti ti-rectangle-filled" style="font-size:16px;color:#e3b341"></i>
           <div style="font-size:16px;font-weight:800;color:#e3b341;margin-top:2px">${amarillas}</div>
-          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">AMAR.</div>
+          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">TA</div>
         </div>
-        <div style="${cardStyle(rojas > 0)}">
-          <i class="ti ti-rectangle-filled" style="font-size:16px;color:#f05e5e"></i>
-          <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${rojas}</div>
-          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">ROJAS</div>
-        </div>
-      </div>`;
-  } else {
+                <div style="${cardStyle(rojas > 0)}">
+                  <i class="ti ti-rectangle-filled" style="font-size:16px;color:#f05e5e"></i>
+                  <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${rojas}${dobleAmar > 0 ? ' (' + dobleAmar + ')' : ''}</div>
+                  <div style="font-size:8px;color:#7a9088;letter-spacing:1px">TR (DA)</div>
+                </div>
+              </div>`;
+          } else {
     const goles        = data.reduce((a,d) => a + (d.gol||0), 0);
     const penMarcados  = data.reduce((a,d) => a + (d.penalti_marcado||0), 0);
     const totalGoles   = goles + penMarcados;
     const asist        = data.reduce((a,d) => a + (d.asistencia||0), 0);
-    const amarillas    = data.reduce((a,d) => a + (d.amarilla||0), 0);
-    const rojas        = data.reduce((a,d) => a + (d.roja||0) + (d.doble_amarilla||0), 0);
-    statsCards = `
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
+        const amarillas    = data.reduce((a,d) => a + (d.amarilla||0), 0);
+        const dobleAmar    = data.reduce((a,d) => a + (d.doble_amarilla||0), 0);
+        const rojaDirecta  = data.reduce((a,d) => a + (d.roja||0), 0);
+        const rojas        = rojaDirecta + dobleAmar;
+        statsCards = `
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
         <div style="${cardStyle(totalGoles > 0)}">
           <i class="ti ti-ball-football" style="font-size:16px;color:white"></i>
           <div style="font-size:16px;font-weight:800;color:white;margin-top:2px">${totalGoles}${penMarcados > 0 ? ' (' + penMarcados + ')' : ''}</div>
-          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">GOLES</div>
+          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">G (PEN)</div>
         </div>
         <div style="${cardStyle(asist > 0)}">
           <i class="ti ti-shoe" style="font-size:16px;color:white"></i>
@@ -395,17 +399,17 @@ async function mostrarHistorial(nombre, club, posicion) {
         <div style="${cardStyle(amarillas > 0)}">
           <i class="ti ti-rectangle-filled" style="font-size:16px;color:#e3b341"></i>
           <div style="font-size:16px;font-weight:800;color:#e3b341;margin-top:2px">${amarillas}</div>
-          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">AMAR.</div>
+          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">TA</div>
         </div>
-        <div style="${cardStyle(rojas > 0)}">
-          <i class="ti ti-rectangle-filled" style="font-size:16px;color:#f05e5e"></i>
-          <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${rojas}</div>
-          <div style="font-size:8px;color:#7a9088;letter-spacing:1px">ROJAS</div>
-        </div>
-      </div>`;
-  }
+                <div style="${cardStyle(rojas > 0)}">
+                  <i class="ti ti-rectangle-filled" style="font-size:16px;color:#f05e5e"></i>
+                  <div style="font-size:16px;font-weight:800;color:#f05e5e;margin-top:2px">${rojas}${dobleAmar > 0 ? ' (' + dobleAmar + ')' : ''}</div>
+                  <div style="font-size:8px;color:#7a9088;letter-spacing:1px">TR (DA)</div>
+                </div>
+              </div>`;
+          }
 
-  modal._historialData = { nombre, club, posicion, foto, escudo, total, maxPts, data, marcadores };
+          modal._historialData = { nombre, club, posicion, foto, escudo, total, maxPts, data, marcadores };
 
   const graficaValorHtml = () => {
     if (valoresData.length < 2) return '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:12px">No hay suficientes datos</div>';
