@@ -687,7 +687,7 @@ function openModal(slotId, posicion, cls) {
     if (mp) { mp.textContent = disponible.toFixed(1) + 'M'; mp.style.color = disponible < 0 ? 'var(--red)' : disponible < 10 ? 'var(--amber)' : 'var(--neon)'; }
     const clubSeleccionado = document.getElementById('modal-filtro-club')?.value || '';
     const filtrados = jugadoresPorPos[posicion]
-      .filter(j => (j.nombre.toLowerCase().includes(filtro.toLowerCase()) || j.club.toLowerCase().includes(filtro.toLowerCase())) && (!clubSeleccionado || j.club === clubSeleccionado) && (!soloDisp || (j.valor || 0) <= disponible))
+            .filter(j => (normalizarTexto(j.nombre).includes(normalizarTexto(filtro)) || normalizarTexto(j.club).includes(normalizarTexto(filtro))) && (!clubSeleccionado || j.club === clubSeleccionado) && (!soloDisp || (j.valor || 0) <= disponible))
       .sort((a, b) => orden === 'valor' ? (b.valor || 0) - (a.valor || 0) : (b.puntos_total ?? 0) - (a.puntos_total ?? 0));
     document.getElementById('modal-players').innerHTML = filtrados.map(j => {
       const usado = usados.has(j.id);

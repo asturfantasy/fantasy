@@ -58,9 +58,9 @@ function filtrarSugerencias(idx) {
   const input = document.getElementById(`buscador-${idx}`);
   const lista = document.getElementById(`sugerencias-${idx}`);
   if (!input || !lista) return;
-  const q = input.value.toLowerCase().trim();
+  const q = normalizarTexto(input.value.trim());
   const base = getJugadoresFiltrados(idx);
-  const filtrados = base.filter(j => q === '' || j.nombre.toLowerCase().includes(q)).slice(0, 8);
+  const filtrados = base.filter(j => q === '' || normalizarTexto(j.nombre).includes(q)).slice(0, 8);
   if (!filtrados.length) { lista.style.display = 'none'; return; }
   lista.style.display = 'block';
   lista.innerHTML = filtrados.map(j => `

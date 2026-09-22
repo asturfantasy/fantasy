@@ -835,10 +835,10 @@ async function loadRankingJugadores() {
   renderJugadoresFn = () => {
     const club = document.getElementById('filtro-club').value;
     const pos = document.getElementById('filtro-pos').value;
-    const nombre = document.getElementById('filtro-nombre').value.toLowerCase();
+    const nombre = normalizarTexto(document.getElementById('filtro-nombre').value);
     const orden = document.getElementById('filtro-orden').value;
     const filtrados = (jugadores || []).filter(j =>
-      (!club || j.club === club) && (!pos || j.posicion === pos) && (!nombre || j.nombre.toLowerCase().includes(nombre))
+      (!club || j.club === club) && (!pos || j.posicion === pos) && (!nombre || normalizarTexto(j.nombre).includes(nombre))
     ).sort((a, b) => {
       if (orden === 'valor-asc') return (parseFloat(a.valor) || 0) - (parseFloat(b.valor) || 0);
       if (orden === 'valor-desc') return (parseFloat(b.valor) || 0) - (parseFloat(a.valor) || 0);

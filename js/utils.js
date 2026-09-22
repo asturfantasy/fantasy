@@ -84,6 +84,10 @@ function updateBottomNav(screenId) {
   if (nav) nav.style.display = 'flex';
 }
 
+function normalizarTexto(texto) {
+  return (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function cambiarPagina(dir) {
   paginaActual += dir;
   if (renderJugadoresFn) renderJugadoresFn();
