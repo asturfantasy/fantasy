@@ -96,10 +96,20 @@ async function main() {
 
     const jornadaSiguiente = jornadaActiva + 1;
 
-    const { data: equipos } = await supabase
-      .from('mi_equipo')
-      .select('*')
-      .eq('jornada', jornadaActiva);
+        let equipos = [];
+        let desde = 0;
+        const TAMANO_PAGINA = 1000;
+        while (true) {
+          const { data: pagina } = await supabase
+            .from('mi_equipo')
+            .select('*')
+            .eq('jornada', jornadaActiva)
+            .range(desde, desde + TAMANO_PAGINA - 1);
+          if (!pagina?.length) break;
+          equipos = equipos.concat(pagina);
+          if (pagina.length < TAMANO_PAGINA) break;
+          desde += TAMANO_PAGINA;
+        }
 
     if (!equipos?.length) {
       await supabase.from('jornadas_copiadas').insert({ jornada: jornadaActiva });
