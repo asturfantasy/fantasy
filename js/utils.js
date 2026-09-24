@@ -65,6 +65,21 @@ function showToast(msg, isError = false) {
   }, 2000);
 }
 
+async function fetchAllRows(query) {
+  let resultado = [];
+  let desde = 0;
+  const TAMANO_PAGINA = 1000;
+  while (true) {
+    const { data, error } = await query.range(desde, desde + TAMANO_PAGINA - 1);
+    if (error) return { data: null, error };
+    if (!data?.length) break;
+    resultado = resultado.concat(data);
+    if (data.length < TAMANO_PAGINA) break;
+    desde += TAMANO_PAGINA;
+  }
+  return { data: resultado, error: null };
+}
+
 function jornadadCerrada() { return new Date() > new Date(DEADLINE_JORNADA); }
 
 function medalClass(pos) { return pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : ''; }

@@ -91,11 +91,27 @@ async function loadLineup() {
         j.cambio_valor = valorAnt !== undefined ? (parseFloat(j.valor) || 0) - valorAnt : 0;
       });
 
-      jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
-      (data || []).forEach(j => { if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j); });
-      Object.keys(jugadoresPorPos).forEach(pos => { jugadoresPorPos[pos].sort((a, b) => (b.puntos_total ?? 0) - (a.puntos_total ?? 0)); });
+            const { data: ultimasData } = await fetchAllRows(db.from('jugadores')
+              .select('nombre, club, jornada, total_jornada')
+              .gte('jornada', Math.max(1, JORNADA_ACTIVA - 3))
+              .lt('jornada', JORNADA_ACTIVA)
+              .order('jornada', { ascending: true }));
+            const ultimasMap = {};
+            (ultimasData || []).forEach(j => {
+              const key = j.nombre + '|' + j.club;
+              if (!ultimasMap[key]) ultimasMap[key] = [];
+              ultimasMap[key].push(j.total_jornada ?? 0);
+            });
+            (data || []).forEach(j => {
+              const historial = ultimasMap[j.nombre + '|' + j.club] || [];
+              j.ultimasPuntuaciones = historial.slice(-3);
+            });
 
-      window._jugadoresCacheJornada = JORNADA_ACTIVA;
+            jugadoresPorPos = { POR:[], DEF:[], MED:[], DEL:[], ENT:[] };
+            (data || []).forEach(j => { if (jugadoresPorPos[j.posicion]) jugadoresPorPos[j.posicion].push(j); });
+            Object.keys(jugadoresPorPos).forEach(pos => { jugadoresPorPos[pos].sort((a, b) => (b.puntos_total ?? 0) - (a.puntos_total ?? 0)); });
+
+            window._jugadoresCacheJornada = JORNADA_ACTIVA;
     }
 
   if (currentUser) {
@@ -710,8 +726,15 @@ function openModal(slotId, posicion, cls) {
                                       ? '<span title="Lesionado" style="position:absolute;top:-3px;left:-3px;font-size:12px;background:var(--bg2);border-radius:50%;line-height:1">🚑</span>'
                                       : '';
             const esc = '<div style="position:relative;width:36px;height:36px;flex-shrink:0">' + (j.foto_url ? '<img loading="lazy" src="' + j.foto_url + '" width="36" height="36" style="object-fit:cover;border-radius:50%;border:' + bR + '" onerror="this.style.display=\'none\'">' : '<div style="width:36px;height:36px;border-radius:50%;background:' + colores[cls] + ';color:' + textoCols[cls] + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;border:' + bR + '">' + j.nombre.substring(0,2).toUpperCase() + '</div>') + (j.escudo_url ? '<img loading="lazy" src="' + j.escudo_url + '" width="13" height="13" style="position:absolute;bottom:-2px;right:-2px;object-fit:contain;border-radius:50%;background:white;border:1px solid rgba(0,0,0,0.2)">' : '') + badgeEstado + '</div>';
-      return '<div class="modal-player" data-id="' + j.id + '" data-slot="' + slotId + '" style="opacity:' + (usado || clubLleno ? '0.3' : '1') + ';pointer-events:' + (usado || clubLleno ? 'none' : 'auto') + '">' + esc + '<div><div class="modal-player-name">' + j.nombre + '</div><div class="modal-player-meta">' + j.club + ' · ' + j.posicion + (j.rival ? ' · vs ' + j.rival + ' (' + (j.es_local ? '🏠' : '✈️') + ')' : '') + '</div></div><div style="text-align:right"><div class="modal-player-pts">' + (j.puntos_total || 0) + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">' + (j.valor || 0) + 'M' + (j.cambio_valor > 0 ? ' <span style="color:#4cd97b;font-size:9px">▲</span>' : j.cambio_valor < 0 ? ' <span style="color:#f05e5e;font-size:9px">▼</span>' : '') + '</div></div></div>';
-      }).join('');
+                              const colorRacha = (pts) => posicion === 'ENT'
+                                ? (pts === 0 ? '#f05e5e' : pts === 1 ? '#e3b341' : '#4cd97b')
+                                : (pts <= 2 ? '#f05e5e' : pts <= 5 ? '#e3b341' : pts <= 9 ? '#4cd97b' : '#5b9cf6');
+                        const racha = (j.ultimasPuntuaciones || []).map(pts =>
+                          '<div style="width:18px;height:16px;border-radius:3px;background:' + colorRacha(pts) + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:700;color:#0d1117">' + pts + '</div>'
+                        ).join('');
+                        const rachaHTML = racha ? '<div style="display:flex;gap:3px;margin-top:3px">' + racha + '</div>' : '';
+
+                              return '<div class="modal-player" data-id="' + j.id + '" data-slot="' + slotId + '" style="opacity:' + (usado || clubLleno ? '0.3' : '1') + ';pointer-events:' + (usado || clubLleno ? 'none' : 'auto') + '">' + esc + '<div><div class="modal-player-name">' + j.nombre + '</div><div class="modal-player-meta">' + j.club + (j.rival ? ' · vs ' + j.rival + ' (' + (j.es_local ? '🏠' : '✈️') + ')' : '') + '</div>' + rachaHTML + '</div><div style="text-align:right"><div class="modal-player-pts">' + (j.puntos_total || 0) + '</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">' + (j.valor || 0) + 'M' + (j.cambio_valor > 0 ? ' <span style="color:#4cd97b;font-size:9px">▲</span>' : j.cambio_valor < 0 ? ' <span style="color:#f05e5e;font-size:9px">▼</span>' : '') + '</div></div></div>';}).join('');
     document.querySelectorAll('.modal-player').forEach(el => {
       el.addEventListener('click', () => { seleccionados[slotId] = jugadoresPorPos[posicion].find(j => j.id === el.dataset.id); cambiosSinGuardar = true; closeModal(); renderPitch(); actualizarSelectCapitan(); actualizarPresupuesto(); });
     });

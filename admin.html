@@ -399,6 +399,27 @@
             <tbody id="tabla-stats-jornadas"></tbody>
           </table>
         </div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">🏆 MVP de un periodo</div></div>
+          <div class="section-body">
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="form-group"><div class="form-label">Jornada inicial</div><input class="form-input" id="mvp-periodo-inicio" type="number" placeholder="1" /></div>
+              <div class="form-group"><div class="form-label">Jornada final</div><input class="form-input" id="mvp-periodo-fin" type="number" placeholder="3" /></div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Título de la tarjeta</div>
+              <input class="form-input" id="mvp-periodo-titulo" type="text" placeholder="MVP DE SEPTIEMBRE" />
+            </div>
+            <div id="mvp-periodo-preview" style="margin-bottom:16px"></div>
+            <button id="btn-generar-mvp-periodo" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="generarMVPPeriodo()">
+              <i class="ti ti-photo"></i> Generar MVP del periodo (PNG 1:1)
+            </button>
+
+            <button class="btn btn-primary" style="margin-top:12px;margin-bottom:16px;width:100%;padding:12px;font-size:14px" onclick="generarOnceIdealDesdeFormulario()">
+              <i class="ti ti-photo"></i> Generar once ideal (PNG 1:1)
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- MÁS USADOS -->
@@ -2219,6 +2240,940 @@ async function generarCardJornada(jornada, formato = 'cuadrado') {
   link.click();
 }
 
+async function calcularMVPPeriodo(jornadaInicio, jornadaFin) {
+  const { data: jugadoresPeriodo } = await fetchAllRows(
+    db.from('jugadores')
+      .select('nombre, club, posicion, jornada, total_jornada, valor, rival, es_local, foto_url, escudo_url, gol, asistencia, amarilla')
+      .gte('jornada', jornadaInicio)
+      .lte('jornada', jornadaFin)
+  );
+
+  if (!jugadoresPeriodo?.length) return null;
+
+  const agrupados = {};
+  jugadoresPeriodo.forEach(j => {
+    const key = j.nombre + '|' + j.club;
+    if (!agrupados[key]) agrupados[key] = { nombre: j.nombre, club: j.club, posicion: j.posicion, foto_url: j.foto_url, escudo_url: j.escudo_url, actuaciones: [], puntosTotales: 0, valorActual: j.valor, valores: {} };
+    agrupados[key].actuaciones.push({ jornada: j.jornada, rival: j.rival, es_local: j.es_local, puntos: j.total_jornada || 0, escudoRival: null,
+      gol: Number(j.gol) || 0, asistencia: Number(j.asistencia) || 0, amarilla: Number(j.amarilla) || 0 }); // NUEVO: eventos por partido
+    agrupados[key].puntosTotales += (j.total_jornada || 0);
+    agrupados[key].valorActual = j.valor;
+    agrupados[key].valores[j.jornada] = j.valor; // NUEVO: valor por jornada
+  });
+
+  const candidatos = Object.values(agrupados).filter(c => c.posicion !== 'ENT');
+  candidatos.sort((a, b) => b.puntosTotales - a.puntosTotales || (a.valorActual || 0) - (b.valorActual || 0));
+
+  if (!candidatos.length) return null;
+
+  const mvp = candidatos[0];
+  mvp.actuaciones.sort((a, b) => a.jornada - b.jornada);
+  const { data: escudosData } = await db.from('jugadores').select('club, escudo_url').in('club', [...new Set(mvp.actuaciones.map(a => a.rival))]).limit(50);
+  const escudoPorClub = {};
+  (escudosData || []).forEach(e => { if (!escudoPorClub[e.club]) escudoPorClub[e.club] = e.escudo_url; });
+  mvp.actuaciones.forEach(act => { act.escudoRival = escudoPorClub[act.rival] || null; });
+
+  // ── NUEVO: variación de valor ───────────────────────
+  // Referencia inicial: valor en la jornada anterior al rango (si existe);
+  // si no, el valor en la primera jornada del rango.
+  // Referencia final: valor en la última jornada del rango.
+  const jornadasMvp = Object.keys(mvp.valores).map(Number).sort((a, b) => a - b);
+  let valorInicio = mvp.valores[jornadasMvp[0]];
+  const valorFin = mvp.valores[jornadasMvp[jornadasMvp.length - 1]];
+
+  if (jornadaInicio > 1) {
+    const { data: previo } = await db.from('jugadores')
+      .select('valor')
+      .eq('nombre', mvp.nombre)
+      .eq('club', mvp.club)
+      .eq('jornada', jornadaInicio - 1)
+      .limit(1);
+    if (previo?.length && previo[0].valor != null) valorInicio = previo[0].valor;
+  }
+  if (valorInicio != null && valorFin != null) mvp.subidaValor = valorFin - valorInicio;
+  delete mvp.valores;
+
+  // ── NUEVO: goles, asistencias y amarillas (totales del periodo) ──
+  const sumar = (campo) => mvp.actuaciones.reduce((t, a) => t + a[campo], 0);
+  mvp.goles = sumar('gol');
+  mvp.asistencias = sumar('asistencia');
+  mvp.amarillas = sumar('amarilla');
+
+  // ── NUEVO: veces alineado y veces capitán ───────────
+  // jugadores tiene un id distinto por jornada, así que primero sacamos
+  // los ids del MVP en el rango y luego contamos sus filas en mi_equipo.
+  // Se usan consultas de solo conteo (head: true): no se descargan filas.
+  const { data: idsData } = await db.from('jugadores')
+    .select('id')
+    .eq('nombre', mvp.nombre)
+    .eq('club', mvp.club)
+    .gte('jornada', jornadaInicio)
+    .lte('jornada', jornadaFin);
+  const idsMvp = (idsData || []).map(r => r.id);
+
+  if (idsMvp.length) {
+    const [alineado, capitan] = await Promise.all([
+      db.from('mi_equipo')
+        .select('jugador_id', { count: 'exact', head: true })
+        .in('jugador_id', idsMvp),
+      db.from('mi_equipo')
+        .select('jugador_id', { count: 'exact', head: true })
+        .in('jugador_id', idsMvp)
+        .eq('capitan', true)
+    ]);
+    if (!alineado.error) mvp.vecesAlineado = alineado.count ?? 0;
+    else console.warn('MVP: no se pudo contar alineaciones', alineado.error.message);
+    if (!capitan.error) mvp.vecesCapitan = capitan.count ?? 0;
+    else console.warn('MVP: no se pudo contar capitanías', capitan.error.message);
+  }
+
+  return mvp;
+}
+
+async function generarMVPPeriodo() {
+  const jornadaInicio = parseInt(document.getElementById('mvp-periodo-inicio').value);
+  const jornadaFin = parseInt(document.getElementById('mvp-periodo-fin').value);
+  const titulo = document.getElementById('mvp-periodo-titulo').value.trim() || 'MVP DEL PERIODO';
+
+  if (!jornadaInicio || !jornadaFin || jornadaInicio > jornadaFin) {
+    showToast('Introduce un rango de jornadas válido', true);
+    return;
+  }
+
+  const btn = document.getElementById('btn-generar-mvp-periodo');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Generando...';
+
+  try {
+    const mvp = await calcularMVPPeriodo(jornadaInicio, jornadaFin);
+    if (!mvp) { showToast('Sin datos para ese rango de jornadas', true); return; }
+    await dibujarMVPPeriodo(mvp, titulo);
+    showToast('✓ Tarjeta generada');
+  } catch (e) {
+    showToast('Error al generar: ' + e.message, true);
+  }
+
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-photo"></i> Generar MVP del periodo (PNG 1:1)';
+}
+
+async function dibujarMVPPeriodo(mvp, titulo) {
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  // ── Paleta (tema claro corporativo) ─────────────────
+  const BANDA = '#101715';            // cabecera y pie
+  const FONDO = '#ffffff';
+  const FONDO_ALT = '#f2f7f4';        // filas alternas / degradado suave
+  const VERDE = '#007a45';            // color de marca
+  const VERDE_CLARO = '#2bb673';
+  const VERDE_RGB = '0,122,69';
+  const TEXTO = '#101715';
+  const TEXTO_2 = 'rgba(16,23,21,0.62)';
+  const TEXTO_3 = 'rgba(16,23,21,0.45)';
+  const VARIACION_OK = '#16a34a';
+  const AMARILLA = '#f2b705';
+  const AMARILLA_TEXTO = '#c99700';   // más oscuro para leerse sobre blanco
+  const ROJO = '#d93a3a';
+
+  const rectRedondo = (x, y, w, h, rad) => {
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; }
+    rad = Math.min(rad, w / 2, h / 2);
+    ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad);
+    ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad);
+    ctx.arcTo(x, y, x + w, y, rad);
+    ctx.closePath();
+  };
+
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  const HEADER_H = 90;
+  const FOOTER_H = 45;
+  const areaInicio = HEADER_H;
+  const areaFin = SIZE - FOOTER_H;
+  const nJornadas = mvp.actuaciones.length;
+
+  // ── Fondo ───────────────────────────────────────────
+  const fondo = ctx.createRadialGradient(170, SIZE / 2, 50, 170, SIZE / 2, SIZE * 0.9);
+  fondo.addColorStop(0, FONDO);
+  fondo.addColorStop(1, FONDO_ALT);
+  ctx.fillStyle = fondo;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  // ── Cabecera (banda oscura) ─────────────────────────
+  ctx.fillStyle = BANDA;
+  ctx.fillRect(0, 0, SIZE, HEADER_H);
+  ctx.fillStyle = VERDE;
+  ctx.fillRect(0, HEADER_H - 4, SIZE, 4);
+
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 45);
+  ctx.fillStyle = VERDE;
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 45);
+
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = VERDE_CLARO;
+  ctx.fillText('★ ' + titulo.toUpperCase(), SIZE - 40, 45);
+
+  // ── Columna izquierda: preparar datos para centrar ──
+  const COL_IZQ_W = 340;
+  const r = 130;
+  const cx = COL_IZQ_W / 2;
+
+  const MARGEN = 24;
+  const GAP = 12;
+  const CASILLA_H = 64;
+  const ANCHO_TOTAL = COL_IZQ_W - MARGEN * 2;
+
+  const filasStats = [
+    [
+      { valor: mvp.goles,       etiqueta: 'GOLES',       color: TEXTO },
+      { valor: mvp.asistencias, etiqueta: 'ASISTENCIAS', color: TEXTO },
+      { valor: mvp.amarillas,   etiqueta: 'AMARILLAS',   color: AMARILLA_TEXTO }
+    ],
+    [
+      { valor: mvp.vecesAlineado, etiqueta: 'VECES ALINEADO',    color: TEXTO },
+      { valor: mvp.vecesCapitan,  etiqueta: 'VECES CAPITANEADO', color: TEXTO }
+    ]
+  ].map(fila => fila.filter(s => s.valor != null)).filter(fila => fila.length);
+  const tieneSubida = mvp.subidaValor != null;
+
+  const OFFSET_STATS = nJornadas > 0 ? 270 : 190;
+  let alturaBloque;
+  if (filasStats.length || tieneSubida) {
+    alturaBloque = 2 * r + OFFSET_STATS
+      + filasStats.length * (CASILLA_H + GAP)
+      + (tieneSubida ? CASILLA_H : -GAP);
+  } else {
+    alturaBloque = 2 * r + (nJornadas > 0 ? 250 : 168);
+  }
+  const cy = areaInicio + Math.max(40, (areaFin - areaInicio - alturaBloque) / 2) + r;
+
+  const fotoImg = await cargarImg(mvp.foto_url);
+  const escudoImg = await cargarImg(mvp.escudo_url);
+
+  // Halo verde suave
+  const halo = ctx.createRadialGradient(cx, cy, r * 0.8, cx, cy, r * 1.3);
+  halo.addColorStop(0, `rgba(${VERDE_RGB},0.18)`);
+  halo.addColorStop(1, `rgba(${VERDE_RGB},0)`);
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 1.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Foto
+  const baseFoto = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+  baseFoto.addColorStop(0, VERDE_CLARO);
+  baseFoto.addColorStop(1, VERDE);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = baseFoto;
+  ctx.fill();
+
+  if (fotoImg) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(fotoImg, cx - r, cy - r, r * 2, r * 2);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 66px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(mvp.nombre.substring(0, 2).toUpperCase(), cx, cy);
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = VERDE;
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  // Escudo del club
+  if (escudoImg) {
+    const er = 38;
+    const ex = cx + r - er + 4;
+    const ey = cy + r - er + 4;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(ex, ey, er, 0, Math.PI * 2);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(ex, ey, er, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(escudoImg, ex - er, ey - er, er * 2, er * 2);
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(ex, ey, er, 0, Math.PI * 2);
+    ctx.strokeStyle = VERDE;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Textos
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = TEXTO;
+  ctx.font = 'bold 28px sans-serif';
+  ctx.fillText(mvp.nombre, cx, cy + r + 42);
+
+  ctx.fillStyle = TEXTO_2;
+  ctx.font = '15px monospace';
+  ctx.fillText(mvp.posicion + ' · ' + mvp.club, cx, cy + r + 68);
+
+  ctx.fillStyle = VERDE;
+  ctx.font = 'bold 56px sans-serif';
+  ctx.fillText(mvp.puntosTotales, cx, cy + r + 128);
+
+  ctx.fillStyle = TEXTO_3;
+  ctx.font = 'bold 13px monospace';
+  ctx.fillText('PUNTOS TOTALES', cx, cy + r + 158);
+
+  if (nJornadas > 0) {
+    const media = mvp.puntosTotales / nJornadas;
+    const mediaTxt = media.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+
+    ctx.strokeStyle = `rgba(${VERDE_RGB},0.3)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 60, cy + r + 184);
+    ctx.lineTo(cx + 60, cy + r + 184);
+    ctx.stroke();
+
+    ctx.fillStyle = TEXTO;
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText(mediaTxt, cx, cy + r + 214);
+
+    ctx.fillStyle = TEXTO_3;
+    ctx.font = 'bold 13px monospace';
+    ctx.fillText('PTS / JORNADA', cx, cy + r + 240);
+  }
+
+  // Casillas de estadísticas
+  const fmtValor = (v) => {
+    const abs = Math.abs(v);
+    if (abs >= 1e6) return (v / 1e6).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + 'M';
+    if (abs >= 1e3) return (v / 1e3).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + 'K';
+    return v.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+  };
+
+  const dibujarCasilla = (x, y, w, h, valorTxt, etiqueta, color, tinte = VERDE_RGB) => {
+    rectRedondo(x, y, w, h, 10);
+    ctx.fillStyle = `rgba(${tinte},0.06)`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${tinte},0.28)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 26px sans-serif';
+    ctx.fillText(valorTxt, x + w / 2, y + 26);
+
+    ctx.fillStyle = TEXTO_3;
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(etiqueta, x + w / 2, y + 50);
+  };
+
+  let statsY = cy + r + OFFSET_STATS;
+  filasStats.forEach(fila => {
+    const w = (ANCHO_TOTAL - GAP * (fila.length - 1)) / fila.length;
+    fila.forEach((s, i) => {
+      dibujarCasilla(MARGEN + i * (w + GAP), statsY, w, CASILLA_H, String(s.valor), s.etiqueta, s.color);
+    });
+    statsY += CASILLA_H + GAP;
+  });
+
+  if (tieneSubida) {
+    const sv = mvp.subidaValor;
+    const txt = sv > 0 ? '▲ +' + fmtValor(sv) : sv < 0 ? '▼ ' + fmtValor(sv) : '= 0';
+    const color = sv > 0 ? VARIACION_OK : sv < 0 ? ROJO : TEXTO;
+    const tinte = sv > 0 ? '22,163,74' : sv < 0 ? '217,58,58' : VERDE_RGB;
+    dibujarCasilla(MARGEN, statsY, ANCHO_TOTAL, CASILLA_H, txt, 'VARIACIÓN DE VALOR', color, tinte);
+  }
+
+  // Separador vertical
+  const gradV = ctx.createLinearGradient(0, areaInicio, 0, areaFin);
+  gradV.addColorStop(0, 'transparent');
+  gradV.addColorStop(0.5, `rgba(${VERDE_RGB},0.35)`);
+  gradV.addColorStop(1, 'transparent');
+  ctx.strokeStyle = gradV;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(COL_IZQ_W, areaInicio);
+  ctx.lineTo(COL_IZQ_W, areaFin);
+  ctx.stroke();
+
+  // ── Iconos de eventos por partido ───────────────────
+  const iconoGol = (x, y) => {
+    const rr = 9;
+    ctx.beginPath();
+    ctx.arc(x, y, rr, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = TEXTO;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    for (let k = 0; k < 5; k++) {
+      const a = -Math.PI / 2 + k * (2 * Math.PI / 5);
+      const px = x + Math.cos(a) * 4, py = y + Math.sin(a) * 4;
+      k === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = TEXTO;
+    ctx.fill();
+    return rr * 2;
+  };
+  const iconoAsistencia = (x, y) => {
+    const rr = 9;
+    ctx.beginPath();
+    ctx.arc(x, y, rr, 0, Math.PI * 2);
+    ctx.fillStyle = VERDE;
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('A', x, y + 1);
+    return rr * 2;
+  };
+  const iconoAmarilla = (x, y) => {
+    rectRedondo(x - 6, y - 9, 12, 18, 2);
+    ctx.fillStyle = AMARILLA;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    return 12;
+  };
+
+  const dibujarEvento = (icono, n, x, y) => {
+    if (!n) return 0;
+    const ancho = icono(x + 9, y);
+    let usado = Math.max(ancho, 18);
+    if (n > 1) {
+      ctx.fillStyle = TEXTO;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'left';
+      const t = '×' + n;
+      ctx.fillText(t, x + usado + 3, y + 1);
+      usado += 3 + ctx.measureText(t).width;
+    }
+    return usado + 8;
+  };
+
+  // ── Columna derecha: actuaciones ────────────────────
+  const COL_DER_X = COL_IZQ_W + 24;
+  const COL_DER_W = SIZE - COL_DER_X - 24;
+  // Tarjetas separadas: margen arriba/abajo y hueco entre jornadas
+  const PAD_V = 18;
+  const GAP_FILAS = 14;
+  const alturaFila = (areaFin - areaInicio - PAD_V * 2 - GAP_FILAS * (Math.max(nJornadas, 1) - 1)) / Math.max(nJornadas, 1);
+
+  const maxAbs = Math.max(1, ...mvp.actuaciones.map(a => Math.abs(a.puntos)));
+
+  const BARRA_X = COL_DER_X + 200;
+  const EVENTOS_W = 130;
+  const PTS_W = 100;
+  const BARRA_W = COL_DER_W - 200 - EVENTOS_W - PTS_W - 16;
+  const EVENTOS_X = BARRA_X + BARRA_W + 16;
+  const BARRA_H = 12;
+
+  const escudosRivales = await Promise.all(mvp.actuaciones.map(act => cargarImg(act.escudoRival)));
+
+  mvp.actuaciones.forEach((act, i) => {
+    const y = areaInicio + PAD_V + i * (alturaFila + GAP_FILAS);
+    const midY = y + alturaFila / 2;
+    const radio = Math.min(10, alturaFila / 4);   // mismo radio que las casillas
+    const tinte = act.puntos >= 0 ? VERDE_RGB : '217,58,58';
+
+    // Tarjeta con el mismo estilo que las casillas de estadísticas
+    rectRedondo(COL_DER_X, y, COL_DER_W, alturaFila, radio);
+    ctx.fillStyle = FONDO;
+    ctx.fill();
+    ctx.fillStyle = `rgba(${tinte},0.06)`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${tinte},0.28)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textBaseline = 'middle';
+
+    // Etiqueta de jornada
+    const etqW = 46, etqH = 30;
+    rectRedondo(COL_DER_X + 18, midY - etqH / 2, etqW, etqH, 8);
+    ctx.fillStyle = VERDE;
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('J' + act.jornada, COL_DER_X + 18 + etqW / 2, midY + 1);
+
+    // Escudo + rival
+    const escR = escudosRivales[i];
+    const erChico = 16;
+    const escX = COL_DER_X + 78;
+    if (escR) ctx.drawImage(escR, escX, midY - erChico, erChico * 2, erChico * 2);
+    ctx.fillStyle = TEXTO_2;
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText((act.rival || '?') + ' (' + (act.es_local ? 'L' : 'V') + ')', escX + erChico * 2 + 8, midY);
+
+    // Barra
+    rectRedondo(BARRA_X, midY - BARRA_H / 2, BARRA_W, BARRA_H, BARRA_H / 2);
+    ctx.fillStyle = 'rgba(16,23,21,0.08)';
+    ctx.fill();
+    if (act.puntos !== 0) {
+      const anchoRelleno = Math.max(BARRA_H, BARRA_W * Math.abs(act.puntos) / maxAbs);
+      rectRedondo(BARRA_X, midY - BARRA_H / 2, anchoRelleno, BARRA_H, BARRA_H / 2);
+      if (act.puntos > 0) {
+        const gb = ctx.createLinearGradient(BARRA_X, 0, BARRA_X + anchoRelleno, 0);
+        gb.addColorStop(0, VERDE);
+        gb.addColorStop(1, VERDE_CLARO);
+        ctx.fillStyle = gb;
+      } else {
+        ctx.fillStyle = ROJO;
+      }
+      ctx.fill();
+    }
+
+    // Eventos del partido
+    let ex = EVENTOS_X;
+    ex += dibujarEvento(iconoGol, act.gol, ex, midY);
+    ex += dibujarEvento(iconoAsistencia, act.asistencia, ex, midY);
+    ex += dibujarEvento(iconoAmarilla, act.amarilla, ex, midY);
+
+    // Puntos
+    ctx.fillStyle = act.puntos >= 0 ? VERDE : ROJO;
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(act.puntos + ' pts', COL_DER_X + COL_DER_W - 18, midY);
+  });
+
+  // ── Pie (banda oscura) ──────────────────────────────
+  ctx.fillStyle = BANDA;
+  ctx.fillRect(0, areaFin, SIZE, FOOTER_H);
+  ctx.fillStyle = VERDE;
+  ctx.fillRect(0, areaFin, SIZE, 3);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, areaFin + FOOTER_H / 2 + 1);
+
+  const link = document.createElement('a');
+  link.download = 'mvp_periodo.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ════════════════════════════════════════════════════
+//  ONCE IDEAL DEL PERIODO
+// ════════════════════════════════════════════════════
+
+// Formaciones permitidas: se elige la que más puntos suma.
+// Ajusta la lista a las formaciones válidas en AsturFantasy.
+const FORMACIONES_ONCE = ['3-4-3', '3-5-2', '4-3-3', '4-4-2', '4-5-1', '5-3-2', '5-4-1'];
+
+async function calcularOnceIdealPeriodo(jornadaInicio, jornadaFin) {
+  const { data: filas } = await fetchAllRows(
+    db.from('jugadores')
+      .select('nombre, club, posicion, jornada, total_jornada, valor, foto_url, escudo_url')
+      .gte('jornada', jornadaInicio)
+      .lte('jornada', jornadaFin)
+  );
+  if (!filas?.length) return null;
+
+  // Agrupar por jugador (nombre + club), igual que en el MVP
+  const agrupados = {};
+  filas.forEach(j => {
+    const key = j.nombre + '|' + j.club;
+    let g = agrupados[key];
+    if (!g) {
+      g = agrupados[key] = {
+        nombre: j.nombre, club: j.club, posicion: j.posicion,
+        foto_url: j.foto_url, escudo_url: j.escudo_url,
+        puntosTotales: 0, valorActual: j.valor, ultimaJornada: j.jornada
+      };
+    }
+    g.puntosTotales += (j.total_jornada || 0);
+    // Posición, foto y valor de la jornada más reciente del rango
+    if (j.jornada >= g.ultimaJornada) {
+      g.ultimaJornada = j.jornada;
+      g.valorActual = j.valor;
+      g.posicion = j.posicion;
+      if (j.foto_url) g.foto_url = j.foto_url;
+      if (j.escudo_url) g.escudo_url = j.escudo_url;
+    }
+  });
+
+  // Separar por posición y ordenar (más puntos; desempate: menor valor)
+  const orden = (a, b) => b.puntosTotales - a.puntosTotales || (a.valorActual || 0) - (b.valorActual || 0);
+  const porPos = { POR: [], DEF: [], MED: [], DEL: [], ENT: [] };
+  Object.values(agrupados).forEach(g => { if (porPos[g.posicion]) porPos[g.posicion].push(g); });
+  Object.values(porPos).forEach(lista => lista.sort(orden));
+
+  // Probar cada formación y quedarse con la que más suma
+  const suma = (lista, n) => lista.slice(0, n).reduce((t, g) => t + g.puntosTotales, 0);
+  let mejor = null;
+  for (const f of FORMACIONES_ONCE) {
+    const [d, m, dl] = f.split('-').map(Number);
+    if (porPos.POR.length < 1 || porPos.DEF.length < d || porPos.MED.length < m || porPos.DEL.length < dl) continue;
+    const total = suma(porPos.POR, 1) + suma(porPos.DEF, d) + suma(porPos.MED, m) + suma(porPos.DEL, dl);
+    if (!mejor || total > mejor.total) mejor = { formacion: f, d, m, dl, total };
+  }
+  if (!mejor) return null;
+
+  return {
+    formacion: mejor.formacion,
+    jornadaInicio,
+    jornadaFin,
+    puntosTotales: mejor.total,           // suma de los 11 (sin entrenador)
+    lineas: {
+      DEL: porPos.DEL.slice(0, mejor.dl),
+      MED: porPos.MED.slice(0, mejor.m),
+      DEF: porPos.DEF.slice(0, mejor.d),
+      POR: porPos.POR.slice(0, 1)
+    },
+    entrenador: porPos.ENT[0] || null
+  };
+}
+
+async function dibujarOnceIdeal(once, titulo) {
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  // ── Paleta (idéntica a la tarjeta MVP) ──────────────
+  const BANDA = '#101715';
+  const FONDO = '#ffffff';
+  const FONDO_ALT = '#f2f7f4';
+  const VERDE = '#007a45';
+  const VERDE_CLARO = '#2bb673';
+  const VERDE_RGB = '0,122,69';
+  const TEXTO = '#101715';
+  const TEXTO_3 = 'rgba(16,23,21,0.45)';
+
+  const rectRedondo = (x, y, w, h, rad) => {
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; }
+    rad = Math.min(rad, w / 2, h / 2);
+    ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad);
+    ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad);
+    ctx.arcTo(x, y, x + w, y, rad);
+    ctx.closePath();
+  };
+
+  const cargarImg = (url) => new Promise(res => {
+    if (!url) { res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  const HEADER_H = 90;
+  const FOOTER_H = 45;
+  const areaInicio = HEADER_H;
+  const areaFin = SIZE - FOOTER_H;
+
+  // ── Fondo y cabecera ────────────────────────────────
+  const fondo = ctx.createRadialGradient(SIZE / 2, SIZE / 2, 50, SIZE / 2, SIZE / 2, SIZE * 0.9);
+  fondo.addColorStop(0, FONDO);
+  fondo.addColorStop(1, FONDO_ALT);
+  ctx.fillStyle = fondo;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  ctx.fillStyle = BANDA;
+  ctx.fillRect(0, 0, SIZE, HEADER_H);
+  ctx.fillStyle = VERDE;
+  ctx.fillRect(0, HEADER_H - 4, SIZE, 4);
+
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('ASTUR', 40, 45);
+  ctx.fillStyle = VERDE;
+  ctx.fillText('FANTASY', 40 + ctx.measureText('ASTUR').width, 45);
+
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = VERDE_CLARO;
+  ctx.fillText('★ ' + titulo.toUpperCase(), SIZE - 40, 45);
+
+  // ── Carga de imágenes ───────────────────────────────
+  const ordenLineas = ['DEL', 'MED', 'DEF', 'POR'];
+  const todos = ordenLineas.flatMap(l => once.lineas[l] || []);
+  if (once.entrenador) todos.push(once.entrenador);
+  const imgs = await Promise.all(todos.map(async j => ({
+    foto: await cargarImg(j.foto_url),
+    escudo: await cargarImg(j.escudo_url)
+  })));
+  const imgDe = new Map(todos.map((j, i) => [j, imgs[i]]));
+
+  // ── Utilidades de dibujo ────────────────────────────
+  const dibujarCasilla = (x, y, w, h, valorTxt, etiqueta, color, tamValor = 26) => {
+    rectRedondo(x, y, w, h, 10);
+    ctx.fillStyle = FONDO;
+    ctx.fill();
+    ctx.fillStyle = `rgba(${VERDE_RGB},0.06)`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${VERDE_RGB},0.28)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.font = `bold ${tamValor}px sans-serif`;
+    ctx.fillText(valorTxt, x + w / 2, y + h * 0.42);
+
+    ctx.fillStyle = TEXTO_3;
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(etiqueta, x + w / 2, y + h * 0.76);
+  };
+
+  // Texto que se encoge hasta caber en maxW
+  const textoAjustado = (txt, x, y, maxW, tamMax, tamMin = 11) => {
+    let tam = tamMax;
+    ctx.font = `bold ${tam}px sans-serif`;
+    while (ctx.measureText(txt).width > maxW && tam > tamMin) {
+      tam--;
+      ctx.font = `bold ${tam}px sans-serif`;
+    }
+    ctx.fillText(txt, x, y);
+  };
+
+  // Jugador: foto circular + escudo + nombre + píldora de puntos
+  const dibujarJugador = (j, x, y, R, maxNombreW) => {
+    const { foto, escudo } = imgDe.get(j) || {};
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(16,23,21,0.18)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, R, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.restore();
+
+    const base = ctx.createLinearGradient(x - R, y - R, x + R, y + R);
+    base.addColorStop(0, VERDE_CLARO);
+    base.addColorStop(1, VERDE);
+    ctx.beginPath();
+    ctx.arc(x, y, R, 0, Math.PI * 2);
+    ctx.fillStyle = base;
+    ctx.fill();
+
+    if (foto) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, R, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(foto, x - R, y - R, R * 2, R * 2);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.round(R * 0.6)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(j.nombre.substring(0, 2).toUpperCase(), x, y);
+    }
+
+    ctx.beginPath();
+    ctx.arc(x, y, R, 0, Math.PI * 2);
+    ctx.strokeStyle = VERDE;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    if (escudo) {
+      const er = Math.round(R * 0.36);
+      const ex = x + R * 0.72, ey = y + R * 0.72;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.clip();
+      ctx.drawImage(escudo, ex - er, ey - er, er * 2, er * 2);
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.strokeStyle = VERDE;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Nombre
+    ctx.fillStyle = TEXTO;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    textoAjustado(j.nombre, x, y + R + 20, maxNombreW, 16);
+
+    // Píldora de puntos
+    const ptsTxt = j.puntosTotales + ' pts';
+    ctx.font = 'bold 15px sans-serif';
+    const pw = ctx.measureText(ptsTxt).width + 22, ph = 26;
+    rectRedondo(x - pw / 2, y + R + 34, pw, ph, ph / 2);
+    ctx.fillStyle = VERDE;
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(ptsTxt, x, y + R + 34 + ph / 2 + 1);
+  };
+
+  // ── Campo ───────────────────────────────────────────
+  const PITCH_X = 32;
+  const PITCH_Y = areaInicio + 20;
+  const PITCH_W = 780;
+  const PITCH_H = areaFin - 20 - PITCH_Y;
+
+  rectRedondo(PITCH_X, PITCH_Y, PITCH_W, PITCH_H, 10);
+  ctx.fillStyle = FONDO;
+  ctx.fill();
+  ctx.fillStyle = `rgba(${VERDE_RGB},0.06)`;
+  ctx.fill();
+
+  // Franjas de césped
+  ctx.save();
+  rectRedondo(PITCH_X, PITCH_Y, PITCH_W, PITCH_H, 10);
+  ctx.clip();
+  const nFranjas = 10;
+  for (let k = 0; k < nFranjas; k += 2) {
+    ctx.fillStyle = `rgba(${VERDE_RGB},0.035)`;
+    ctx.fillRect(PITCH_X, PITCH_Y + k * PITCH_H / nFranjas, PITCH_W, PITCH_H / nFranjas);
+  }
+
+  // Líneas del campo
+  ctx.strokeStyle = `rgba(${VERDE_RGB},0.22)`;
+  ctx.lineWidth = 2;
+  const midY = PITCH_Y + PITCH_H / 2;
+  const midX = PITCH_X + PITCH_W / 2;
+  ctx.beginPath(); ctx.moveTo(PITCH_X, midY); ctx.lineTo(PITCH_X + PITCH_W, midY); ctx.stroke();
+  ctx.beginPath(); ctx.arc(midX, midY, 75, 0, Math.PI * 2); ctx.stroke();
+  const areaGrandeW = 380, areaGrandeH = 130, areaPeqW = 180, areaPeqH = 50;
+  ctx.strokeRect(midX - areaGrandeW / 2, PITCH_Y, areaGrandeW, areaGrandeH);
+  ctx.strokeRect(midX - areaPeqW / 2, PITCH_Y, areaPeqW, areaPeqH);
+  ctx.strokeRect(midX - areaGrandeW / 2, PITCH_Y + PITCH_H - areaGrandeH, areaGrandeW, areaGrandeH);
+  ctx.strokeRect(midX - areaPeqW / 2, PITCH_Y + PITCH_H - areaPeqH, areaPeqW, areaPeqH);
+  ctx.restore();
+
+  rectRedondo(PITCH_X, PITCH_Y, PITCH_W, PITCH_H, 10);
+  ctx.strokeStyle = `rgba(${VERDE_RGB},0.28)`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Jugadores por líneas (ataque arriba)
+  const alturaLinea = { DEL: 0.14, MED: 0.39, DEF: 0.64, POR: 0.87 };
+  const R_JUG = 44;
+  ordenLineas.forEach(linea => {
+    const jugadores = once.lineas[linea] || [];
+    const n = jugadores.length;
+    const y = PITCH_Y + PITCH_H * alturaLinea[linea];
+    const paso = PITCH_W / (n + 1);
+    jugadores.forEach((j, i) => {
+      dibujarJugador(j, PITCH_X + paso * (i + 1), y, R_JUG, Math.min(paso - 10, 170));
+    });
+  });
+
+  // ── Columna lateral ─────────────────────────────────
+  const SIDE_X = PITCH_X + PITCH_W + 20;
+  const SIDE_W = SIZE - 32 - SIDE_X;
+  const GAP = 12;
+  const H_PUNTOS = 100, H_DATO = 72, H_ENT = 214;
+  const tieneRango = once.jornadaInicio != null && once.jornadaFin != null;
+  const alturaLateral = H_PUNTOS + GAP + H_DATO + (tieneRango ? GAP + H_DATO : 0) + (once.entrenador ? GAP + H_ENT : 0);
+  let sy = areaInicio + (areaFin - areaInicio - alturaLateral) / 2;
+
+  dibujarCasilla(SIDE_X, sy, SIDE_W, H_PUNTOS, String(once.puntosTotales), 'PUNTOS DEL ONCE', VERDE, 44);
+  sy += H_PUNTOS + GAP;
+
+  dibujarCasilla(SIDE_X, sy, SIDE_W, H_DATO, once.formacion, 'FORMACIÓN', TEXTO, 28);
+  sy += H_DATO + GAP;
+
+  if (tieneRango) {
+    const rango = once.jornadaInicio === once.jornadaFin
+      ? 'J' + once.jornadaInicio
+      : 'J' + once.jornadaInicio + '–J' + once.jornadaFin;
+    dibujarCasilla(SIDE_X, sy, SIDE_W, H_DATO, rango, 'JORNADAS', TEXTO, 28);
+    sy += H_DATO + GAP;
+  }
+
+  if (once.entrenador) {
+    rectRedondo(SIDE_X, sy, SIDE_W, H_ENT, 10);
+    ctx.fillStyle = FONDO;
+    ctx.fill();
+    ctx.fillStyle = `rgba(${VERDE_RGB},0.06)`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${VERDE_RGB},0.28)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = TEXTO_3;
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ENTRENADOR', SIDE_X + SIDE_W / 2, sy + 22);
+
+    dibujarJugador(once.entrenador, SIDE_X + SIDE_W / 2, sy + 90, 48, SIDE_W - 20);
+  }
+
+  // ── Pie ─────────────────────────────────────────────
+  ctx.fillStyle = BANDA;
+  ctx.fillRect(0, areaFin, SIZE, FOOTER_H);
+  ctx.fillStyle = VERDE;
+  ctx.fillRect(0, areaFin, SIZE, 3);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('asturfantasy.com', SIZE / 2, areaFin + FOOTER_H / 2 + 1);
+
+  const link = document.createElement('a');
+  link.download = 'once_ideal.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// Enlázalo al botón igual que generarMVPPeriodo, pasando los valores del formulario
+async function generarOnceIdeal(jornadaInicio, jornadaFin, titulo) {
+  const once = await calcularOnceIdealPeriodo(jornadaInicio, jornadaFin);
+  if (!once) {
+    alert('No hay jugadores suficientes en ese rango para formar un once.');
+    return;
+  }
+  await dibujarOnceIdeal(once, titulo);
+}
+
   async function _dibujarClasificacionFantasy(tabla, titulo, subtitulo, nombreArchivo) {
     const N = 15;
     const topN = Array.from({ length: N }, (_, i) => tabla[i] || { pos: i + 1, nombre: '—', pts: '—', vacio: true });
@@ -2330,6 +3285,24 @@ async function generarCardJornada(jornada, formato = 'cuadrado') {
     link.href = canvas.toDataURL('image/png');
     link.click();
   }
+
+  function generarOnceIdealDesdeFormulario() {
+  const jornadaInicio = parseInt(document.getElementById('mvp-periodo-inicio').value);
+  const jornadaFin = parseInt(document.getElementById('mvp-periodo-fin').value);
+  const tituloMVP = document.getElementById('mvp-periodo-titulo').value || '';
+
+  if (isNaN(jornadaInicio) || isNaN(jornadaFin) || jornadaInicio > jornadaFin) {
+    alert('Revisa las jornadas inicial y final.');
+    return;
+  }
+
+  // "MVP Septiembre" → "Once ideal Septiembre"
+  const titulo = /mvp/i.test(tituloMVP)
+    ? tituloMVP.replace(/mvp/i, 'Once ideal')
+    : 'Once ideal ' + tituloMVP;
+
+  generarOnceIdeal(jornadaInicio, jornadaFin, titulo.trim());
+}
 
   async function generarClasificacionesFantasy() {
     const ahora = new Date();

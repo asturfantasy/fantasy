@@ -412,7 +412,7 @@ async function abrirEquipo(abrev, nombre) {
         </div>
         <div class="pc-info">
           <div class="pc-name">${j.nombre}</div>
-          <div class="pc-meta">${j.posicion} · ${j.valor}M</div>
+          <div class="pc-meta">${j.posicion} · ${j.valor == null ? 'Causa baja' : j.valor + 'M'}</div>
         </div>
         <div class="pc-pts">${j.puntos_total}</div>
       </div>
