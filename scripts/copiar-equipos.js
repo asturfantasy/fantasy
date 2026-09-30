@@ -104,6 +104,7 @@ async function main() {
             .from('mi_equipo')
             .select('*')
             .eq('jornada', jornadaActiva)
+            .order('id', { ascending: true })
             .range(desde, desde + TAMANO_PAGINA - 1);
           if (!pagina?.length) break;
           equipos = equipos.concat(pagina);
@@ -112,6 +113,14 @@ async function main() {
         }
 
     if (!equipos?.length) {
+      const { count } = await supabase
+        .from('mi_equipo')
+        .select('*', { count: 'exact', head: true })
+        .eq('jornada', jornadaActiva);
+      if (count > 0) {
+        console.error('ALERTA: mi_equipo tiene ' + count + ' filas en J' + jornadaActiva + ' pero la paginación devolvió 0. Abortando sin marcar como copiada.');
+        process.exit(1);
+      }
       await supabase.from('jornadas_copiadas').insert({ jornada: jornadaActiva });
       console.log('Sin equipos que copiar');
       return;
@@ -147,8 +156,8 @@ async function main() {
 
         const jugSiguiente = jugadoresSiguiente?.find(j => j.nombre === jugActiva.nombre && j.club === jugActiva.club);
         if (!jugSiguiente) continue;
+        costeTotal += parseFloat(jugSiguiente.valor) || 0;
 
-        costeTotal += parseFloat(jugActiva.valor) || 0;
         equipoConvertido.push({ ...e, jugador_id_siguiente: jugSiguiente.id });
       }
 
