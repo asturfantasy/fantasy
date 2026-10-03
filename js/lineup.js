@@ -276,7 +276,7 @@ async function loadLineup() {
   // ── Carrusel partidos jornada ──
   const { data: partidos } = await db
     .from('partidos')
-    .select('local_abrev, visitante_abrev, local_escudo_url, visitante_escudo_url, resultado_local, resultado_visitante, finalizado, fecha, hora')
+    .select('local_abrev, visitante_abrev, local_nombre, visitante_nombre, local_escudo_url, visitante_escudo_url, resultado_local, resultado_visitante, finalizado, fecha, hora')
     .eq('jornada', JORNADA_ACTIVA)
     .order('orden', { ascending: true });
 
@@ -285,10 +285,17 @@ async function loadLineup() {
     lineupPartidos.innerHTML = partidos.map(p => `
       <div style="flex-shrink:0;background:var(--surface);border-radius:10px;padding:8px 10px;
                   display:flex;flex-direction:column;align-items:center;gap:4px;min-width:80px">
-        <div style="display:flex;align-items:center;gap:6px">
-          ${p.local_escudo_url ? `<img src="${p.local_escudo_url}" width="22" height="22" style="object-fit:contain">` : ''}
-          ${p.visitante_escudo_url ? `<img src="${p.visitante_escudo_url}" width="22" height="22" style="object-fit:contain">` : ''}
-        </div>
+       <div style="display:flex;align-items:flex-start;gap:6px">
+         <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+           ${p.local_escudo_url ? `<img src="${p.local_escudo_url}" width="22" height="22" style="object-fit:contain">` : ''}
+           <div style="font-family:var(--font-mono);font-size:7px;color:var(--text-muted)">${p.local_abrev || ''}</div>
+         </div>
+         <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);align-self:center;padding-top:0px">vs</div>
+         <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+           ${p.visitante_escudo_url ? `<img src="${p.visitante_escudo_url}" width="22" height="22" style="object-fit:contain">` : ''}
+           <div style="font-family:var(--font-mono);font-size:7px;color:var(--text-muted)">${p.visitante_abrev || ''}</div>
+         </div>
+       </div>
         ${!p.finalizado && p.fecha ? `<div style="font-family:var(--font-mono);font-size:8px;color:var(--text-muted);text-align:center">${formatearFecha(p.fecha, p.hora)}</div>` : ''}
         ${p.finalizado ? `<div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--neon)">${p.resultado_local}-${p.resultado_visitante}</div>` : ''}
       </div>

@@ -108,8 +108,7 @@ async function main() {
             .range(desde, desde + TAMANO_PAGINA - 1);
           if (!pagina?.length) break;
           equipos = equipos.concat(pagina);
-          if (pagina.length < TAMANO_PAGINA) break;
-          desde += TAMANO_PAGINA;
+          desde += pagina.length;
         }
 
     if (!equipos?.length) {
