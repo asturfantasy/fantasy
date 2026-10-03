@@ -1252,7 +1252,7 @@ async function loadPerfil() {
     const { data: misEquipos } = await db.from('mi_equipo').select('jugador_id, jornada').eq('user_id', currentUser.id);
     const idsUsados = [...new Set((misEquipos || []).map(e => e.jugador_id))];
     const { data: jugadoresInfo } = idsUsados.length
-      ? await db.from('jugadores').select('id, nombre, club').in('id', idsUsados)
+      ? await db.from('jugadores').select('id, nombre, club, jornada, total_jornada').in('id', idsUsados)
       : { data: [] };
     const infoPorId = {};
     (jugadoresInfo || []).forEach(j => { infoPorId[j.id] = j; });
@@ -1274,24 +1274,16 @@ async function loadPerfil() {
   // Jugador agradecido (mejor media pts / veces alineado)
   const jugadorPuntos = {};
   for (const e of (misEquipos || [])) {
-    const jug = (jugadoresInfo || []).find(j => j.id === e.jugador_id);
+    const jug = infoPorId[e.jugador_id];
     if (!jug) continue;
     const clave = jug.nombre + '|' + jug.club;
-    const jugJornada = (jugadoresInfo || []).find(j => j.nombre === jug.nombre && j.club === jug.club && j.jornada === e.jornada);
-    if (!jugJornada) continue;
     if (!jugadorPuntos[clave]) jugadorPuntos[clave] = { pts: 0, veces: 0, nombre: jug.nombre };
-    jugadorPuntos[clave].pts += jugJornada.total_jornada || 0;
+    jugadorPuntos[clave].pts += jug.total_jornada || 0;
     jugadorPuntos[clave].veces++;
   }
   const agradecido = Object.values(jugadorPuntos)
     .filter(j => j.veces >= 1)
     .sort((a,b) => (b.pts/b.veces) - (a.pts/a.veces))[0];
-
-    console.log('misEquipos:', misEquipos?.length);
-    console.log('jugadoresInfo:', jugadoresInfo?.length);
-    console.log('jugadorPuntos:', jugadorPuntos);
-    console.log('agradecido:', agradecido);
-    console.log('todos jugadorPuntos:', Object.values(jugadorPuntos).map(j => ({nombre: j.nombre, pts: j.pts, veces: j.veces, media: j.pts/j.veces})));
 
   // Pintar estadísticas
   const stats = [
