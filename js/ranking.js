@@ -1131,11 +1131,16 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   // D. Trébol
   let trebolMax = 0;
   let trebolActual = 0;
-  const jornadasOrdenadas = Object.keys(jugadoresPorJornada).sort((a,b) => a-b);
+  let jornadaPrevia = null;
+  const jornadasOrdenadas = Object.keys(jugadoresPorJornada).map(Number).sort((a,b) => a-b);
   jornadasOrdenadas.forEach(jornada => {
+    // Si se salta una jornada, la racha se rompe
+    if (jornadaPrevia !== null && jornada !== jornadaPrevia + 1) trebolActual = 0;
+    jornadaPrevia = jornada;
+
     const equipo = jugadoresPorJornada[jornada];
     const ent = equipo.find(j => j.posicion === 'ENT');
-    if (ent && (ent.puntos_entrenador || 0) > 0) {
+    if (ent && Number(ent.puntos_entrenador) === 3) {
       trebolActual++;
       trebolMax = Math.max(trebolMax, trebolActual);
     } else {
@@ -1181,7 +1186,7 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
     { icono: '🚀', titulo: 'Artillería pesada', desc: 'Tu equipo anota 5 o más goles en una única jornada', desbloqueado: artilleria },
     { icono: '🛡️', titulo: 'Alma de delantero', desc: 'Un defensa alineado marca un gol', desbloqueado: almaDelantero },
     { icono: '🫶', titulo: 'Compañerismo', desc: 'Tu equipo logra 3 o más asistencias en una única jornada', desbloqueado: companerismo },
-    { icono: '🔮', titulo: 'Oráculo', desc: `${Math.min(trebolMax, 5)}/5 jornadas consecutivas acertando entrenador`, desbloqueado: trebolDesbloqueado, contador: `${Math.min(trebolMax, 5)}/5` },
+   { icono: '🔮', titulo: 'Oráculo', desc: `${Math.min(trebolActual, 5)}/5 jornadas consecutivas con el entrenador logrando la victoria`, desbloqueado: trebolDesbloqueado, contador: `${Math.min(trebolActual, 5)}/5` },
     { icono: '🆘', titulo: 'Gafe', desc: 'Alineas un jugador con puntuación negativa', desbloqueado: gafe },
     { icono: '🌪️', titulo: 'Agitador', desc: 'Usa 50 jugadores diferentes', desbloqueado: agitadorDesbloqueado, contador: `${Math.min(jugadoresDiferentes, 50)}/50` },
     { icono: '💯', titulo: 'Centenario', desc: 'Logra 100 o más puntos en una única jornada', desbloqueado: centenario },
@@ -1218,12 +1223,22 @@ async function loadPerfil() {
   const misJornadas = clasificacion || [];
   const todas = todasClasificaciones || [];
 
+  // Solo jornadas con TODOS sus partidos finalizados
+  const { data: partidosEst } = await db.from('partidos').select('jornada, finalizado');
+  const resumenJ = {};
+  (partidosEst || []).forEach(p => {
+    if (!resumenJ[p.jornada]) resumenJ[p.jornada] = { total: 0, fin: 0 };
+    resumenJ[p.jornada].total++;
+    if (p.finalizado) resumenJ[p.jornada].fin++;
+  });
+  const misJornadasFin = misJornadas.filter(j => resumenJ[j.jornada]?.total > 0 && resumenJ[j.jornada].total === resumenJ[j.jornada].fin);
+
   // Calcular estadísticas
-  const puntosPorJornada = misJornadas.map(j => j.puntos);
+  const puntosPorJornada = misJornadasFin.map(j => j.puntos);
   const mejorJornada = puntosPorJornada.length ? Math.max(...puntosPorJornada) : 0;
   const peorJornada = puntosPorJornada.length ? Math.min(...puntosPorJornada) : 0;
   const media = puntosPorJornada.length ? (puntosPorJornada.reduce((a,b) => a+b, 0) / puntosPorJornada.length).toFixed(1) : 0;
-  const mejorJornadaNum = misJornadas.find(j => j.puntos === mejorJornada)?.jornada || '—';
+  const mejorJornadaNum = misJornadasFin.find(j => j.puntos === mejorJornada)?.jornada || '—';
 
   // Jornadas consecutivas en top 10
   const jornadasUnicas = [...new Set(todas.map(j => j.jornada))].sort((a,b) => a-b);
@@ -1288,7 +1303,7 @@ async function loadPerfil() {
   // Pintar estadísticas
   const stats = [
     { label: 'Mejor jornada', value: mejorJornada + ' pts', sub: 'J' + mejorJornadaNum, color: 'var(--neon)' },
-    { label: 'Peor jornada', value: peorJornada + ' pts', sub: misJornadas.find(j => j.puntos === peorJornada)?.jornada ? 'J' + misJornadas.find(j => j.puntos === peorJornada)?.jornada : '—', color: 'var(--red)' },
+    { label: 'Peor jornada', value: peorJornada + ' pts', sub: misJornadasFin.find(j => j.puntos === peorJornada)?.jornada ? 'J' + misJornadasFin.find(j => j.puntos === peorJornada)?.jornada : '—', color: 'var(--red)' },
     { label: 'Media por jornada', value: media + ' pts', sub: puntosPorJornada.length + ' jornadas', color: 'var(--amber)' },
     { label: 'Racha top 10', value: rachaActual + ' jornadas', sub: 'Máx. ' + rachaMax, color: 'var(--amber)' },
     { label: 'Jugador más usado', value: masUsadoNombre, sub: masUsadoVeces + ' jornadas', color: 'white' },
