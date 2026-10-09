@@ -156,7 +156,11 @@ async function loadLineup() {
                 const todosExisten = jugadoresAnt.length === idsAnt.length;
                 const costeTotal = Math.round(jugadoresAnt.reduce((acc, j) => acc + (parseFloat(j.valor) || 0), 0) * 10) / 10;
 
-        if (todosExisten && costeTotal <= PRESUPUESTO) {
+        const clubsAnt = {};
+        jugadoresAnt.forEach(j => { clubsAnt[j.club] = (clubsAnt[j.club] || 0) + 1; });
+        const superaClub = Object.values(clubsAnt).some(n => n > 2);
+
+        if (todosExisten && costeTotal <= PRESUPUESTO && !superaClub) {
           // Copiar equipo anterior
           const formacion = egAnterior[0].formacion;
           document.getElementById('formation-select').value = formacion;
@@ -224,6 +228,8 @@ async function loadLineup() {
           let costePos = 0;
           for (const j of candidatos) {
             if (selPos.length >= cantidad) break;
+            const enPos = selPos.filter(s => s.club === j.club).length;
+            if ((clubsEnSel[j.club] || 0) + enPos >= 2) continue;
             if (costeAuto + costePos + (parseFloat(j.valor) || 0) <= presupuestoMax) {
               selPos.push(j);
               costePos += parseFloat(j.valor) || 0;

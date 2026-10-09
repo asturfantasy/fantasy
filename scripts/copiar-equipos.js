@@ -17,7 +17,8 @@ async function generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, for
   const porPos = { POR: [], DEF: [], MED: [], DEL: [], ENT: [] };
   jugadores.forEach(j => { if (porPos[j.posicion]) porPos[j.posicion].push(j); });
 
-  const necesarios = { POR: 1, DEF: 3, MED: 4, DEL: 3, ENT: 1 };
+  const [nDef, nMed, nDel] = (/^\d-\d-\d$/.test(formacion) ? formacion : '3-4-3').split('-').map(Number);
+  const necesarios = { POR: 1, DEF: nDef, MED: nMed, DEL: nDel, ENT: 1 };
   const selAuto = [];
   const usados = new Set();
   const clubCount = {};
@@ -33,6 +34,9 @@ async function generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, for
     let selPos = [];
     for (const j of candidatos) {
       if (selPos.length >= cantidad) break;
+      // máximo 2 por club contando también los ya elegidos en esta misma posición
+      const enClub = (clubCount[j.club] || 0) + selPos.filter(s => s.club === j.club).length;
+      if (enClub >= 2) continue;
       if (coste + (parseFloat(j.valor) || 0) <= presupuesto * 0.98) {
         selPos.push(j);
         coste += parseFloat(j.valor) || 0;
@@ -148,6 +152,7 @@ async function main() {
     for (const [userId, equipo] of Object.entries(equiposPorUser)) {
       let costeTotal = 0;
       const equipoConvertido = [];
+      const clubesCount = {};
 
       for (const e of equipo) {
         const jugActiva = jugadoresActiva?.find(j => j.id === e.jugador_id);
@@ -156,12 +161,15 @@ async function main() {
         const jugSiguiente = jugadoresSiguiente?.find(j => j.nombre === jugActiva.nombre && j.club === jugActiva.club);
         if (!jugSiguiente) continue;
         costeTotal += parseFloat(jugSiguiente.valor) || 0;
+        clubesCount[jugSiguiente.club] = (clubesCount[jugSiguiente.club] || 0) + 1;
 
         equipoConvertido.push({ ...e, jugador_id_siguiente: jugSiguiente.id });
       }
 
-      if (costeTotal > presupuesto) {
-        console.log('Usuario ' + userId + ' supera presupuesto (' + costeTotal.toFixed(1) + 'M) → equipo aleatorio');
+      const superaClub = Object.values(clubesCount).some(n => n > 2);
+
+      if (costeTotal > presupuesto || superaClub) {
+        console.log('Usuario ' + userId + ' → equipo aleatorio (' + costeTotal.toFixed(1) + 'M' + (superaClub ? ', más de 2 por club' : '') + ')');
         await generarEquipoAleatorio(userId, jornadaSiguiente, presupuesto, equipo[0]?.formacion);
       } else {
         await supabase.from('mi_equipo').insert(
