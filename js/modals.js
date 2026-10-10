@@ -224,13 +224,22 @@ async function mostrarHistorial(nombre, club, posicion) {
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando...</div>';
   modal.classList.add('open');
 
-  const [{ data: partidosPublicados }, { data: todosPartidos }] = await Promise.all([
-    db.from('partidos').select('jornada, finalizado').or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`),
-    db.from('partidos').select('jornada, resultado_local, resultado_visitante, finalizado').eq('finalizado', true).or(`local_abrev.eq.${club},visitante_abrev.eq.${club}`)
-  ]);
+    // Club real que tuvo el jugador en cada jornada (por si ha cambiado de club)
+    const { data: filasJug } = await db.from('jugadores').select('jornada, club').eq('nombre', nombre);
+    const clubPorJornada = {};
+    (filasJug || []).forEach(f => { clubPorJornada[f.jornada] = f.club; });
+    const clubes = [...new Set(Object.values(clubPorJornada))];
+    if (!clubes.length) clubes.push(club);
+    const filtroClubes = clubes.map(c => `local_abrev.eq.${c},visitante_abrev.eq.${c}`).join(',');
+    const partidoDelClub = p => { const c = clubPorJornada[p.jornada]; return c && (p.local_abrev === c || p.visitante_abrev === c); };
+
+    const [{ data: partidosPublicados }, { data: todosPartidos }] = await Promise.all([
+      db.from('partidos').select('jornada, finalizado, local_abrev, visitante_abrev').or(filtroClubes),
+      db.from('partidos').select('jornada, resultado_local, resultado_visitante, finalizado, local_abrev, visitante_abrev').eq('finalizado', true).or(filtroClubes)
+    ]);
 
   // Solo jornadas donde TODOS los partidos están finalizados
-  const jornadasMap = (partidosPublicados || []).reduce((acc, p) => {
+  const jornadasMap = (partidosPublicados || []).filter(partidoDelClub).reduce((acc, p) => {
     if (!acc[p.jornada]) acc[p.jornada] = { total: 0, finalizados: 0 };
     acc[p.jornada].total++;
     if (p.finalizado) acc[p.jornada].finalizados++;
@@ -247,13 +256,13 @@ async function mostrarHistorial(nombre, club, posicion) {
   }
 
   const marcadores = {};
-  (todosPartidos || []).forEach(p => {
+  (todosPartidos || []).filter(partidoDelClub).forEach(p => {
     marcadores[p.jornada] = { local: p.resultado_local, visitante: p.resultado_visitante };
   });
 
   const { data, error } = await db.from('jugadores')
     .select('jornada, total_jornada, valor, escudo_url, foto_url, rival, es_local, gol, penalti_marcado, penalti_fallado, gol_pp, asistencia, amarilla, doble_amarilla, roja, puerta_cero, minutos, rol, goles_encajados, puntos_entrenador')
-    .eq('nombre', nombre).eq('club', club)
+    .eq('nombre', nombre)
     .in('jornada', jornadasPublicadas)
     .order('jornada', { ascending: true });
 
@@ -264,8 +273,8 @@ async function mostrarHistorial(nombre, club, posicion) {
 
   const maxPts = Math.max(...data.map(d => Math.abs(d.total_jornada)), 1);
   const total  = data.reduce((acc, d) => acc + d.total_jornada, 0);
-  const foto   = data[0]?.foto_url || '';
-  const escudo = data[0]?.escudo_url || '';
+  const foto   = data[data.length - 1]?.foto_url || '';
+  const escudo = data[data.length - 1]?.escudo_url || '';
 
   const ultimaJornada = data[data.length - 1]?.jornada;
   let valoresData = data.filter(d => d.valor != null);
@@ -273,7 +282,7 @@ async function mostrarHistorial(nombre, club, posicion) {
   if (ultimaJornada) {
     const { data: valorActual } = await db.from('jugadores')
       .select('jornada, valor')
-      .eq('nombre', nombre).eq('club', club)
+      .eq('nombre', nombre)
       .eq('jornada', ultimaJornada + 1)
       .maybeSingle();
     if (valorActual?.valor) {

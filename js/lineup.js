@@ -78,16 +78,16 @@ async function loadLineup() {
       if (error) { showToast('Error cargando jugadores', true); return; }
       const { data: rankingData } = await db.from('ranking_jugadores').select('nombre, club, puntos_total');
       const puntosMap = {};
-      (rankingData || []).forEach(r => { puntosMap[r.nombre + '-' + r.club] = r.puntos_total; });
-      (data || []).forEach(j => { j.puntos_total = puntosMap[j.nombre + '-' + j.club] ?? j.puntos; });
+      (rankingData || []).forEach(r => { puntosMap[r.nombre] = r.puntos_total; });
+      (data || []).forEach(j => { j.puntos_total = puntosMap[j.nombre] ?? j.puntos; });
 
       const { data: valoresAnt } = await db.from('jugadores')
         .select('nombre, club, valor')
         .eq('jornada', JORNADA_ACTIVA - 1);
       const valorAntMap = {};
-      (valoresAnt || []).forEach(j => { valorAntMap[j.nombre + '|' + j.club] = parseFloat(j.valor) || 0; });
+      (valoresAnt || []).forEach(j => { valorAntMap[j.nombre] = parseFloat(j.valor) || 0; });
       (data || []).forEach(j => {
-        const valorAnt = valorAntMap[j.nombre + '|' + j.club];
+        const valorAnt = valorAntMap[j.nombre];
         j.cambio_valor = valorAnt !== undefined ? (parseFloat(j.valor) || 0) - valorAnt : 0;
       });
 
@@ -98,12 +98,12 @@ async function loadLineup() {
               .order('jornada', { ascending: true }));
             const ultimasMap = {};
             (ultimasData || []).forEach(j => {
-              const key = j.nombre + '|' + j.club;
+              const key = j.nombre;
               if (!ultimasMap[key]) ultimasMap[key] = [];
               ultimasMap[key].push(j.total_jornada ?? 0);
             });
             (data || []).forEach(j => {
-              const historial = ultimasMap[j.nombre + '|' + j.club] || [];
+              const historial = ultimasMap[j.nombre] || [];
               j.ultimasPuntuaciones = historial.slice(-3);
             });
 
@@ -149,7 +149,7 @@ async function loadLineup() {
           .in('id', idsAnt);
 
         const jugadoresAnt = (jugadoresJ_ant || []).map(jant => {
-          const enActual = Object.values(jugadoresPorPos).flat().find(j => j.nombre === jant.nombre && j.club === jant.club);
+         const enActual = Object.values(jugadoresPorPos).flat().find(j => j.nombre === jant.nombre);
           return enActual || null;
         }).filter(Boolean);
 
@@ -175,7 +175,7 @@ async function loadLineup() {
           if (capAntReg) {
             const jugCapAnt = (jugadoresJ_ant || []).find(j => j.id === capAntReg.jugador_id);
             if (jugCapAnt) {
-              const capEnActual = Object.values(jugadoresPorPos).flat().find(j => j.nombre === jugCapAnt.nombre && j.club === jugCapAnt.club);
+             const capEnActual = Object.values(jugadoresPorPos).flat().find(j => j.nombre === jugCapAnt.nombre);
               capId = capEnActual?.id || null;
             }
           }
