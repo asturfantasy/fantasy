@@ -158,7 +158,7 @@ async function main() {
         const jugActiva = jugadoresActiva?.find(j => j.id === e.jugador_id);
         if (!jugActiva) continue;
 
-        const jugSiguiente = jugadoresSiguiente?.find(j => j.nombre === jugActiva.nombre && j.club === jugActiva.club);
+        const jugSiguiente = jugadoresSiguiente?.find(j => j.nombre === jugActiva.nombre);
         if (!jugSiguiente) continue;
         costeTotal += parseFloat(jugSiguiente.valor) || 0;
         clubesCount[jugSiguiente.club] = (clubesCount[jugSiguiente.club] || 0) + 1;

@@ -230,8 +230,8 @@ async function mostrarComparativa() {
   const ambosPor = j1.posicion === 'POR' && j2.posicion === 'POR';
 
    const [{ data: valoresHist1 }, { data: valoresHist2 }] = await Promise.all([
-    db.from('jugadores').select('jornada, valor').eq('nombre', j1.nombre).eq('club', j1.club).lte('jornada', JORNADA_VISIBLE).order('jornada', { ascending: true }),
-    db.from('jugadores').select('jornada, valor').eq('nombre', j2.nombre).eq('club', j2.club).lte('jornada', JORNADA_VISIBLE).order('jornada', { ascending: true }),
+   db.from('jugadores').select('jornada, valor').eq('nombre', j1.nombre).lte('jornada', JORNADA_VISIBLE).order('jornada', { ascending: true }),
+   db.from('jugadores').select('jornada, valor').eq('nombre', j2.nombre).lte('jornada', JORNADA_VISIBLE).order('jornada', { ascending: true }),
   ]);
   const valores1 = (valoresHist1 || []).filter(d => d.valor != null && parseFloat(d.valor) > 0);
   const valores2 = (valoresHist2 || []).filter(d => d.valor != null && parseFloat(d.valor) > 0);
