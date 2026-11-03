@@ -2243,7 +2243,7 @@ async function generarCardJornada(jornada, formato = 'cuadrado') {
 async function calcularMVPPeriodo(jornadaInicio, jornadaFin) {
   const { data: jugadoresPeriodo } = await fetchAllRows(
     db.from('jugadores')
-      .select('nombre, club, posicion, jornada, total_jornada, valor, rival, es_local, foto_url, escudo_url, gol, asistencia, amarilla')
+      .select('nombre, club, posicion, jornada, total_jornada, valor, rival, es_local, foto_url, escudo_url, gol, penalti_marcado, asistencia, amarilla')
       .gte('jornada', jornadaInicio)
       .lte('jornada', jornadaFin)
   );
@@ -2255,7 +2255,7 @@ async function calcularMVPPeriodo(jornadaInicio, jornadaFin) {
     const key = j.nombre + '|' + j.club;
     if (!agrupados[key]) agrupados[key] = { nombre: j.nombre, club: j.club, posicion: j.posicion, foto_url: j.foto_url, escudo_url: j.escudo_url, actuaciones: [], puntosTotales: 0, valorActual: j.valor, valores: {} };
     agrupados[key].actuaciones.push({ jornada: j.jornada, rival: j.rival, es_local: j.es_local, puntos: j.total_jornada || 0, escudoRival: null,
-      gol: Number(j.gol) || 0, asistencia: Number(j.asistencia) || 0, amarilla: Number(j.amarilla) || 0 }); // NUEVO: eventos por partido
+           gol: (Number(j.gol) || 0) + (Number(j.penalti_marcado) || 0), asistencia: Number(j.asistencia) || 0, amarilla: Number(j.amarilla) || 0 }); // NUEVO: eventos por partido
     agrupados[key].puntosTotales += (j.total_jornada || 0);
     agrupados[key].valorActual = j.valor;
     agrupados[key].valores[j.jornada] = j.valor; // NUEVO: valor por jornada

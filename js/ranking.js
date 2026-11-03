@@ -1001,8 +1001,7 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
 
   const { data: jugadoresAll } = await db
     .from('jugadores')
-    .select('id, nombre, posicion, valor, gol, asistencia, amarilla, doble_amarilla, roja, goles_encajados, total_jornada, puerta_cero, puntos_entrenador, jornada, minutos')
-    .in('id', jugadoresIds);
+        .select('id, nombre, posicion, valor, gol, penalti_marcado, asistencia, amarilla, doble_amarilla, roja, goles_encajados, total_jornada, puerta_cero, puntos_entrenador, jornada, minutos').in('id', jugadoresIds);
 
   const { data: todosPartidos } = await db
     .from('partidos')
@@ -1109,7 +1108,7 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   let artilleria = false;
   for (const jornada of Object.keys(jugadoresPorJornada)) {
     const equipo = jugadoresPorJornada[jornada];
-    const totalGoles = equipo.reduce((acc, j) => acc + (j.gol || 0), 0);
+    const totalGoles = equipo.reduce((acc, j) => acc + (j.gol || 0) + (j.penalti_marcado || 0), 0);
     if (totalGoles >= 5) { artilleria = true; break; }
   }
 
@@ -1117,7 +1116,7 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   let almaDelantero = false;
   for (const jornada of Object.keys(jugadoresPorJornada)) {
     const equipo = jugadoresPorJornada[jornada];
-    if (equipo.some(j => j.posicion === 'DEF' && (j.gol || 0) > 0)) { almaDelantero = true; break; }
+    if (equipo.some(j => j.posicion === 'DEF' && ((j.gol || 0) + (j.penalti_marcado || 0)) > 0)) { almaDelantero = true; break; }
   }
 
   // Compañerismo
