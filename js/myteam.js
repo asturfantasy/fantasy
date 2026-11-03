@@ -44,9 +44,9 @@ async function cargarMyTeam(jornada) {
   if (error || !data?.length) { grid.innerHTML = ''; banner.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
     const ids = data.map(j => j.jugador_id);
-    const { data: jugData } = await db.from('jugadores').select('id, escudo_url, foto_url, valor, activo, gol, asistencia, amarilla, doble_amarilla, roja').in('id', ids);
+        const { data: jugData } = await db.from('jugadores').select('id, escudo_url, foto_url, valor, activo, gol, penalti_marcado, asistencia, amarilla, doble_amarilla, roja').in('id', ids);
     const escudoMap = {}, fotoMap = {}, valorMap = {}, activoMap = {}, golMap = {}, asistMap = {}, amarillaMap = {}, dobleAmarillaMap = {}, rojaMap = {};
-    (jugData || []).forEach(j => { escudoMap[j.id] = j.escudo_url; fotoMap[j.id] = j.foto_url; valorMap[j.id] = j.valor; activoMap[j.id] = j.activo; golMap[j.id] = j.gol || 0; asistMap[j.id] = j.asistencia || 0; amarillaMap[j.id] = j.amarilla || 0; dobleAmarillaMap[j.id] = j.doble_amarilla || 0; rojaMap[j.id] = j.roja || 0; });
+       (jugData || []).forEach(j => { escudoMap[j.id] = j.escudo_url; fotoMap[j.id] = j.foto_url; valorMap[j.id] = j.valor; activoMap[j.id] = j.activo; golMap[j.id] = (j.gol || 0) + (j.penalti_marcado || 0); asistMap[j.id] = j.asistencia || 0; amarillaMap[j.id] = j.amarilla || 0; dobleAmarillaMap[j.id] = j.doble_amarilla || 0; rojaMap[j.id] = j.roja || 0; });
     const { data: capData } = await db.from('mi_equipo').select('jugador_id').eq('user_id', currentUser.id).eq('jornada', jornada).eq('capitan', true).single();
     const capitanId = capData?.jugador_id || null;
     const orden = ['POR','DEF','MED','DEL','ENT'];
