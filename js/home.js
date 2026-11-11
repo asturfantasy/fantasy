@@ -142,14 +142,17 @@ async function loadHome() {
   //Clasificación clubes
   let condicionActual = null;
   let ordenActual = 'pts';
+  let rachaActual = null;
 
-  async function cargarClasificacion(condicion = condicionActual, orden = ordenActual) {
+  async function cargarClasificacion(condicion = condicionActual, orden = ordenActual, racha = rachaActual) {
     condicionActual = condicion;
     ordenActual = orden;
+    rachaActual = racha;
 
     const { data, error } = await db.rpc('get_clasificacion_clubes', {
       p_condicion: condicion,
-      p_orden: orden
+      p_orden: orden,
+      p_racha: racha
     });
 
     if (error) {
@@ -193,6 +196,9 @@ async function loadHome() {
     document.querySelectorAll('#filtro-orden-grupo .filtro-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.valor === ordenActual);
     });
+    document.querySelectorAll('#filtro-racha-grupo .filtro-btn').forEach(btn => {
+      btn.classList.toggle('active', (btn.dataset.valor ? Number(btn.dataset.valor) : null) === rachaActual);
+    });
   }
 
   // Listeners de los botones de filtro (clonados para evitar duplicados al repetir loadHome)
@@ -202,8 +208,9 @@ async function loadHome() {
     btn.addEventListener('click', () => {
       const tipo = btn.dataset.tipo;
       const valor = btn.dataset.valor || null;
-      if (tipo === 'condicion') cargarClasificacion(valor, ordenActual);
-      else cargarClasificacion(condicionActual, valor);
+      if (tipo === 'condicion') cargarClasificacion(valor, ordenActual, rachaActual);
+      else if (tipo === 'orden') cargarClasificacion(condicionActual, valor, rachaActual);
+      else cargarClasificacion(condicionActual, ordenActual, valor ? Number(valor) : null);
     });
   });
 
