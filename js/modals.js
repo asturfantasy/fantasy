@@ -480,7 +480,7 @@ async function mostrarHistorial(nombre, club, posicion) {
       const esNegativo = pts < 0;
       const anchoPct = Math.min(Math.abs(pts) / maxPts * 100, 100);
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
-        '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;min-width:90px">' +
+        '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;width:118px;white-space:nowrap">' +
           '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">J' + d.jornada + '</span>' +
           (d.rival ? '<span style="font-size:10px">' + (d.es_local ? '🏠' : '✈️') + '</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">' + d.rival + '</span>' : '') +
           (marcador ? '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-left:2px">(' + marcador + ')</span>' : '') +
