@@ -989,7 +989,7 @@ function logrosVacios() {
   ];
 }
 
-async function calcularLogros(misJornadasOriginal, todas, currentUser) {
+async function calcularLogros(misJornadasOriginal, posPorJornada, currentUser) {
   const { data: miEquipoAll } = await db
     .from('mi_equipo')
     .select('jugador_id, jornada, capitan')
@@ -1022,10 +1022,7 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   );
 
   if (!jornadasFinalizadas.size) {
-    const victoriaJornada = misJornadasOriginal.some(j => {
-      const ranking = todas.filter(t => t.jornada === j.jornada).sort((a,b) => b.puntos - a.puntos);
-      return ranking[0]?.user_id === currentUser.id;
-    });
+    const victoriaJornada = misJornadasOriginal.some(j => posPorJornada[j.jornada] === 1);
     const totalPuntos = misJornadasOriginal.reduce((acc, j) => acc + j.puntos, 0);
     const logros = logrosVacios();
     logros[0].desbloqueado = victoriaJornada;
@@ -1046,21 +1043,13 @@ async function calcularLogros(misJornadasOriginal, todas, currentUser) {
   });
 
   // Primera victoria
-  const victoriaJornada = misJornadas.some(j => {
-    const ranking = todas
-      .filter(t => t.jornada === j.jornada && jornadasFinalizadas.has(t.jornada))
-      .sort((a,b) => b.puntos - a.puntos);
-    return ranking[0]?.user_id === currentUser.id;
-  });
+  const victoriaJornada = misJornadas.some(j => posPorJornada[j.jornada] === 1);
 
   // Mítico
   let miticoContador = 0;
   misJornadas.forEach(j => {
-    const ranking = todas
-      .filter(t => t.jornada === j.jornada && jornadasFinalizadas.has(t.jornada))
-      .sort((a,b) => b.puntos - a.puntos);
-    const pos = ranking.findIndex(r => r.user_id === currentUser.id);
-    if (pos >= 0 && pos < 50) miticoContador++;
+    const pos = posPorJornada[j.jornada] || 0;
+    if (pos >= 1 && pos <= 50) miticoContador++;
   });
   const miticoDesbloqueado = miticoContador >= 3;
 
@@ -1215,12 +1204,11 @@ async function loadPerfil() {
     .order('jornada', { ascending: true });
 
   // Clasificación general de todas las jornadas para el ranking semanal
-  const { data: todasClasificaciones } = await db.from('clasificacion_automatica')
-    .select('user_id, jornada, puntos')
-    .order('jornada', { ascending: true });
+  const { data: posiciones } = await db.rpc('get_mis_posiciones_jornada', { p_user: currentUser.id });
+  const posPorJornada = {};
+  (posiciones || []).forEach(p => { posPorJornada[p.jornada] = p.posicion ?? 0; });
 
   const misJornadas = clasificacion || [];
-  const todas = todasClasificaciones || [];
 
   // Solo jornadas con TODOS sus partidos finalizados
   const { data: partidosEst } = await db.from('partidos').select('jornada, finalizado');
@@ -1239,12 +1227,14 @@ async function loadPerfil() {
   const media = puntosPorJornada.length ? (puntosPorJornada.reduce((a,b) => a+b, 0) / puntosPorJornada.length).toFixed(1) : 0;
   const mejorJornadaNum = misJornadasFin.find(j => j.puntos === mejorJornada)?.jornada || '—';
 
-  // Jornadas consecutivas en top 10
-  const jornadasUnicas = [...new Set(todas.map(j => j.jornada))].sort((a,b) => a-b);
+  // Jornadas consecutivas en top 10 (solo jornadas finalizadas)
+  const jornadasUnicas = (posiciones || [])
+    .map(p => p.jornada)
+    .filter(j => resumenJ[j]?.total > 0 && resumenJ[j].total === resumenJ[j].fin)
+    .sort((a, b) => a - b);
   let rachaActual = 0, rachaMax = 0, rachaTemp = 0;
   jornadasUnicas.forEach(jornada => {
-    const ranking = todas.filter(j => j.jornada === jornada).sort((a,b) => b.puntos - a.puntos);
-    const pos = ranking.findIndex(j => j.user_id === currentUser.id) + 1;
+    const pos = posPorJornada[jornada] || 0;
     if (pos > 0 && pos <= 10) {
       rachaTemp++;
       rachaMax = Math.max(rachaMax, rachaTemp);
@@ -1254,9 +1244,7 @@ async function loadPerfil() {
   });
   // Racha actual (desde el final)
   for (let i = jornadasUnicas.length - 1; i >= 0; i--) {
-    const jornada = jornadasUnicas[i];
-    const ranking = todas.filter(j => j.jornada === jornada).sort((a,b) => b.puntos - a.puntos);
-    const pos = ranking.findIndex(j => j.user_id === currentUser.id) + 1;
+    const pos = posPorJornada[jornadasUnicas[i]] || 0;
     if (pos > 0 && pos <= 10) rachaActual++;
     else break;
   }
@@ -1317,7 +1305,7 @@ async function loadPerfil() {
     '</div>'
   ).join('');
 
-  const logros = await calcularLogros(misJornadas, todas, currentUser);
+  const logros = await calcularLogros(misJornadas, posPorJornada, currentUser);
 
   document.getElementById('perfil-logros').innerHTML = logros.map(l =>
     '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border-radius:10px;' + (!l.desbloqueado ? 'opacity:0.4;' : 'border:1px solid rgba(76,217,123,0.2);') + '">' +
